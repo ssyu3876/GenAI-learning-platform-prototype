@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowRight, Check, Clock, Lock, Play, RotateCcw } from 'lucide-react';
 import { Badge, Button, Card, CardBody, CardHeader, ProgressBar, cn } from '@/components/ui';
 import { sprintEnter, sprintGoOn, sprintLeaveWeekSummary, sprintPick, resetScenario } from '../actions';
@@ -56,10 +57,12 @@ function StatBars({ stats }: { stats: SprintRunnerProps['stats'] }) {
   );
 }
 
+// The caller passes key={step.index}, so a new question remounts this component and the
+// initial state is already the right time. Resetting it in the effect would cause an extra
+// render and is flagged by react-hooks/set-state-in-effect.
 function Countdown({ seconds, onTimeout }: { seconds: number; onTimeout: () => void }) {
   const [left, setLeft] = useState(seconds);
   useEffect(() => {
-    setLeft(seconds);
     const id = setInterval(() => {
       setLeft((n) => {
         if (n <= 1) {
@@ -83,6 +86,7 @@ function Countdown({ seconds, onTimeout }: { seconds: number; onTimeout: () => v
 export function SprintRunner(props: SprintRunnerProps) {
   const { view, week, stats, weeks, step, pending, summary, ending, history } = props;
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   const act = (fn: () => Promise<unknown>) =>
     startTransition(async () => {
@@ -114,7 +118,7 @@ export function SprintRunner(props: SprintRunnerProps) {
               <Button variant="primary" onClick={() => act(() => resetScenario({ key: 'sprint-zero' }))} disabled={isPending}>
                 <RotateCcw className="h-4 w-4" aria-hidden /> Play again
               </Button>
-              <Button variant="ghost" onClick={() => window.location.assign('/scenarios')}>
+              <Button variant="ghost" onClick={() => router.push('/scenarios')}>
                 Back to scenarios
               </Button>
             </div>
@@ -311,6 +315,7 @@ export function SprintRunner(props: SprintRunnerProps) {
         </div>
         {step.seconds ? (
           <Countdown
+            key={step.index}
             seconds={step.seconds}
             onTimeout={() =>
               act(() => sprintPick({ choiceId: step.choices[step.timeoutChoice]?.id ?? step.choices[0]!.id, timedOut: true }))

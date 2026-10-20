@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowRight, Lightbulb, RotateCcw, SkipForward } from 'lucide-react';
 import { Badge, Button, Card, CardBody, CardHeader, ProgressBar, cn } from '@/components/ui';
 import { answerInterview, skipInterviewQuestion, startInterviewRun } from '../actions';
@@ -29,6 +30,7 @@ export function InterviewRunner(props: InterviewRunnerProps) {
   const [answer, setAnswer] = useState('');
   const [hintsUsed, setHintsUsed] = useState(0);
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
   const words = answer.trim().split(/\s+/).filter(Boolean).length;
 
   const begin = () =>
@@ -147,7 +149,7 @@ export function InterviewRunner(props: InterviewRunnerProps) {
           <Button variant="primary" onClick={begin} disabled={isPending}>
             <RotateCcw className="h-4 w-4" aria-hidden /> Run it again
           </Button>
-          <Button variant="ghost" onClick={() => window.location.assign('/scenarios')}>
+          <Button variant="ghost" onClick={() => router.push('/scenarios')}>
             Back to scenarios
           </Button>
         </div>

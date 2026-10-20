@@ -1,6 +1,7 @@
 'use client';
 
 import { useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowRight, Check, FlaskConical, RotateCcw, ShieldCheck, Wrench, X } from 'lucide-react';
 import { Badge, Button, Card, CardBody, CardHeader, ProgressBar, cn } from '@/components/ui';
 import { resetScenario, shipAdvance, shipChoose, shipDecideAfterRepair, shipRepair } from '../actions';
@@ -112,6 +113,7 @@ export function ShipRunner(props: ShipRunnerProps) {
     history,
   } = props;
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   const run = (fn: () => Promise<unknown>) =>
     startTransition(async () => {
@@ -146,7 +148,7 @@ export function ShipRunner(props: ShipRunnerProps) {
               >
                 <RotateCcw className="h-4 w-4" aria-hidden /> Play again
               </Button>
-              <Button variant="ghost" onClick={() => window.location.assign('/scenarios')}>
+              <Button variant="ghost" onClick={() => router.push('/scenarios')}>
                 Back to scenarios
               </Button>
             </div>

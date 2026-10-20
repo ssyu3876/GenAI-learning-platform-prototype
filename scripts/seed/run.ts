@@ -18,6 +18,7 @@ import {
   learningEvents,
   lessonCompletions,
   users,
+  type Activity,
   type LearnerBackground,
   type LearnerGoal,
   type UserRole,
@@ -76,6 +77,43 @@ function mulberry32(seed: number) {
 }
 const rand = mulberry32(20261017);
 const between = (min: number, max: number) => min + rand() * (max - min);
+// Separate stream for quiz answers so they do not shift the rest of the demo history.
+const answerRand = mulberry32(20261020);
+
+function hashString(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+
+/**
+ * Quiz answers that match a score, saved in attempt.detail like the quiz player does.
+ * Some questions are harder than others, and most misses land on the same tempting wrong
+ * option, so the mistake notebook and class insights have a realistic pattern to show.
+ */
+function simulatedQuizAnswers(activity: Activity, score: number): { answers: number[] } | null {
+  if (activity.type !== 'quiz') return null;
+  const parsed = quizConfigSchema.safeParse(activity.config);
+  if (!parsed.success) return null;
+  const questions = parsed.data.questions;
+  const wrongCount = questions.length - Math.round((score / 100) * questions.length);
+  const weight = questions.map((_, i) => 0.15 + (hashString(`${activity.title}:${i}`) % 100) / 100);
+  const wrong = new Set<number>();
+  while (wrong.size < wrongCount) {
+    const open = questions.map((_, i) => i).filter((i) => !wrong.has(i));
+    let r = answerRand() * open.reduce((sum, i) => sum + weight[i]!, 0);
+    const pick = open.find((i) => (r -= weight[i]!) <= 0) ?? open[open.length - 1]!;
+    wrong.add(pick);
+  }
+  return {
+    answers: questions.map((q, i) => {
+      if (!wrong.has(i)) return q.answerIndex;
+      const others = q.options.map((_, o) => o).filter((o) => o !== q.answerIndex);
+      const trap = others[hashString(`${activity.title}:${i}:trap`) % others.length]!;
+      return answerRand() < 0.7 ? trap : others[Math.floor(answerRand() * others.length)]!;
+    }),
+  };
+}
 
 /** A moment `daysAgo` days back, at a plausible study hour (UTC). */
 function at(daysAgo: number, hour = Math.floor(between(1, 14))): Date {
@@ -169,7 +207,7 @@ function simulate(userId: string, plan: { step: Step; when: Date; score: number 
       batch.events.push({ id: newId('event'), userId, type: 'course.enrolled', courseId: course.id, xp: 0, createdAt: row.enrolledAt });
     }
     const xp = xpForScore(score, activity.xpReward);
-    batch.attempts.push({ id: newId('attempt'), userId, activityId: activity.id, courseId: course.id, bestScore: score, xpEarned: xp, completedAt: when, updatedAt: when });
+    batch.attempts.push({ id: newId('attempt'), userId, activityId: activity.id, courseId: course.id, bestScore: score, xpEarned: xp, detail: simulatedQuizAnswers(activity, score), completedAt: when, updatedAt: when });
     batch.events.push({ id: newId('event'), userId, type: 'activity.completed', courseId: course.id, lessonId: lesson.id, activityId: activity.id, xp, payload: { score, attempt: 1 }, createdAt: when });
 
     const n = (doneInLesson.get(lesson.id) ?? 0) + 1;

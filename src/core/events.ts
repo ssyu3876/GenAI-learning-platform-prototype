@@ -17,6 +17,8 @@ export const EVENT_TYPES = {
   /** payload: { courseId } — learner generated their own course */
   courseGenerated: 'course.generated',
   classJoined: 'class.joined',
+  /** payload: { itemId, questionIndex, correct, box } — learner answered a review card */
+  reviewAnswered: 'review.answered',
 } as const;
 
 export type EventType = (typeof EVENT_TYPES)[keyof typeof EVENT_TYPES] | (string & {});

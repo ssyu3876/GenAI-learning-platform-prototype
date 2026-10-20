@@ -16,6 +16,7 @@ const MODULES = [
   'classes',
   'self-learn',
   'admin',
+  'review',
 ];
 
 const moduleBoundaries = MODULES.map((name) => ({

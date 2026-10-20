@@ -49,6 +49,7 @@ sum over the last 7 days. This keeps leaderboards, streaks and dashboards consis
 | `onboarding.completed` | onboarding | 0 | `{ track }` |
 | `tutor.asked` | ai-tutor | 0 | `{ lessonId? }` |
 | `class.joined` | classes | 0 | `{ classId }` |
+| `review.answered` | review | 2 for a right answer on a due card, else 0 | `{ itemId, questionIndex, correct, box }` |
 
 XP rules (`src/core/progress/xp.ts`): score ≥ 60 earns the activity's `xpReward`, 100 earns
 120%, below 60 earns a proportional share. Levels: Seed 0, Sprout 100, Seedling 250, Sapling
@@ -78,5 +79,6 @@ Each type is an `ActivityDefinition` (`src/core/activity-types.ts`) with a zod `
 | `leaderboard_prefs` | leaderboard | Per-user display choice: real name or nickname, opt out |
 | `leaderboard_class_settings` | leaderboard | Instructor switch: show the class board or not |
 | `lesson_adaptations` | courses | Cached "explain it my way" rewrites per lesson × learner track |
+| `review_items` | review | Missed quiz questions per learner, with Leitner box and next due date (built from `activity_attempts.detail.answers`) |
 
 When you add a table, add a row here in the same PR.

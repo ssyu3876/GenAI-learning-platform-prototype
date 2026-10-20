@@ -50,6 +50,7 @@ sum over the last 7 days. This keeps leaderboards, streaks and dashboards consis
 | `tutor.asked` | ai-tutor | 0 | `{ lessonId? }` |
 | `class.joined` | classes | 0 | `{ classId }` |
 | `review.answered` | review | 2 for a right answer on a due card, else 0 | `{ itemId, questionIndex, correct, box }` |
+| `scenario.completed` | scenarios | the run score 0-100 | `{ scenarioKey, score }` |
 
 XP rules (`src/core/progress/xp.ts`): score ≥ 60 earns the activity's `xpReward`, 100 earns
 120%, below 60 earns a proportional share. Levels: Seed 0, Sprout 100, Seedling 250, Sapling
@@ -81,5 +82,12 @@ Each type is an `ActivityDefinition` (`src/core/activity-types.ts`) with a zod `
 | `lesson_adaptations` | courses | Cached "explain it my way" rewrites per lesson × learner track |
 | `review_items` | review | Missed quiz questions per learner, with Leitner box and next due date (built from `activity_attempts.detail.answers`) |
 | `class_insight_summaries` | classes | Latest AI summary of common misconceptions per class, with the answer count it was based on |
+| `scenario_runs` | scenarios | One row per learner per scenario key: `state` jsonb (steps, stats, history), `bestScore`, `completions` |
+
+Achievements (`src/modules/achievements/`) owns **no tables**. A badge is a predicate over a
+snapshot built from `learning_events`, `activity_attempts`, `lesson_completions` and
+`enrollments`, so it can never disagree with the XP totals. Scenario results are read back
+from `learning_events` (`scenario.completed`), which is why the achievements module never
+imports the scenarios module.
 
 When you add a table, add a row here in the same PR.

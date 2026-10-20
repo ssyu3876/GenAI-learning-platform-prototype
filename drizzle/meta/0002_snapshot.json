@@ -1,5 +1,5 @@
 {
-  "id": "951fcf9d-40e6-453d-8095-276efd83fbcf",
+  "id": "986b451e-86fe-4870-a901-8e04704ac2ae",
   "prevId": "956953dc-6f67-4d2c-a5d9-313723834b35",
   "version": "7",
   "dialect": "postgresql",
@@ -1508,8 +1508,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.review_items": {
-      "name": "review_items",
+    "public.scenario_runs": {
+      "name": "scenario_runs",
       "schema": "",
       "columns": {
         "id": {
@@ -1524,81 +1524,38 @@
           "primaryKey": false,
           "notNull": true
         },
-        "activity_id": {
-          "name": "activity_id",
+        "scenario_key": {
+          "name": "scenario_key",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "course_id": {
-          "name": "course_id",
+        "status": {
+          "name": "status",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "'active'"
         },
-        "question_index": {
-          "name": "question_index",
-          "type": "integer",
+        "state": {
+          "name": "state",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": true
         },
-        "prompt": {
-          "name": "prompt",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "wrong_answer": {
-          "name": "wrong_answer",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "box": {
-          "name": "box",
+        "best_score": {
+          "name": "best_score",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "default": 0
         },
-        "due_at": {
-          "name": "due_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "review_count": {
-          "name": "review_count",
+        "completions": {
+          "name": "completions",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "default": 0
-        },
-        "lapse_count": {
-          "name": "lapse_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "last_reviewed_at": {
-          "name": "last_reviewed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "mastered_at": {
-          "name": "mastered_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "source_attempt_at": {
-          "name": "source_attempt_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
         },
         "created_at": {
           "name": "created_at",
@@ -1616,8 +1573,8 @@
         }
       },
       "indexes": {
-        "review_items_user_id_activity_id_question_index_index": {
-          "name": "review_items_user_id_activity_id_question_index_index",
+        "scenario_runs_user_key_idx": {
+          "name": "scenario_runs_user_key_idx",
           "columns": [
             {
               "expression": "user_id",
@@ -1626,13 +1583,7 @@
               "nulls": "last"
             },
             {
-              "expression": "activity_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "question_index",
+              "expression": "scenario_key",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1643,17 +1594,11 @@
           "method": "btree",
           "with": {}
         },
-        "review_items_user_id_due_at_index": {
-          "name": "review_items_user_id_due_at_index",
+        "scenario_runs_user_idx": {
+          "name": "scenario_runs_user_idx",
           "columns": [
             {
               "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "due_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1666,38 +1611,12 @@
         }
       },
       "foreignKeys": {
-        "review_items_user_id_users_id_fk": {
-          "name": "review_items_user_id_users_id_fk",
-          "tableFrom": "review_items",
+        "scenario_runs_user_id_users_id_fk": {
+          "name": "scenario_runs_user_id_users_id_fk",
+          "tableFrom": "scenario_runs",
           "tableTo": "users",
           "columnsFrom": [
             "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "review_items_activity_id_activities_id_fk": {
-          "name": "review_items_activity_id_activities_id_fk",
-          "tableFrom": "review_items",
-          "tableTo": "activities",
-          "columnsFrom": [
-            "activity_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "review_items_course_id_courses_id_fk": {
-          "name": "review_items_course_id_courses_id_fk",
-          "tableFrom": "review_items",
-          "tableTo": "courses",
-          "columnsFrom": [
-            "course_id"
           ],
           "columnsTo": [
             "id"

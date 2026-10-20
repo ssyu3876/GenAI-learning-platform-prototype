@@ -19,15 +19,22 @@
     {
       "idx": 2,
       "version": "7",
-      "when": 1792471032927,
-      "tag": "0002_review_items",
+      "when": 1792413815325,
+      "tag": "0002_curly_squadron_supreme",
       "breakpoints": true
     },
     {
       "idx": 3,
       "version": "7",
-      "when": 1792471034649,
-      "tag": "0003_class_insight_summaries",
+      "when": 1792481905334,
+      "tag": "0003_review_items",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792481906728,
+      "tag": "0004_class_insight_summaries",
       "breakpoints": true
     }
   ]

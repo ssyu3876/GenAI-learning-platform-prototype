@@ -80,5 +80,6 @@ Each type is an `ActivityDefinition` (`src/core/activity-types.ts`) with a zod `
 | `leaderboard_class_settings` | leaderboard | Instructor switch: show the class board or not |
 | `lesson_adaptations` | courses | Cached "explain it my way" rewrites per lesson × learner track |
 | `review_items` | review | Missed quiz questions per learner, with Leitner box and next due date (built from `activity_attempts.detail.answers`) |
+| `class_insight_summaries` | classes | Latest AI summary of common misconceptions per class, with the answer count it was based on |
 
 When you add a table, add a row here in the same PR.

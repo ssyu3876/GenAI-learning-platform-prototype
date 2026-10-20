@@ -4,6 +4,7 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { generateJson } from '@/core/ai/client';
 import { hashPassword } from '@/core/auth/password';
 import { requireUser } from '@/core/auth/session';
 import { getDb } from '@/core/db/client';
@@ -11,8 +12,17 @@ import { classCourses, classes, classMembers, courses, users } from '@/core/db/s
 import { EVENT_TYPES, recordEvent } from '@/core/events';
 import { newId, newInviteCode, randomString } from '@/core/ids';
 import type { ActionResult } from '@/core/types';
+import {
+  buildMisconceptionInput,
+  MISCONCEPTION_SYSTEM_PROMPT,
+  misconceptionSummarySchema,
+  mockMisconceptionSummary,
+  pickFocusQuestions,
+  resolveQuestionRefs,
+} from './insights';
 import { parseStudentCsv, type SkippedRow } from './logic';
-import { assignableCourseCondition, getManagedClass } from './queries';
+import { assignableCourseCondition, getClassQuestionInsights, getManagedClass } from './queries';
+import { classInsightSummaries } from './schema';
 
 // No 0/O/1/l/I so temporary passwords are easy to read out or copy by hand.
 const PASSWORD_ALPHABET = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -214,4 +224,46 @@ export async function unassignCourse(_prev: ActionResult | null, formData: FormD
     .where(and(eq(classCourses.classId, cls.id), eq(classCourses.courseId, parsed.data.courseId)));
   revalidatePath(`/classes/${cls.id}`);
   return { ok: true, message: 'Course removed from the class.' };
+}
+
+const classIdSchema = z.object({ classId: z.string().min(1) });
+
+/** Insights tab: ask the AI to group the class's wrong quiz answers into misconceptions. */
+export async function summariseMisconceptions(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const user = await requireUser(['instructor', 'admin']);
+  const parsed = classIdSchema.safeParse({ classId: formData.get('classId') });
+  if (!parsed.success) return { ok: false, error: 'Pick a class first.' };
+  const cls = await getManagedClass(user, parsed.data.classId);
+  if (!cls) return { ok: false, error: 'You can only summarise your own classes.' };
+
+  const insights = await getClassQuestionInsights(cls.id);
+  const focus = pickFocusQuestions(insights.questions);
+  if (focus.length === 0) {
+    return { ok: false, error: 'Not enough wrong answers yet to spot a pattern. Check back after the next quiz.' };
+  }
+
+  const { data, mocked } = await generateJson(
+    [
+      { role: 'system', content: MISCONCEPTION_SYSTEM_PROMPT },
+      { role: 'user', content: buildMisconceptionInput(cls.name, focus) },
+    ],
+    misconceptionSummarySchema,
+    {
+      feature: 'classes.summarise_misconceptions',
+      userId: user.id,
+      tier: 'fast',
+      temperature: 0.4,
+      maxTokens: 900,
+      mock: () => mockMisconceptionSummary(focus),
+    },
+  );
+  const content = mocked ? data : resolveQuestionRefs(data, focus);
+  const db = await getDb();
+  const values = { content, mocked, answerCount: insights.answerCount, generatedAt: new Date() };
+  await db
+    .insert(classInsightSummaries)
+    .values({ classId: cls.id, ...values })
+    .onConflictDoUpdate({ target: classInsightSummaries.classId, set: values });
+  revalidatePath(`/classes/${cls.id}`);
+  return { ok: true, message: 'Summary updated.' };
 }

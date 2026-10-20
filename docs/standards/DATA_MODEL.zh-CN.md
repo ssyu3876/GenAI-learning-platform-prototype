@@ -71,5 +71,6 @@ XP 规则（`src/core/progress/xp.ts`）：分数 ≥ 60 获得活动的 `xpRewa
 | `leaderboard_class_settings` | leaderboard | 教师开关：是否显示班级排行榜 |
 | `lesson_adaptations` | courses | 缓存的"换个方式讲"改写，按 lesson × 学生 track |
 | `review_items` | review | 每个学生答错的测验题，含 Leitner 盒子和下次复习时间（来自 `activity_attempts.detail.answers`） |
+| `class_insight_summaries` | classes | 每个班级最新一次 AI 常见误区总结，及其依据的作答数 |
 
 添加新表时，在同一个 PR 里给这里加一行。

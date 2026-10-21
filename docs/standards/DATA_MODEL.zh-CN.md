@@ -44,6 +44,7 @@ XP **永远不存在 user 表上**。总 XP = `sum(learning_events.xp)`。周 XP
 | `onboarding.completed` | 入门测评 | 0 | `{ track }` |
 | `tutor.asked` | AI 助教 | 0 | `{ lessonId? }` |
 | `class.joined` | 班级 | 0 | `{ classId }` |
+| `review.answered` | review | 到期卡片答对得 2，否则 0 | `{ itemId, questionIndex, correct, box }` |
 
 XP 规则（`src/core/progress/xp.ts`）：分数 ≥ 60 获得活动的 `xpReward`，100 分获得 120%，低于 60 按比例获得。等级：Seed 0、Sprout 100、Seedling 250、Sapling 500、Young Tree 900、Tree 1400、Grove 2100、Forest 3000。连续天数按 UTC 天计算，只要有任何事件就算。
 
@@ -69,5 +70,7 @@ XP 规则（`src/core/progress/xp.ts`）：分数 ≥ 60 获得活动的 `xpRewa
 | `leaderboard_prefs` | leaderboard | 每个用户的显示选择：真名或昵称、退出排行榜 |
 | `leaderboard_class_settings` | leaderboard | 教师开关：是否显示班级排行榜 |
 | `lesson_adaptations` | courses | 缓存的"换个方式讲"改写，按 lesson × 学生 track |
+| `review_items` | review | 每个学生答错的测验题，含 Leitner 盒子和下次复习时间（来自 `activity_attempts.detail.answers`） |
+| `class_insight_summaries` | classes | 每个班级最新一次 AI 常见误区总结，及其依据的作答数 |
 
 添加新表时，在同一个 PR 里给这里加一行。

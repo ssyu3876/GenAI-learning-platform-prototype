@@ -12,6 +12,7 @@ import { classesManifest } from '@/modules/classes/manifest';
 import { coursesManifest } from '@/modules/courses/manifest';
 import { leaderboardManifest } from '@/modules/leaderboard/manifest';
 import { onboardingManifest } from '@/modules/onboarding/manifest';
+import { reviewManifest } from '@/modules/review/manifest';
 import { scenariosManifest } from '@/modules/scenarios/manifest';
 import { selfLearnManifest } from '@/modules/self-learn/manifest';
 import { studioManifest } from '@/modules/studio/manifest';
@@ -21,6 +22,7 @@ export const MODULES: ModuleManifest[] = [
   coursesManifest,
   activitiesManifest,
   selfLearnManifest,
+  reviewManifest,
   leaderboardManifest,
   aiTutorManifest,
   studioManifest,

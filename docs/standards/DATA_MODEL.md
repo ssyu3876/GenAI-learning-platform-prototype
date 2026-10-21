@@ -49,6 +49,7 @@ sum over the last 7 days. This keeps leaderboards, streaks and dashboards consis
 | `onboarding.completed` | onboarding | 0 | `{ track }` |
 | `tutor.asked` | ai-tutor | 0 | `{ lessonId? }` |
 | `class.joined` | classes | 0 | `{ classId }` |
+| `review.answered` | review | 2 for a right answer on a due card, else 0 | `{ itemId, questionIndex, correct, box }` |
 | `scenario.completed` | scenarios | the run score 0-100 | `{ scenarioKey, score }` |
 
 XP rules (`src/core/progress/xp.ts`): score ≥ 60 earns the activity's `xpReward`, 100 earns
@@ -79,6 +80,8 @@ Each type is an `ActivityDefinition` (`src/core/activity-types.ts`) with a zod `
 | `leaderboard_prefs` | leaderboard | Per-user display choice: real name or nickname, opt out |
 | `leaderboard_class_settings` | leaderboard | Instructor switch: show the class board or not |
 | `lesson_adaptations` | courses | Cached "explain it my way" rewrites per lesson × learner track |
+| `review_items` | review | Missed quiz questions per learner, with Leitner box and next due date (built from `activity_attempts.detail.answers`) |
+| `class_insight_summaries` | classes | Latest AI summary of common misconceptions per class, with the answer count it was based on |
 | `scenario_runs` | scenarios | One row per learner per scenario key: `state` jsonb (steps, stats, history), `bestScore`, `completions` |
 
 Achievements (`src/modules/achievements/`) owns **no tables**. A badge is a predicate over a

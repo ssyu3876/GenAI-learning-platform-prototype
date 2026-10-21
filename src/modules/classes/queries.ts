@@ -3,6 +3,7 @@
 import { and, asc, avg, count, countDistinct, desc, eq, gte, inArray, isNotNull, max, or, sql, sum } from 'drizzle-orm';
 import { getDb } from '@/core/db/client';
 import {
+  activities,
   activityAttempts,
   classCourses,
   classes,
@@ -18,7 +19,16 @@ import { EVENT_TYPES } from '@/core/events';
 import { getCourseProgress } from '@/core/progress/service';
 import { getLevel } from '@/core/progress/xp';
 import type { SessionUser } from '@/core/types';
+import {
+  errorRate,
+  parseQuizAnswers,
+  parseQuizQuestions,
+  tallyQuestions,
+  topWrongPick,
+  type QuestionInsight,
+} from './insights';
 import { fillDaySeries, mean, nudgeReason, type DayPoint, type NudgeReason } from './logic';
+import { classInsightSummaries } from './schema';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const daysAgo = (n: number) => new Date(Date.now() - n * DAY_MS);
@@ -432,5 +442,122 @@ export async function getClassPulse(user: SessionUser): Promise<ClassPulse> {
     studentCount: studentIds.length,
     activeThisWeek: recent.length,
     busiest,
+  };
+}
+
+export interface ClassQuestionInsights {
+  totalStudents: number;
+  /** Students with at least one saved quiz answer in scope */
+  studentsWithAnswers: number;
+  answerCount: number;
+  /** Weighted over every answer, 0-100, null when nothing was answered */
+  averageErrorRate: number | null;
+  /** Every answered quiz question, worst first */
+  questions: QuestionInsight[];
+  summary: typeof classInsightSummaries.$inferSelect | null;
+}
+
+/**
+ * Error rate per quiz question for the class, from each student's latest saved quiz attempt
+ * (activity_attempts.detail.answers). Scoped to the class's courses when it has any.
+ */
+export async function getClassQuestionInsights(classId: string): Promise<ClassQuestionInsights> {
+  const db = await getDb();
+  const members = await db
+    .select({ userId: classMembers.userId })
+    .from(classMembers)
+    .where(eq(classMembers.classId, classId));
+  const ids = members.map((m) => m.userId);
+  const [summary] = await db
+    .select()
+    .from(classInsightSummaries)
+    .where(eq(classInsightSummaries.classId, classId))
+    .limit(1);
+  const empty: ClassQuestionInsights = {
+    totalStudents: ids.length,
+    studentsWithAnswers: 0,
+    answerCount: 0,
+    averageErrorRate: null,
+    questions: [],
+    summary: summary ?? null,
+  };
+  if (ids.length === 0) return empty;
+
+  const assigned = await db
+    .select({ courseId: classCourses.courseId })
+    .from(classCourses)
+    .where(eq(classCourses.classId, classId));
+  const courseIds = assigned.map((a) => a.courseId);
+  const rows = await db
+    .select({
+      userId: activityAttempts.userId,
+      detail: activityAttempts.detail,
+      activityId: activities.id,
+      activityTitle: activities.title,
+      config: activities.config,
+      lessonTitle: lessons.title,
+      lessonPosition: lessons.position,
+      activityPosition: activities.position,
+      course: { id: courses.id, title: courses.title, emoji: courses.emoji },
+    })
+    .from(activityAttempts)
+    .innerJoin(activities, eq(activities.id, activityAttempts.activityId))
+    .innerJoin(lessons, eq(lessons.id, activities.lessonId))
+    .innerJoin(courses, eq(courses.id, activityAttempts.courseId))
+    .where(
+      and(
+        inArray(activityAttempts.userId, ids),
+        eq(activities.type, 'quiz'),
+        courseIds.length ? inArray(activityAttempts.courseId, courseIds) : undefined,
+      ),
+    )
+    .orderBy(asc(courses.title), asc(lessons.position), asc(activities.position));
+
+  const byActivity = new Map<string, { row: (typeof rows)[number]; answerSets: (number | null)[][] }>();
+  const answeredBy = new Set<string>();
+  for (const r of rows) {
+    const answers = parseQuizAnswers(r.detail);
+    if (!answers) continue;
+    answeredBy.add(r.userId);
+    const entry = byActivity.get(r.activityId) ?? { row: r, answerSets: [] };
+    entry.answerSets.push(answers);
+    byActivity.set(r.activityId, entry);
+  }
+
+  const questions: QuestionInsight[] = [];
+  for (const { row, answerSets } of byActivity.values()) {
+    const quiz = parseQuizQuestions(row.config);
+    tallyQuestions(quiz, answerSets).forEach((t, i) => {
+      const q = quiz[i]!;
+      if (t.answered === 0) return;
+      questions.push({
+        key: `${row.activityId}:${i}`,
+        activityId: row.activityId,
+        activityTitle: row.activityTitle,
+        questionIndex: i,
+        prompt: q.prompt,
+        options: q.options,
+        answerIndex: q.answerIndex,
+        explanation: q.explanation,
+        answered: t.answered,
+        wrong: t.wrong,
+        errorRate: errorRate(t.wrong, t.answered),
+        picks: t.picks,
+        topWrong: topWrongPick(t, q.answerIndex),
+        lessonTitle: row.lessonTitle,
+        course: row.course,
+      });
+    });
+  }
+  questions.sort((a, b) => b.errorRate - a.errorRate || b.answered - a.answered);
+
+  const answerCount = questions.reduce((n, q) => n + q.answered, 0);
+  const wrongCount = questions.reduce((n, q) => n + q.wrong, 0);
+  return {
+    ...empty,
+    studentsWithAnswers: answeredBy.size,
+    answerCount,
+    averageErrorRate: answerCount ? errorRate(wrongCount, answerCount) : null,
+    questions,
   };
 }

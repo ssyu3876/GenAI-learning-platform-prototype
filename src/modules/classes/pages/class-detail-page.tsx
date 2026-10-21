@@ -1,5 +1,6 @@
 // /classes/[classId]: one class for its instructor (or an admin), split into tabs.
-// Students = roster + CSV import, Courses = assignments, Engagement = the dashboard.
+// Students = roster + CSV import, Courses = assignments, Engagement = the dashboard,
+// Insights = error rate per quiz question + AI summary of common misconceptions.
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
@@ -22,6 +23,7 @@ import { CopyButton } from '../components/copy-button';
 import { EngagementChart } from '../components/engagement-chart';
 import { ImportStudentsForm } from '../components/import-students-form';
 import { InlineActionForm } from '../components/inline-action-form';
+import { QuestionInsights } from '../components/question-insights';
 import { formatLastActive, NUDGE_LABEL } from '../logic';
 import {
   getClassEngagement,
@@ -36,6 +38,7 @@ export const CLASS_TABS = [
   { id: 'students', label: 'Students' },
   { id: 'courses', label: 'Courses' },
   { id: 'engagement', label: 'Engagement' },
+  { id: 'insights', label: 'Insights' },
 ] as const;
 export type ClassTab = (typeof CLASS_TABS)[number]['id'];
 
@@ -83,6 +86,7 @@ export async function ClassDetailPage({ user, classId, tab }: { user: SessionUse
       {tab === 'students' ? <StudentsTab classId={cls.id} /> : null}
       {tab === 'courses' ? <CoursesTab user={user} classId={cls.id} /> : null}
       {tab === 'engagement' ? <EngagementTab classId={cls.id} /> : null}
+      {tab === 'insights' ? <QuestionInsights classId={cls.id} /> : null}
     </div>
   );
 }

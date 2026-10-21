@@ -1,5 +1,6 @@
 import { ArrowUpDown } from 'lucide-react';
 import { defineActivity } from '@/core/activity-types';
+import { gradeSequence } from '../grading';
 import { SequencePlayer } from './player';
 import { sequenceConfigSchema, type SequenceConfig } from './schema';
 
@@ -19,5 +20,6 @@ export const sequenceActivity = defineActivity<SequenceConfig>({
     instructions: `Order these steps for learning ${topic}.`,
     steps: ['Get the big picture', 'Learn one key idea', 'Try a small example', 'Check your understanding', 'Teach it to someone'],
   }),
+  grade: gradeSequence,
   Player: SequencePlayer,
 });

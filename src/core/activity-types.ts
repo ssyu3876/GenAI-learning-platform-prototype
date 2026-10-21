@@ -41,6 +41,12 @@ export interface ActivityDefinition<C = unknown> extends ActivitySpec {
   icon: IconComponent;
   defaultConfig: C;
   Player: ComponentType<ActivityPlayerProps<C>>;
+  /**
+   * Optional server-side scoring. Given the validated config and the `detail` the player
+   * submitted, return the 0-100 score, or null when the detail does not fit the activity.
+   * When a type has grade(), the lesson runner ignores the score sent by the browser.
+   */
+  grade?: (config: C, detail: unknown) => number | null;
 }
 
 /**

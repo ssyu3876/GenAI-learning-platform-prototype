@@ -1,5 +1,6 @@
 import { ListChecks } from 'lucide-react';
 import { defineActivity } from '@/core/activity-types';
+import { gradeQuiz } from '../grading';
 import { QuizPlayer } from './player';
 import { quizConfigSchema, type QuizConfig } from './schema';
 
@@ -41,5 +42,6 @@ export const quizActivity = defineActivity<QuizConfig>({
       },
     ],
   }),
+  grade: gradeQuiz,
   Player: QuizPlayer,
 });

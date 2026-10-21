@@ -190,11 +190,34 @@ Client side: `const [state, action] = useActionState(renameCourse, null)` and sh
 - PR description: what changed, how you tested it, which parts the AI wrote and what you changed.
 - Never commit `.env.local`, `.data/` or API keys.
 
+### Database migrations in a branch
+
+Drizzle applies a migration only if its timestamp is **newer than the latest migration already
+recorded in the database**. Older ones are skipped silently. Two people generating migrations on
+separate branches can therefore end up with clashing numbers (two `0003_…` files) or a migration
+that never runs in production.
+
+If your branch adds or changes a `schema.ts`:
+
+1. Right before opening the PR, merge the latest `main` into your branch.
+2. Delete the migration files **you** generated in `drizzle/` (the `.sql` files and their
+   `drizzle/meta/*_snapshot.json`), and remove your entries from `drizzle/meta/_journal.json`.
+   Never touch migrations that came from `main`.
+3. Run `npm run db:generate` again. Your migration now gets the next number and a fresh timestamp.
+4. `npm run db:reset` and `npm run check` locally, then push.
+5. If `main` changes again before your PR is merged and the new commits include migrations, repeat
+   steps 1-4.
+
+Preview deployments use their own Neon database branch, so testing a preview never changes the
+production database. Never run migrations or SQL against production by hand unless the whole team
+agrees and someone has checked the current state first.
+
 ## 10. Checklist before you open a PR
 
 - [ ] Code is inside my module (plus thin route files / one registry line)
 - [ ] No new dependencies, no hard-coded colours, no direct LLM calls
 - [ ] Inputs validated with zod, actions call `requireUser()`
+- [ ] If I added a migration: regenerated it on top of the latest `main` (see §9)
 - [ ] Works with no `AI_API_KEY` (mock path)
 - [ ] Empty, loading and error states exist
 - [ ] `npm run check` passes

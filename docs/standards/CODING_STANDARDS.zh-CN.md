@@ -171,11 +171,26 @@ export async function renameCourse(_prev: ActionResult | null, formData: FormDat
 - PR 描述：改了什么、怎么测的、哪部分是 AI 写的、你改了什么。
 - 永远不要 commit `.env.local`、`.data/` 或 API key。
 
+### 分支里的数据库迁移
+
+Drizzle 只执行**比数据库里最新一条迁移记录更新**的迁移，更旧的会被直接跳过，不报任何错。所以两个人在各自分支里生成迁移，可能出现编号冲突（两个 `0003_…` 文件），或者某个迁移在生产环境里永远不会执行。
+
+如果你的分支新增或修改了 `schema.ts`：
+
+1. 提 PR 前，先把最新的 `main` 合并进你的分支。
+2. 删掉**你自己**在 `drizzle/` 里生成的迁移文件（`.sql` 文件和对应的 `drizzle/meta/*_snapshot.json`），并从 `drizzle/meta/_journal.json` 里删掉你的那几条记录。不要动来自 `main` 的迁移。
+3. 重新执行 `npm run db:generate`。这样你的迁移会拿到下一个编号和最新的时间戳。
+4. 在本地执行 `npm run db:reset` 和 `npm run check`，通过后再 push。
+5. 如果 PR 合并前 `main` 又更新了，并且新提交里也有迁移，重复第 1–4 步。
+
+预览部署用的是独立的 Neon 数据库分支，测试预览不会改动生产数据库。除非全组同意、并且有人先确认过当前状态，否则不要手动对生产数据库执行迁移或 SQL。
+
 ## 10. 提 PR 前的检查清单
 
 - [ ] 代码在我的模块里（加上薄路由文件 / registry 一行）
 - [ ] 没有新依赖、没有硬编码的颜色、没有直接调 LLM
 - [ ] 输入用 zod 验证了、action 调了 `requireUser()`
+- [ ] 如果加了迁移：已经在最新的 `main` 基础上重新生成（见 §9）
 - [ ] 没有 `AI_API_KEY` 也能跑（mock 路径）
 - [ ] 空、加载和错误状态都有
 - [ ] `npm run check` 通过

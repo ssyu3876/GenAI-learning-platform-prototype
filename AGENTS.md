@@ -38,5 +38,9 @@ before writing code, in this order:
   validates input with zod.
 - **Database changes**: add tables in `src/modules/<module>/schema.ts` (or core if shared), then
   `npm run db:generate`. Never edit generated SQL in `drizzle/` by hand.
+- **Migrations on a branch**: before opening a PR, merge the latest `main`, delete only the
+  migrations this branch generated (SQL + snapshot + journal entries), and run
+  `npm run db:generate` again so the new migration has the next number and a newer timestamp.
+  See `docs/standards/CODING_STANDARDS.md` §9. Never run SQL against the production database.
 - **User-facing text is English**, warm and plain. No "unlock your potential" style copy.
 - Before finishing: `npm run typecheck` and `npm run lint` must pass for your files.

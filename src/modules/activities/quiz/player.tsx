@@ -1,11 +1,11 @@
 'use client';
 
 import { Check, ChevronRight, X } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { ActivityPlayerProps } from '@/core/activity-types';
 import { Button, cn, ProgressBar } from '@/components/ui';
 import { ActivityFrame, ResultPanel } from '../components/activity-frame';
-import { useCompletion } from '../components/use-completion';
+import { seededShuffle, useCompletion } from '../components/use-completion';
 import type { QuizConfig } from './schema';
 
 export function QuizPlayer({ activity, config, onComplete, previousBest, preview }: ActivityPlayerProps<QuizConfig>) {
@@ -14,6 +14,14 @@ export function QuizPlayer({ activity, config, onComplete, previousBest, preview
   const [answers, setAnswers] = useState<number[]>([]);
   const [finished, setFinished] = useState(false);
   const { submit, submitting, outcome, error, reset } = useCompletion(onComplete);
+  // Options are shown in a shuffled order so the right answer is not always in the same
+  // place. Seeded per activity and question: stable across renders, server and client.
+  // `picked` and `answers` always hold the ORIGINAL option index (what grading, the review
+  // notebook and class insights read from detail.answers).
+  const optionOrder = useMemo(
+    () => config.questions.map((qq, qi) => seededShuffle(qq.options.map((_, i) => i), `${activity.id}:${qi}`)),
+    [config.questions, activity.id],
+  );
 
   const q = config.questions[index]!;
   const total = config.questions.length;
@@ -63,7 +71,8 @@ export function QuizPlayer({ activity, config, onComplete, previousBest, preview
           </div>
           <p className="font-display text-xl font-semibold">{q.prompt}</p>
           <div role="radiogroup" aria-label="Answer options" className="flex flex-col gap-2">
-            {q.options.map((opt, i) => {
+            {optionOrder[index]!.map((i, pos) => {
+              const opt = q.options[i]!;
               const isAnswer = i === q.answerIndex;
               const isPicked = i === picked;
               return (
@@ -83,7 +92,7 @@ export function QuizPlayer({ activity, config, onComplete, previousBest, preview
                   )}
                 >
                   <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 border-line bg-paper font-display text-sm">
-                    {checked && isAnswer ? <Check className="h-4 w-4" /> : checked && isPicked ? <X className="h-4 w-4" /> : String.fromCharCode(65 + i)}
+                    {checked && isAnswer ? <Check className="h-4 w-4" /> : checked && isPicked ? <X className="h-4 w-4" /> : String.fromCharCode(65 + pos)}
                   </span>
                   {opt}
                 </button>

@@ -12,6 +12,7 @@ import { getDb } from '@/core/db/client';
 import { activities, lessons } from '@/core/db/schema';
 import { completeActivity, completeLesson, enrollInCourse } from '@/core/progress/service';
 import type { SessionUser } from '@/core/types';
+import { getActivityType } from '@/registry/activities';
 import { ADAPTATION_VARIANTS, lessonAdaptations, type AdaptationVariant } from './schema';
 
 async function courseForLesson(user: SessionUser, lessonId: string) {
@@ -28,20 +29,37 @@ const submitSchema = z.object({
   detail: z.unknown().optional(),
 });
 
+/**
+ * Score for a submitted activity. Types with a grade() (quiz, sort, sequence) are scored here
+ * from the stored config and the learner's answers, and the browser's score is ignored.
+ * Types that can only be scored in the browser or by the AI (coding, role-play, slides) still
+ * use the submitted score.
+ */
+function scoreOnServer(type: string, config: unknown, detail: unknown, submitted: number): number {
+  const def = getActivityType(type);
+  if (!def?.grade) return submitted;
+  const parsed = def.schema.safeParse(config);
+  if (!parsed.success) throw new Error('This activity is misconfigured');
+  const score = def.grade(parsed.data, detail);
+  if (score === null) throw new Error('These answers do not match the activity');
+  return score;
+}
+
 /** Called by the lesson runner when a learner finishes an activity. */
 export async function submitActivityResult(input: z.infer<typeof submitSchema>): Promise<ActivityOutcome> {
   const user = await requireUser();
   const data = submitSchema.parse(input);
   const db = await getDb();
   const [act] = await db
-    .select({ lessonId: activities.lessonId })
+    .select({ lessonId: activities.lessonId, type: activities.type, config: activities.config })
     .from(activities)
     .where(eq(activities.id, data.activityId))
     .limit(1);
   if (!act) throw new Error('Activity not found');
   const course = await courseForLesson(user, act.lessonId);
+  const score = scoreOnServer(act.type, act.config, data.detail, data.score);
   await enrollInCourse(user.id, course.id);
-  const res = await completeActivity({ userId: user.id, activityId: data.activityId, score: data.score, detail: data.detail });
+  const res = await completeActivity({ userId: user.id, activityId: data.activityId, score, detail: data.detail });
   return {
     xpGained: res.xpGained,
     bestScore: res.bestScore,

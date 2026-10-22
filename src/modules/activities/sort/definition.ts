@@ -1,5 +1,6 @@
 import { Shuffle } from 'lucide-react';
 import { defineActivity } from '@/core/activity-types';
+import { gradeSort } from '../grading';
 import { SortPlayer } from './player';
 import { sortConfigSchema, type SortConfig } from './schema';
 
@@ -31,5 +32,6 @@ export const sortActivity = defineActivity<SortConfig>({
       { text: 'Mistakes mean you should give up', bucket: 'Myth' },
     ],
   }),
+  grade: gradeSort,
   Player: SortPlayer,
 });

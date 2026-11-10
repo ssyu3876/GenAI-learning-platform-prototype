@@ -77,7 +77,7 @@ export function Pip({
   size = 96,
   className,
   float,
-  title = 'Pip the sprout',
+  title = 'Pip',
 }: {
   mood?: PipMood;
   stage?: PipStage;

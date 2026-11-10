@@ -1,9 +1,10 @@
 // Insights tab: error rate per quiz question plus the AI misconception summary.
 import { AlertTriangle, Check, Lightbulb, ListChecks, Target, UserCheck, WandSparkles } from 'lucide-react';
 import { Badge, Card, CardBody, CardHeader, cn, EmptyState, Notice, Pip, ProgressBar, Stat, type Tint } from '@/components/ui';
+import { fmt, getT, type Locale, type Translations } from '@/i18n';
 import { summariseMisconceptions } from '../actions';
 import { ATTENTION_RATE, type QuestionInsight } from '../insights';
-import { formatLastActive } from '../logic';
+import { daysSince } from '../logic';
 import { getClassQuestionInsights, type ClassQuestionInsights } from '../queries';
 import { InlineActionForm } from './inline-action-form';
 
@@ -15,19 +16,29 @@ function rateTint(rate: number): Tint {
   return 'mint';
 }
 
+/** "Today" / "Yesterday" / "3 days ago" / "Never", then a date once it is over a month old. */
+function updatedLabel(date: Date, t: Translations, locale: Locale): string {
+  const days = daysSince(date);
+  if (days === null || days <= 0) return t.classes.time.today;
+  if (days === 1) return t.classes.time.yesterday;
+  if (days < 30) return fmt(t.classes.time.daysAgo, { days });
+  return date.toLocaleDateString(locale === 'zh' ? 'zh-CN' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 export async function QuestionInsights({ classId }: { classId: string }) {
+  const { t } = await getT();
   const data = await getClassQuestionInsights(classId);
   if (data.totalStudents === 0) {
     return (
-      <EmptyState title="No students to learn from yet">
-        Once students join and take quizzes, you will see which questions trip them up.
+      <EmptyState title={t.classes.insights.emptyNoStudentsTitle}>
+        {t.classes.insights.emptyNoStudentsBody}
       </EmptyState>
     );
   }
   if (data.questions.length === 0) {
     return (
-      <EmptyState title="No quiz answers yet">
-        When students finish a quiz in one of this class&apos;s courses, each question&apos;s error rate shows up here.
+      <EmptyState title={t.classes.insights.emptyNoAnswersTitle}>
+        {t.classes.insights.emptyNoAnswersBody}
       </EmptyState>
     );
   }
@@ -36,21 +47,21 @@ export async function QuestionInsights({ classId }: { classId: string }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Quiz answers" value={data.answerCount} icon={<ListChecks className="h-5 w-5" aria-hidden />} tint="sky" />
+        <Stat label={t.classes.insights.statAnswers} value={data.answerCount} icon={<ListChecks className="h-5 w-5" aria-hidden />} tint="sky" />
         <Stat
-          label="Avg error rate"
+          label={t.classes.insights.statAverageError}
           value={data.averageErrorRate === null ? '–' : `${data.averageErrorRate}%`}
           icon={<Target className="h-5 w-5" aria-hidden />}
           tint="lilac"
         />
         <Stat
-          label={`Missed by ${ATTENTION_RATE}%+`}
+          label={fmt(t.classes.insights.statFlagged, { rate: ATTENTION_RATE })}
           value={flagged}
           icon={<AlertTriangle className="h-5 w-5" aria-hidden />}
           tint="coral"
         />
         <Stat
-          label="Students answering"
+          label={t.classes.insights.statStudentsAnswering}
           value={`${data.studentsWithAnswers} / ${data.totalStudents}`}
           icon={<UserCheck className="h-5 w-5" aria-hidden />}
           tint="mint"
@@ -60,7 +71,7 @@ export async function QuestionInsights({ classId }: { classId: string }) {
       <MisconceptionCard classId={classId} data={data} />
 
       <Card>
-        <CardHeader title="Question by question" subtitle="Based on each student's latest try. Most missed first." />
+        <CardHeader title={t.classes.insights.questionsTitle} subtitle={t.classes.insights.questionsSubtitle} />
         <CardBody>
           <ul>
             {data.questions.map((q) => (
@@ -73,21 +84,27 @@ export async function QuestionInsights({ classId }: { classId: string }) {
   );
 }
 
-function MisconceptionCard({ classId, data }: { classId: string; data: ClassQuestionInsights }) {
+async function MisconceptionCard({ classId, data }: { classId: string; data: ClassQuestionInsights }) {
+  const { t, locale } = await getT();
   const summary = data.summary;
   const newAnswers = summary ? data.answerCount - summary.answerCount : 0;
+  const when = summary ? updatedLabel(summary.generatedAt, t, locale) : '';
+  const updatedWhen = locale === 'en' ? when.toLowerCase() : when;
   return (
     <Card tint="lilac">
       <CardHeader
-        title="Common misconceptions"
+        title={t.classes.insights.misconceptionsTitle}
         subtitle={
           summary
-            ? `Based on ${summary.answerCount} answers · updated ${formatLastActive(summary.generatedAt).toLowerCase()}`
-            : 'Pip reads the wrong answers and groups them into the ideas students are mixing up.'
+            ? fmt(
+                summary.answerCount === 1 ? t.classes.insights.summaryBasisOne : t.classes.insights.summaryBasis,
+                { count: summary.answerCount, when: updatedWhen },
+              )
+            : t.classes.insights.summaryPrompt
         }
         action={
-          <InlineActionForm action={summariseMisconceptions} fields={{ classId }} pendingText="Reading answers…">
-            <WandSparkles className="h-4 w-4" aria-hidden /> {summary ? 'Refresh summary' : 'Summarise'}
+          <InlineActionForm action={summariseMisconceptions} fields={{ classId }} pendingText={t.classes.insights.readingAnswers}>
+            <WandSparkles className="h-4 w-4" aria-hidden /> {summary ? t.classes.insights.refresh : t.classes.insights.summarise}
           </InlineActionForm>
         }
       />
@@ -95,9 +112,7 @@ function MisconceptionCard({ classId, data }: { classId: string; data: ClassQues
         {!summary ? (
           <div className="flex items-center gap-3">
             <Pip mood="think" size={56} />
-            <p className="text-sm text-ink-soft">
-              No summary yet. It only looks at answers, never at names, and you can refresh it after each quiz.
-            </p>
+            <p className="text-sm text-ink-soft">{t.classes.insights.noSummary}</p>
           </div>
         ) : (
           <>
@@ -111,7 +126,7 @@ function MisconceptionCard({ classId, data }: { classId: string; data: ClassQues
                     {m.questions.length ? (
                       <ul className="flex flex-col gap-0.5 text-xs text-ink-soft">
                         {m.questions.map((p) => (
-                          <li key={p}>Seen in: {p}</li>
+                          <li key={p}>{fmt(t.classes.insights.seenIn, { question: p })}</li>
                         ))}
                       </ul>
                     ) : null}
@@ -119,7 +134,7 @@ function MisconceptionCard({ classId, data }: { classId: string; data: ClassQues
                       <p className="flex gap-2 rounded-lg bg-butter-soft px-3 py-2 text-sm">
                         <Lightbulb className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
                         <span>
-                          <span className="sr-only">Teaching tip: </span>
+                          <span className="sr-only">{t.classes.insights.teachingTip} </span>
                           {m.tip}
                         </span>
                       </p>
@@ -129,11 +144,13 @@ function MisconceptionCard({ classId, data }: { classId: string; data: ClassQues
               </ol>
             ) : null}
             {summary.mocked ? (
-              <Notice tone="info">Demo summary built from the numbers only. Add an AI key for a written one.</Notice>
+              <Notice tone="info">{t.classes.insights.demoSummary}</Notice>
             ) : null}
             {newAnswers > 0 ? (
               <p className="text-sm text-ink-soft">
-                {newAnswers} new answer{newAnswers === 1 ? '' : 's'} since this summary.
+                {newAnswers === 1
+                  ? t.classes.insights.newAnswersOne
+                  : fmt(t.classes.insights.newAnswers, { count: newAnswers })}
               </p>
             ) : null}
           </>
@@ -143,40 +160,51 @@ function MisconceptionCard({ classId, data }: { classId: string; data: ClassQues
   );
 }
 
-function QuestionLine({ question: q }: { question: QuestionInsight }) {
+async function QuestionLine({ question: q }: { question: QuestionInsight }) {
+  const { t } = await getT();
   const top = q.topWrong;
   return (
     <li className="flex flex-col gap-2 border-t-2 border-line/15 py-4 first:border-t-0 first:pt-0">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs font-semibold text-ink-soft">
-          <span aria-hidden>{q.course.emoji}</span> {q.lessonTitle} · {q.activityTitle} · Q{q.questionIndex + 1}
+          <span aria-hidden>{q.course.emoji}</span>{' '}
+          {fmt(t.classes.insights.questionRef, {
+            lesson: q.lessonTitle,
+            activity: q.activityTitle,
+            number: q.questionIndex + 1,
+          })}
         </span>
         <Badge tint={rateTint(q.errorRate)}>
           {q.errorRate >= ATTENTION_RATE ? <AlertTriangle className="h-3.5 w-3.5" aria-hidden /> : null}
-          {q.errorRate}% wrong
+          {fmt(t.classes.insights.wrongRate, { rate: q.errorRate })}
         </Badge>
       </div>
       <p className="font-semibold">{q.prompt}</p>
       <div className="flex items-center gap-3">
-        <ProgressBar value={q.errorRate} tint={rateTint(q.errorRate)} label={`Error rate for: ${q.prompt}`} size="sm" />
+        <ProgressBar
+          value={q.errorRate}
+          tint={rateTint(q.errorRate)}
+          label={fmt(t.classes.insights.errorRateLabel, { prompt: q.prompt })}
+          size="sm"
+        />
         <span className="w-24 shrink-0 text-right text-sm font-semibold">
-          {q.wrong} of {q.answered} wrong
+          {fmt(t.classes.insights.wrongOf, { wrong: q.wrong, answered: q.answered })}
         </span>
       </div>
       {top ? (
         <p className="text-sm">
-          <span className="text-ink-soft">Most common wrong pick:</span>{' '}
+          <span className="text-ink-soft">{t.classes.insights.mostCommonWrongPick}</span>{' '}
           <strong>
             {letter(top.index)}. {q.options[top.index]}
           </strong>{' '}
           <span className="text-ink-soft">
-            ({top.count} student{top.count === 1 ? '' : 's'})
+            ({top.count} {top.count === 1 ? t.chrome.common.student : t.chrome.common.students})
           </span>
         </p>
       ) : null}
       <details className="group">
         <summary className="w-fit cursor-pointer rounded-lg text-sm font-semibold text-ink-soft hover:text-ink">
-          See every option
+          {t.classes.insights.seeEveryOption}
         </summary>
         <ul className="mt-2 flex flex-col gap-1.5">
           {q.options.map((opt, i) => {
@@ -191,10 +219,15 @@ function QuestionLine({ question: q }: { question: QuestionInsight }) {
                 )}
               >
                 <span className="grid h-6 w-6 place-items-center rounded-full border-2 border-line bg-paper font-display text-xs">
-                  {isAnswer ? <Check className="h-3.5 w-3.5" aria-label="Right answer" /> : letter(i)}
+                  {isAnswer ? <Check className="h-3.5 w-3.5" aria-label={t.classes.insights.rightAnswer} /> : letter(i)}
                 </span>
                 <span>{opt}</span>
-                <ProgressBar value={share} tint={isAnswer ? 'mint' : 'coral'} label={`Share who picked ${letter(i)}`} size="sm" />
+                <ProgressBar
+                  value={share}
+                  tint={isAnswer ? 'mint' : 'coral'}
+                  label={fmt(t.classes.insights.sharePicked, { letter: letter(i) })}
+                  size="sm"
+                />
                 <span className="text-right font-semibold">{q.picks[i]}</span>
               </li>
             );

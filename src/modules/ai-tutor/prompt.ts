@@ -1,6 +1,8 @@
 // Prompt building and the offline (demo mode) reply for the tutor. Pure functions so they
 // can be unit tested and reused by the API handler.
 import type { LearnerBackground, LearnerTrack } from '@/core/db/schema';
+import type { Locale } from '@/i18n/config';
+import { outputLanguage } from '@/i18n/ai';
 
 export interface TutorLessonContext {
   id: string;
@@ -52,13 +54,16 @@ export function buildSystemPrompt({
   lesson,
   profile,
   learnerName,
+  locale = 'en',
 }: {
   lesson: TutorLessonContext | null;
   profile: TutorLearnerProfile | null;
   learnerName: string;
+  locale?: Locale;
 }): string {
   const parts = [
     `You are Pip, a friendly sprout who tutors learners on Sprout, a platform of short courses. Most courses are about software engineering, but a lesson can be about any subject: follow the subject of the lesson.`,
+    outputLanguage(locale),
     `How to answer:
 - Keep it short: 150 words or fewer unless the learner asks for more detail.
 - Use Markdown: short paragraphs, bullet lists, \`inline code\` and fenced code blocks when they help.
@@ -122,17 +127,44 @@ type MockIntent = 'simpler' | 'example' | 'quiz' | 'work' | 'general';
 
 export function detectIntent(question: string): MockIntent {
   const q = question.toLowerCase();
-  if (/simpl|plain|eli5|easier|confus/.test(q)) return 'simpler';
-  if (/example|real[- ]world|analogy/.test(q)) return 'example';
-  if (/quiz|test me|check me|question for me/.test(q)) return 'quiz';
-  if (/work|job|career|industry|company|team/.test(q)) return 'work';
+  if (/simpl|plain|eli5|easier|confus|简单|通俗|听不懂|没懂|解释一下/.test(q)) return 'simpler';
+  if (/example|real[- ]world|analogy|例子|案例|现实|实际/.test(q)) return 'example';
+  if (/quiz|test me|check me|question for me|测验|测试|考考|出题/.test(q)) return 'quiz';
+  if (/work|job|career|industry|company|team|工作|职场|公司|行业|团队/.test(q)) return 'work';
   return 'general';
 }
 
 const DEMO_NOTE = '_Demo mode: Pip has no AI key right now, so this is a ready-made answer._';
+const DEMO_NOTE_ZH = '_演示模式：Pip 现在没有接入 AI 密钥，这是一条预置回答。_';
 
 /** Canned but useful reply for when no AI provider is available. */
-export function buildMockReply({ question, lesson }: { question: string; lesson: TutorLessonContext | null }): string {
+export function buildMockReply({
+  question,
+  lesson,
+  locale = 'en',
+}: {
+  question: string;
+  lesson: TutorLessonContext | null;
+  locale?: Locale;
+}): string {
+  if (locale === 'zh') {
+    const topic = lesson ? `**${lesson.title}**` : '这个话题';
+    const idea = lesson ? keyIdea(lesson.content) : null;
+    const ideaLine = idea ? `\n\n这一课的关键是：_${idea}_` : '';
+    switch (detectIntent(question)) {
+      case 'simpler':
+        return `${DEMO_NOTE_ZH}\n\n我们把${topic}拆成几个小步骤：${ideaLine}\n\n1. 先只读第一个小标题，用一句话说出它解决什么问题。\n2. 想象三个人在没有软件的情况下要做这件事，会卡在哪里？\n3. 再读一遍这一课。每个新术语，都是在解决其中一个问题。\n\n哪一步你觉得最难？`;
+      case 'example':
+        return `${DEMO_NOTE_ZH}\n\n用现实生活来看${topic}：${ideaLine}\n\n想象一个外卖应用。顾客、餐厅和骑手都要对同一份订单保持一致的期待。软件工程里的大多数概念，都是为了让这些人保持同步：说清需求、小步改动、上线前先检查。\n\n你能看出这一课的概念会落在这个应用的哪个位置吗？`;
+      case 'quiz':
+        return `${DEMO_NOTE_ZH}\n\n关于${topic}的一个小检查：\n\n> 用你自己的话说说：这一课的核心概念解决了什么问题？如果没有它会怎样？\n\n写两句话，然后和这一课的第一节对照一下。`;
+      case 'work':
+        return `${DEMO_NOTE_ZH}\n\n到了工作里，${topic}这样的概念会出现在日常的事情中：\n\n- **计划会议**：团队一起确认接下来做什么\n- **代码评审**：同事在改动上线前先检查一遍\n- **修 bug**：追查哪里出了问题，并防止它再次发生\n\n下次看软件岗位的招聘要求时，留意一下这一课里的词。`;
+      default:
+        return `${DEMO_NOTE_ZH}\n\n好问题！演示模式下我只有预置回答，不过可以先从${topic}说起。${ideaLine}\n\n试试下面的快捷按钮：更简单的解释、现实中的例子、小测验，或者它如何用在工作里。配置好 AI 密钥后，我就能回答你输入的任何问题。`;
+    }
+  }
+
   const topic = lesson ? `**${lesson.title}**` : 'this topic';
   const idea = lesson ? keyIdea(lesson.content) : null;
   const ideaLine = idea ? `\n\nThe key idea in the lesson: _${idea}_` : '';

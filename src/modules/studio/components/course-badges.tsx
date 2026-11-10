@@ -1,29 +1,29 @@
 // Status / visibility badges shared by the studio list, editor and home widget.
 import type { CourseStatus, CourseVisibility } from '@/core/db/schema';
 import { Badge, type Tint } from '@/components/ui';
+import { getT, type Locale } from '@/i18n';
 
-const STATUS: Record<CourseStatus, { label: string; tint: Tint }> = {
-  draft: { label: 'Draft', tint: 'paper' },
-  pending_review: { label: 'Waiting for review', tint: 'butter' },
-  published: { label: 'Published', tint: 'mint' },
-  archived: { label: 'Archived', tint: 'lilac' },
+const STATUS_TINT: Record<CourseStatus, Tint> = {
+  draft: 'paper',
+  pending_review: 'butter',
+  published: 'mint',
+  archived: 'lilac',
 };
 
-const VISIBILITY: Record<CourseVisibility, string> = {
-  public: 'Public catalog',
-  class: 'My classes',
-  private: 'Only me',
-};
-
-export function StatusBadge({ status }: { status: CourseStatus }) {
-  const s = STATUS[status] ?? STATUS.draft;
-  return <Badge tint={s.tint}>{s.label}</Badge>;
+export async function StatusBadge({ status }: { status: CourseStatus }) {
+  const { t } = await getT();
+  return <Badge tint={STATUS_TINT[status] ?? STATUS_TINT.draft}>{t.studio.status[status] ?? status}</Badge>;
 }
 
-export function VisibilityBadge({ visibility }: { visibility: CourseVisibility }) {
-  return <Badge tint="sky">{VISIBILITY[visibility] ?? visibility}</Badge>;
+export async function VisibilityBadge({ visibility }: { visibility: CourseVisibility }) {
+  const { t } = await getT();
+  return <Badge tint="sky">{t.studio.visibility[visibility] ?? visibility}</Badge>;
 }
 
-export function formatDate(date: Date): string {
-  return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+export function formatDate(date: Date, locale: Locale): string {
+  return new Date(date).toLocaleDateString(locale === 'zh' ? 'zh-CN' : 'en-GB', {
+    day: 'numeric',
+    month: locale === 'zh' ? 'long' : 'short',
+    year: 'numeric',
+  });
 }

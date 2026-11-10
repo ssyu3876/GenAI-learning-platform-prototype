@@ -1,13 +1,28 @@
+'use client';
+
 import Link from 'next/link';
 import { Clock } from 'lucide-react';
 import { asTint, Badge, Card, ProgressBar, TINT_SOLID } from '@/components/ui';
+import { useT } from '@/i18n/client';
 import type { CourseCardData } from '../queries';
 
-const LEVEL_LABEL = { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced' } as const;
-const AUDIENCE_LABEL = { everyone: 'For everyone', non_cs: 'No coding needed', cs: 'For CS folks' } as const;
-
 export function CourseCard({ course, highlight }: { course: CourseCardData; highlight?: string }) {
+  const t = useT();
+
+  const LEVEL_LABEL = {
+    beginner: t.courses.card.beginner,
+    intermediate: t.courses.card.intermediate,
+    advanced: t.courses.card.advanced,
+  } as const;
+
+  const AUDIENCE_LABEL = {
+    everyone: t.courses.card.forEveryone,
+    non_cs: t.courses.card.noCodingNeeded,
+    cs: t.courses.card.forCS,
+  } as const;
+
   const tint = asTint(course.color);
+
   return (
     <Link href={`/courses/${course.slug}`} className="group block focus-visible:outline-none">
       <Card tint={tint} interactive className="flex h-full flex-col overflow-hidden group-focus-visible:ring-4 group-focus-visible:ring-sky">
@@ -27,18 +42,23 @@ export function CourseCard({ course, highlight }: { course: CourseCardData; high
             <Badge tint="paper">{LEVEL_LABEL[course.level]}</Badge>
             <Badge tint="paper">{AUDIENCE_LABEL[course.audience]}</Badge>
             <Badge tint="paper">
-              <Clock className="h-3 w-3" /> {course.estimatedMinutes} min
+              <Clock className="h-3 w-3" /> {course.estimatedMinutes} {t.chrome.common.min}
             </Badge>
           </div>
           {course.progress && (course.enrolled || course.progress.done > 0) ? (
             <div>
               <div className="mb-1 flex justify-between text-xs font-semibold">
-                <span>{course.progress.percent === 100 ? 'Completed' : 'In progress'}</span>
+                <span>{course.progress.percent === 100 ? t.courses.card.completed : t.courses.card.inProgress}</span>
                 <span>
-                  {course.progress.done}/{course.progress.total} lessons
+                  {course.progress.done}/{course.progress.total} {t.chrome.common.lessons}
                 </span>
               </div>
-              <ProgressBar value={course.progress.percent} label={`${course.title} progress`} size="sm" tint={course.progress.percent === 100 ? 'mint' : 'butter'} />
+              <ProgressBar
+                value={course.progress.percent}
+                label={t.courses.card.progressLabel.replace('{title}', course.title)}
+                size="sm"
+                tint={course.progress.percent === 100 ? 'mint' : 'butter'}
+              />
             </div>
           ) : null}
         </div>

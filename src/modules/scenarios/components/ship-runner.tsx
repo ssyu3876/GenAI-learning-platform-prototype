@@ -4,6 +4,8 @@ import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Check, FlaskConical, RotateCcw, ShieldCheck, Wrench, X } from 'lucide-react';
 import { Badge, Button, Card, CardBody, CardHeader, ProgressBar, cn } from '@/components/ui';
+import { useT } from '@/i18n/client';
+import { fmt } from '@/i18n/format';
 import { resetScenario, shipAdvance, shipChoose, shipDecideAfterRepair, shipRepair } from '../actions';
 
 export interface ShipRunnerProps {
@@ -34,6 +36,7 @@ export interface ShipRunnerProps {
 }
 
 function Meters({ quality, minutes, budget }: { quality: number; minutes: number; budget: number }) {
+  const t = useT();
   const timePercent = Math.round((minutes / budget) * 100);
   const lowQuality = quality <= 50;
   const lowTime = minutes <= 6;
@@ -41,19 +44,29 @@ function Meters({ quality, minutes, budget }: { quality: number; minutes: number
     <div className="grid gap-3 sm:grid-cols-2">
       <div className="rounded-blob border-2 border-line bg-paper px-4 py-3 shadow-sticker-sm">
         <div className="mb-1 flex items-baseline justify-between">
-          <span className="text-xs font-semibold tracking-wide text-ink-soft uppercase">Project quality</span>
+          <span className="text-xs font-semibold tracking-wide text-ink-soft uppercase">{t.scenarios.ship.quality}</span>
           <span className={cn('font-display text-2xl font-bold', lowQuality && 'text-danger')}>{quality}</span>
         </div>
-        <ProgressBar value={quality} label="Project quality" tint={lowQuality ? 'coral' : 'mint'} size="sm" />
-        <p className="mt-1 text-[0.7rem] text-ink-soft">Never goes back up. Every wrong call takes some.</p>
+        <ProgressBar
+          value={quality}
+          label={t.scenarios.ship.quality}
+          tint={lowQuality ? 'coral' : 'mint'}
+          size="sm"
+        />
+        <p className="mt-1 text-[0.7rem] text-ink-soft">{t.scenarios.ship.qualityHint}</p>
       </div>
       <div className="rounded-blob border-2 border-line bg-paper px-4 py-3 shadow-sticker-sm">
         <div className="mb-1 flex items-baseline justify-between">
-          <span className="text-xs font-semibold tracking-wide text-ink-soft uppercase">Review time</span>
+          <span className="text-xs font-semibold tracking-wide text-ink-soft uppercase">{t.scenarios.ship.reviewTime}</span>
           <span className={cn('font-display text-2xl font-bold', lowTime && 'text-danger')}>{minutes}</span>
         </div>
-        <ProgressBar value={timePercent} label="Review time left" tint={lowTime ? 'coral' : 'sky'} size="sm" />
-        <p className="mt-1 text-[0.7rem] text-ink-soft">Unspent minutes count as 35% of the final score.</p>
+        <ProgressBar
+          value={timePercent}
+          label={t.scenarios.ship.reviewTimeLeft}
+          tint={lowTime ? 'coral' : 'sky'}
+          size="sm"
+        />
+        <p className="mt-1 text-[0.7rem] text-ink-soft">{t.scenarios.ship.reviewTimeHint}</p>
       </div>
     </div>
   );
@@ -74,6 +87,7 @@ function Verb({
   disabled: boolean;
   tone?: 'repair' | 'evidence';
 }) {
+  const t = useT();
   return (
     <button
       type="button"
@@ -91,7 +105,7 @@ function Verb({
         {label}
       </span>
       <span className="shrink-0 rounded-pill border-2 border-line bg-cream px-2 py-0.5 text-xs font-semibold">
-        {minutes} min
+        {fmt(t.scenarios.ship.minutes, { minutes })}
       </span>
     </button>
   );
@@ -112,6 +126,7 @@ export function ShipRunner(props: ShipRunnerProps) {
     ending,
     history,
   } = props;
+  const t = useT();
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -127,17 +142,25 @@ export function ShipRunner(props: ShipRunnerProps) {
         <Card tint={tone}>
           <CardHeader
             title={ending.title}
-            subtitle={`${ending.score} / 100 · quality ${quality} · ${minutes} min left`}
-            action={<Badge tint="paper">Result</Badge>}
+            subtitle={fmt(t.scenarios.ship.endingSubtitle, {
+              score: ending.score,
+              quality,
+              minutes,
+            })}
+            action={<Badge tint="paper">{t.scenarios.common.result}</Badge>}
           />
           <CardBody className="flex flex-col gap-3">
             <p>{ending.body}</p>
             <div className="rounded-blob border-2 border-line bg-paper px-4 py-3">
-              <div className="text-xs font-semibold tracking-wide text-ink-soft uppercase">What decided it</div>
+              <div className="text-xs font-semibold tracking-wide text-ink-soft uppercase">
+                {t.scenarios.common.whatDecided}
+              </div>
               <p className="mt-1 text-sm">{ending.insight}</p>
             </div>
             <div className="rounded-blob border-2 border-dashed border-line/60 px-4 py-3">
-              <div className="text-xs font-semibold tracking-wide text-ink-soft uppercase">Keep this</div>
+              <div className="text-xs font-semibold tracking-wide text-ink-soft uppercase">
+                {t.scenarios.common.keepThis}
+              </div>
               <p className="mt-1 font-display font-semibold">{ending.takeaway}</p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -146,17 +169,20 @@ export function ShipRunner(props: ShipRunnerProps) {
                 onClick={() => run(() => resetScenario({ key: 'ship-it' }))}
                 disabled={isPending}
               >
-                <RotateCcw className="h-4 w-4" aria-hidden /> Play again
+                <RotateCcw className="h-4 w-4" aria-hidden /> {t.scenarios.common.playAgain}
               </Button>
               <Button variant="ghost" onClick={() => router.push('/scenarios')}>
-                Back to scenarios
+                {t.scenarios.common.backToScenarios}
               </Button>
             </div>
           </CardBody>
         </Card>
 
         <Card>
-          <CardHeader title="Every turn" subtitle={`${history.length} responses`} />
+          <CardHeader
+            title={t.scenarios.ship.everyTurn}
+            subtitle={fmt(t.scenarios.ship.responses, { count: history.length })}
+          />
           <CardBody>
             <ol className="flex flex-col gap-2">
               {history.map((h, i) => (
@@ -172,7 +198,7 @@ export function ShipRunner(props: ShipRunnerProps) {
                     tint={h.delta < 0 ? 'coral' : h.action === 'evidence' ? 'lilac' : 'mint'}
                     className="shrink-0"
                   >
-                    {h.action === 'evidence' ? 'read' : h.delta < 0 ? h.delta : 'ok'}
+                    {h.action === 'evidence' ? t.scenarios.ship.read : h.delta < 0 ? h.delta : t.scenarios.ship.ok}
                   </Badge>
                 </li>
               ))}
@@ -187,7 +213,7 @@ export function ShipRunner(props: ShipRunnerProps) {
     return (
       <Card>
         <CardBody>
-          <p className="text-ink-soft">Nothing left to review.</p>
+          <p className="text-ink-soft">{t.scenarios.ship.nothingLeft}</p>
         </CardBody>
       </Card>
     );
@@ -196,29 +222,27 @@ export function ShipRunner(props: ShipRunnerProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Badge tint="coral">
-          Turn {turnIndex + 1} of {total}
-        </Badge>
+        <Badge tint="coral">{fmt(t.scenarios.ship.turnOf, { current: turnIndex + 1, total })}</Badge>
         <span className="text-sm font-semibold text-ink-soft">
           {phase === 'repair'
-            ? 'Repairing the output'
+            ? t.scenarios.ship.repairing
             : phase === 'verdict'
-              ? 'Now decide'
+              ? t.scenarios.ship.nowDecide
               : evidenceShown
-                ? 'You have seen the tests'
-                : 'Read the change'}
+                ? t.scenarios.ship.seenTests
+                : t.scenarios.ship.readChange}
         </span>
       </div>
       <ProgressBar
         value={Math.round(((turnIndex + (phase === 'result' ? 1 : 0)) / total) * 100)}
-        label="Review progress"
+        label={t.scenarios.ship.reviewProgress}
         size="sm"
       />
 
       <Meters quality={quality} minutes={minutes} budget={budget} />
 
       <Card tint="butter">
-        <CardHeader title={turn.title} subtitle="The agent says" />
+        <CardHeader title={turn.title} subtitle={t.scenarios.ship.agentSays} />
         <CardBody className="flex flex-col gap-3">
           <p className="font-display text-lg leading-snug font-semibold">“{turn.claim}”</p>
           <pre className="overflow-x-auto rounded-blob border-2 border-line bg-ink px-4 py-3 font-mono text-[0.8rem] leading-relaxed text-cream">
@@ -229,7 +253,7 @@ export function ShipRunner(props: ShipRunnerProps) {
 
       {evidenceShown ? (
         <Card tint="lilac">
-          <CardHeader title="What the tests say" subtitle="Paid for with review time" />
+          <CardHeader title={t.scenarios.ship.testsSay} subtitle={t.scenarios.ship.testsPaid} />
           <CardBody>
             <pre className="overflow-x-auto rounded-blob border-2 border-line bg-ink px-4 py-3 font-mono text-[0.78rem] leading-relaxed text-cream">
               {turn.evidence}
@@ -241,14 +265,14 @@ export function ShipRunner(props: ShipRunnerProps) {
       {phase === 'result' && pending ? (
         <Card tint={pending.delta < 0 ? 'coral' : 'mint'}>
           <CardHeader
-            title={pending.delta < 0 ? 'That cost quality' : 'That held'}
-            subtitle={`${pending.delta < 0 ? pending.delta : '0'} quality`}
+            title={pending.delta < 0 ? t.scenarios.ship.costQuality : t.scenarios.ship.held}
+            subtitle={fmt(t.scenarios.ship.qualityDelta, { delta: pending.delta < 0 ? pending.delta : '0' })}
           />
           <CardBody className="flex flex-col gap-3">
             <p>{pending.note}</p>
             <div>
               <Button variant="primary" onClick={() => run(() => shipAdvance())} disabled={isPending}>
-                Next turn <ArrowRight className="h-4 w-4" aria-hidden />
+                {t.scenarios.ship.nextTurn} <ArrowRight className="h-4 w-4" aria-hidden />
               </Button>
             </div>
           </CardBody>
@@ -258,8 +282,12 @@ export function ShipRunner(props: ShipRunnerProps) {
       {phase === 'repair' && repair ? (
         <Card tint="sky">
           <CardHeader
-            title="Make the output good enough first"
-            subtitle={`Step ${repair.stepIndex + 1} of ${repair.stepTotal} · ${repair.prompt}`}
+            title={t.scenarios.ship.repairTitle}
+            subtitle={fmt(t.scenarios.ship.repairStep, {
+              current: repair.stepIndex + 1,
+              total: repair.stepTotal,
+              prompt: repair.prompt,
+            })}
           />
           <CardBody>
             <ul className="flex flex-col gap-2">
@@ -277,30 +305,28 @@ export function ShipRunner(props: ShipRunnerProps) {
                 </li>
               ))}
             </ul>
-            <p className="mt-2 text-xs text-ink-soft">
-              A wrong choice still moves you on, and still costs quality. There is no retry.
-            </p>
+            <p className="mt-2 text-xs text-ink-soft">{t.scenarios.ship.repairHint}</p>
           </CardBody>
         </Card>
       ) : null}
 
       {phase === 'verdict' ? (
         <Card tint="mint">
-          <CardHeader title="The change is sound now" subtitle="Ship it, or throw the work away" />
+          <CardHeader title={t.scenarios.ship.verdictTitle} subtitle={t.scenarios.ship.verdictSubtitle} />
           <CardBody className="flex flex-wrap gap-2">
             <Button
               variant="mint"
               onClick={() => run(() => shipDecideAfterRepair({ action: 'approve' }))}
               disabled={isPending}
             >
-              <Check className="h-4 w-4" aria-hidden /> Approve
+              <Check className="h-4 w-4" aria-hidden /> {t.scenarios.ship.approve}
             </Button>
             <Button
               variant="secondary"
               onClick={() => run(() => shipDecideAfterRepair({ action: 'reject' }))}
               disabled={isPending}
             >
-              <X className="h-4 w-4" aria-hidden /> Reject
+              <X className="h-4 w-4" aria-hidden /> {t.scenarios.ship.reject}
             </Button>
           </CardBody>
         </Card>
@@ -311,7 +337,7 @@ export function ShipRunner(props: ShipRunnerProps) {
           {!evidenceShown ? (
             <Verb
               icon={<FlaskConical className="h-4 w-4 text-lilac" aria-hidden />}
-              label="Read the tests and the log"
+              label={t.scenarios.ship.readTests}
               minutes={turn.minutes.evidence}
               onClick={() => run(() => shipChoose({ action: 'evidence' }))}
               disabled={isPending}
@@ -320,14 +346,14 @@ export function ShipRunner(props: ShipRunnerProps) {
           ) : null}
           <Verb
             icon={<Check className="h-4 w-4 text-mint-deep" aria-hidden />}
-            label="Approve the change"
+            label={t.scenarios.ship.approveChange}
             minutes={turn.minutes.approve}
             onClick={() => run(() => shipChoose({ action: 'approve' }))}
             disabled={isPending}
           />
           <Verb
             icon={<X className="h-4 w-4 text-coral-deep" aria-hidden />}
-            label="Reject and send it back"
+            label={t.scenarios.ship.rejectChange}
             minutes={turn.minutes.reject}
             onClick={() => run(() => shipChoose({ action: 'reject' }))}
             disabled={isPending}
@@ -335,16 +361,14 @@ export function ShipRunner(props: ShipRunnerProps) {
           {turn.canRepair ? (
             <Verb
               icon={<ShieldCheck className="h-4 w-4" aria-hidden />}
-              label="Repair it, then decide"
+              label={t.scenarios.ship.repairThenDecide}
               minutes={turn.minutes.repair}
               onClick={() => run(() => shipChoose({ action: 'repair' }))}
               disabled={isPending}
               tone="repair"
             />
           ) : null}
-          <p className="mt-1 text-xs text-ink-soft">
-            Reading the tests costs time and no quality. Guessing costs quality and no time.
-          </p>
+          <p className="mt-1 text-xs text-ink-soft">{t.scenarios.ship.decideHint}</p>
         </div>
       ) : null}
     </div>

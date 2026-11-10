@@ -1,0 +1,95 @@
+{
+  "title": "Leaderboard",
+  "subtitle": "Everyone's progress, out in the open. XP comes from activities, finished lessons and finished courses.",
+  "everyone": "Everyone",
+  "scopesAria": "Who to compare with",
+  "rankingsAria": "Rankings",
+  "views": {
+    "xp": "XP ranking",
+    "race": "Course race"
+  },
+  "periods": {
+    "week": "This week",
+    "month": "This month",
+    "all": "All time"
+  },
+  "instructor": {
+    "setting": "Instructor setting:",
+    "visible": "the board for {scope} is visible to students.",
+    "hidden": "the board for {scope} is hidden from students.",
+    "hide": "Hide from students",
+    "show": "Show to students"
+  },
+  "pausedTitle": "Your teacher has paused this board",
+  "pausedBody": "You can still see the “{everyone}” board, and your own progress is on the home page.",
+  "emptyBoardTitle": "No one on this board yet",
+  "emptyBoardBody": "Finish an activity to put yourself on the map.",
+  "hiddenNotice": "You are hidden from other people. Change it below.",
+  "live": "Live",
+  "liveUpdated": " · updated {time}",
+  "movement": {
+    "noChange": "No change",
+    "up": "Up {value}",
+    "down": "Down {value}"
+  },
+  "podium": {
+    "topThree": "Top three"
+  },
+  "rows": {
+    "nameYou": "{name} (you)",
+    "streakTitle": "{count}-day streak"
+  },
+  "chase": {
+    "periodLabel": "Your rank · {period} · {scope}",
+    "withXp": "with {xp} XP",
+    "xpChunk": "{xp} XP",
+    "toPass": " to pass ",
+    "aboutOne": ", about {count} more activity.",
+    "aboutMany": ", about {count} more activities.",
+    "inLead": "You are in the lead. Pip is impressed.",
+    "tied": "{name} is tied with you.",
+    "behindXp": "{name} is {xp} XP behind you."
+  },
+  "highlights": {
+    "climb": "Biggest climb",
+    "streak": "Longest streak",
+    "activities": "Most activities",
+    "days": "{count} days",
+    "done": "{count} done"
+  },
+  "race": {
+    "pickCourseAria": "Pick a course",
+    "racing": "{count} racing",
+    "lessons": "{done}/{total} lessons",
+    "emptyTitle": "No courses to race on yet",
+    "emptyBody": "Once a class has courses assigned, the race starts here.",
+    "nobodyTitle": "Nobody has started this one",
+    "nobodyBody": "Be the first on the track."
+  },
+  "widget": {
+    "fullBoard": "Full board",
+    "xpToPass": "{xp} XP to pass",
+    "oneActivity": ". One good activity could do it.",
+    "topOfBoard": "You are top of the board this week. 🌳"
+  },
+  "privacy": {
+    "title": "How you show up",
+    "subtitle": "Competition is more fun when it is your choice. Teachers always see real names.",
+    "displayMode": "Display mode",
+    "nameLabel": "First name + initial",
+    "nameNote": "e.g. \"Mia W.\"",
+    "nicknameLabel": "A nickname",
+    "nicknameNote": "Only you and your teacher know it is you",
+    "hiddenLabel": "Hide me",
+    "hiddenNote": "You still see your own rank; others do not see you",
+    "nicknameField": "Nickname",
+    "nicknamePlaceholder": "e.g. BugHunter"
+  },
+  "errors": {
+    "tooLong": "Keep it under 24 characters.",
+    "chars": "Letters, numbers, spaces, - _ . only.",
+    "pickNickname": "Pick a nickname first.",
+    "generic": "Check the form."
+  },
+  "saved": "Saved. Your classmates will see the change right away."
+}

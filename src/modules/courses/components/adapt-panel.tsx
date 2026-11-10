@@ -4,20 +4,22 @@
 import { Baby, Briefcase, Cpu, X } from 'lucide-react';
 import { useState } from 'react';
 import { Button, cn, Markdown, Notice, Pip } from '@/components/ui';
+import { useT } from '@/i18n/client';
 import { adaptLesson } from '../actions';
 import type { AdaptationVariant } from '../schema';
 
-const OPTIONS: { variant: AdaptationVariant; label: string; icon: typeof Baby }[] = [
-  { variant: 'simpler', label: 'Explain it simpler', icon: Baby },
-  { variant: 'example', label: 'Show a real story', icon: Briefcase },
-  { variant: 'technical', label: 'Go more technical', icon: Cpu },
-];
-
 export function AdaptPanel({ lessonId, suggested }: { lessonId: string; suggested?: AdaptationVariant }) {
+  const t = useT();
   const [active, setActive] = useState<AdaptationVariant | null>(null);
   const [content, setContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const OPTIONS: { variant: AdaptationVariant; label: string; icon: typeof Baby }[] = [
+    { variant: 'simpler', label: t.courses.adapt.simpler, icon: Baby },
+    { variant: 'example', label: t.courses.adapt.example, icon: Briefcase },
+    { variant: 'technical', label: t.courses.adapt.technical, icon: Cpu },
+  ];
 
   async function load(variant: AdaptationVariant) {
     setActive(variant);
@@ -27,7 +29,7 @@ export function AdaptPanel({ lessonId, suggested }: { lessonId: string; suggeste
       const res = await adaptLesson(lessonId, variant);
       setContent(res.content);
     } catch {
-      setError('Pip could not rewrite this right now. Try again in a moment.');
+      setError(t.courses.adapt.error);
     } finally {
       setLoading(false);
     }
@@ -36,7 +38,7 @@ export function AdaptPanel({ lessonId, suggested }: { lessonId: string; suggeste
   return (
     <div className="rounded-blob border-2 border-dashed border-line/50 p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 font-display font-semibold">Not clicking? Ask Pip to</span>
+        <span className="mr-1 font-display font-semibold">{t.courses.adapt.prompt}</span>
         {OPTIONS.map(({ variant, label, icon: Icon }) => (
           <Button
             key={variant}
@@ -53,7 +55,7 @@ export function AdaptPanel({ lessonId, suggested }: { lessonId: string; suggeste
       {loading ? (
         <div className="mt-4 flex items-center gap-3">
           <Pip mood="think" size={44} className="animate-wiggle" />
-          <span className="font-semibold">Rewriting this lesson for you…</span>
+          <span className="font-semibold">{t.courses.adapt.rewriting}</span>
         </div>
       ) : null}
       {error ? <Notice tone="error" className="mt-3">{error}</Notice> : null}
@@ -66,7 +68,7 @@ export function AdaptPanel({ lessonId, suggested }: { lessonId: string; suggeste
               setActive(null);
             }}
             className="absolute top-2 right-2 rounded-full p-1 hover:bg-paper"
-            aria-label="Close the rewritten version"
+            aria-label={t.courses.adapt.close}
           >
             <X className="h-4 w-4" />
           </button>

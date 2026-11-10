@@ -4,11 +4,12 @@
 import { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
 import { Button, type ButtonVariant } from '@/components/ui';
+import { useT } from '@/i18n/client';
 
 export function CopyButton({
   value,
   label,
-  copiedLabel = 'Copied',
+  copiedLabel,
   variant = 'secondary',
 }: {
   value: string;
@@ -16,6 +17,8 @@ export function CopyButton({
   copiedLabel?: string;
   variant?: ButtonVariant;
 }) {
+  const t = useT();
+  const copiedText = copiedLabel ?? t.classes.copyButton.copied;
   const [copied, setCopied] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -34,12 +37,12 @@ export function CopyButton({
     <span className="inline-flex items-center gap-2">
       <Button variant={variant} size="sm" onClick={copy}>
         {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
-        {copied ? copiedLabel : label}
+        {copied ? copiedText : label}
       </Button>
       <span role="status" className="sr-only">
-        {copied ? copiedLabel : ''}
+        {copied ? copiedText : ''}
       </span>
-      {failed ? <span className="text-xs font-semibold text-danger">Copy failed. Select the text instead.</span> : null}
+      {failed ? <span className="text-xs font-semibold text-danger">{t.classes.copyButton.failed}</span> : null}
     </span>
   );
 }

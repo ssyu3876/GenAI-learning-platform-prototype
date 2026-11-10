@@ -7,8 +7,10 @@ import { usePathname } from 'next/navigation';
 import { BookOpen, RotateCcw, Send, Square, X } from 'lucide-react';
 import type { ShellAddonProps } from '@/core/types';
 import { Button, cn, Markdown, Pip } from '@/components/ui';
+import { useT } from '@/i18n/client';
+import { fmt } from '@/i18n/format';
 import { getTutorLessonTitle } from '../actions';
-import { lessonIdFromPath, MAX_HISTORY, MAX_MESSAGE_CHARS, QUICK_PROMPTS } from '../shared';
+import { lessonIdFromPath, MAX_HISTORY, MAX_MESSAGE_CHARS } from '../shared';
 
 interface ChatItem {
   id: number;
@@ -20,6 +22,14 @@ interface ChatItem {
 const PANEL_ID = 'pip-tutor-panel';
 
 export function TutorLauncher({ user }: ShellAddonProps) {
+  const t = useT();
+  const QUICK_PROMPTS = [
+    t.aiTutor.quickPrompts.simpler,
+    t.aiTutor.quickPrompts.example,
+    t.aiTutor.quickPrompts.quiz,
+    t.aiTutor.quickPrompts.atWork,
+  ] as const;
+
   const pathname = usePathname();
   const lessonId = lessonIdFromPath(pathname);
 
@@ -46,10 +56,10 @@ export function TutorLauncher({ user }: ShellAddonProps) {
     let cancelled = false;
     getTutorLessonTitle(lessonId)
       .then((res) => {
-        if (!cancelled) setTitles((t) => ({ ...t, [lessonId]: res.ok && res.data ? res.data.title : null }));
+        if (!cancelled) setTitles((prev) => ({ ...prev, [lessonId]: res.ok && res.data ? res.data.title : null }));
       })
       .catch(() => {
-        if (!cancelled) setTitles((t) => ({ ...t, [lessonId]: null }));
+        if (!cancelled) setTitles((prev) => ({ ...prev, [lessonId]: null }));
       });
     return () => {
       cancelled = true;
@@ -93,6 +103,8 @@ export function TutorLauncher({ user }: ShellAddonProps) {
 
     const controller = new AbortController();
     abortRef.current = controller;
+    // Keep an API error message; use the localized message for network or parse failures.
+    let serverError: string | null = null;
     const appendToReply = (chunk: string) =>
       setMessages((prev) => prev.map((m) => (m.id === replyId ? { ...m, content: m.content + chunk } : m)));
 
@@ -105,7 +117,8 @@ export function TutorLauncher({ user }: ShellAddonProps) {
       });
       if (!res.ok || !res.body) {
         const data = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(data?.error ?? 'Pip could not answer just now. Try again in a moment.');
+        serverError = data?.error ?? t.aiTutor.errors.noAnswer;
+        throw new Error(serverError);
       }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -115,7 +128,7 @@ export function TutorLauncher({ user }: ShellAddonProps) {
         appendToReply(decoder.decode(value, { stream: true }));
       }
       appendToReply(decoder.decode());
-    } catch (err) {
+    } catch {
       if (controller.signal.aborted) {
         // Keep whatever arrived and mark it as stopped; drop an empty bubble.
         setMessages((prev) =>
@@ -126,7 +139,7 @@ export function TutorLauncher({ user }: ShellAddonProps) {
       } else {
         setMessages((prev) => prev.filter((m) => m.id !== replyId && m.id !== userItem.id));
         setInput(question);
-        setError(err instanceof Error ? err.message : 'Something went wrong. Try again.');
+        setError(serverError ?? t.aiTutor.errors.generic);
       }
     } finally {
       if (abortRef.current === controller) abortRef.current = null;
@@ -167,7 +180,7 @@ export function TutorLauncher({ user }: ShellAddonProps) {
   const last = messages.at(-1);
   const isThinking = streaming && last?.role === 'assistant' && last.content.length === 0;
   const showChips = !streaming;
-  const firstName = user.name.split(' ')[0] || 'there';
+  const firstName = user.name.split(' ')[0] || t.aiTutor.empty.fallbackName;
 
   return (
     <>
@@ -188,7 +201,7 @@ export function TutorLauncher({ user }: ShellAddonProps) {
         <span className="grid h-9 w-9 place-items-center rounded-full border-2 border-line bg-paper" aria-hidden>
           <Pip size={30} mood="happy" />
         </span>
-        Ask Pip
+        {t.aiTutor.askPip}
       </button>
 
       {open ? (
@@ -210,14 +223,14 @@ export function TutorLauncher({ user }: ShellAddonProps) {
             </span>
             <div className="min-w-0 flex-1">
               <h2 id="pip-tutor-title" className="font-display text-lg leading-tight font-bold">
-                Ask Pip
+                {t.aiTutor.askPip}
               </h2>
-              <p className="truncate text-xs text-ink-soft">Your study buddy. Hints, not answers.</p>
+              <p className="truncate text-xs text-ink-soft">{t.aiTutor.subtitle}</p>
             </div>
-            <Button variant="ghost" size="sm" onClick={resetChat} disabled={messages.length === 0} aria-label="Start a new chat">
+            <Button variant="ghost" size="sm" onClick={resetChat} disabled={messages.length === 0} aria-label={t.aiTutor.newChat}>
               <RotateCcw className="h-4 w-4" aria-hidden />
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setOpen(false)} aria-label="Close Pip (Esc)">
+            <Button variant="ghost" size="sm" onClick={() => setOpen(false)} aria-label={t.aiTutor.close}>
               <X className="h-4 w-4" aria-hidden />
             </Button>
           </header>
@@ -226,22 +239,24 @@ export function TutorLauncher({ user }: ShellAddonProps) {
             <div className="border-b-2 border-line/20 px-3 py-2">
               <span className="inline-flex max-w-full items-center gap-1.5 rounded-pill border-2 border-line bg-butter-soft px-2.5 py-0.5 text-xs font-semibold">
                 <BookOpen className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                <span className="truncate">Talking about: {lessonTitle ?? 'this lesson'}</span>
+                <span className="truncate">
+                  {fmt(t.aiTutor.context.talkingAbout, { title: lessonTitle ?? t.aiTutor.context.thisLesson })}
+                </span>
               </span>
             </div>
           ) : null}
 
-          <div ref={logRef} role="log" aria-label="Conversation with Pip" className="flex-1 overflow-y-auto px-3 py-3">
+          <div ref={logRef} role="log" aria-label={t.aiTutor.conversation} className="flex-1 overflow-y-auto px-3 py-3">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center gap-2 px-4 py-6 text-center">
                 <span aria-hidden>
                   <Pip size={72} mood="happy" />
                 </span>
-                <p className="font-display text-lg font-bold">Hi {firstName}, what are you stuck on?</p>
+                <p className="font-display text-lg font-bold">{fmt(t.aiTutor.empty.greeting, { name: firstName })}</p>
                 <p className="text-sm text-ink-soft">
                   {lessonId
-                    ? 'Ask anything about this lesson, or tap a quick question below.'
-                    : 'Ask about anything you are learning. Open a lesson and I will know what you are reading.'}
+                    ? t.aiTutor.empty.lessonHint
+                    : t.aiTutor.empty.generalHint}
                 </p>
               </div>
             ) : (
@@ -250,7 +265,7 @@ export function TutorLauncher({ user }: ShellAddonProps) {
                   m.role === 'user' ? (
                     <li key={m.id} className="flex justify-end">
                       <div className="max-w-[85%] rounded-blob rounded-br-md border-2 border-line bg-sky-soft px-3 py-2 text-sm whitespace-pre-wrap">
-                        <span className="sr-only">You: </span>
+                        <span className="sr-only">{t.aiTutor.youLabel}</span>
                         {m.content}
                       </div>
                     </li>
@@ -260,13 +275,13 @@ export function TutorLauncher({ user }: ShellAddonProps) {
                         <Pip size={28} mood={m.content ? 'happy' : 'think'} />
                       </span>
                       <div className="min-w-0 max-w-[85%] rounded-blob rounded-tl-md border-2 border-line bg-paper px-3 py-2 shadow-sticker-sm">
-                        <span className="sr-only">Pip: </span>
+                        <span className="sr-only">{t.aiTutor.pipLabel}</span>
                         {m.content ? (
                           <Markdown className="text-sm">{m.content}</Markdown>
                         ) : (
                           <TypingDots />
                         )}
-                        {m.stopped ? <p className="mt-1 text-xs font-semibold text-ink-soft">Stopped</p> : null}
+                        {m.stopped ? <p className="mt-1 text-xs font-semibold text-ink-soft">{t.aiTutor.stopped}</p> : null}
                       </div>
                     </li>
                   ),
@@ -276,7 +291,7 @@ export function TutorLauncher({ user }: ShellAddonProps) {
           </div>
 
           <div role="status" className="sr-only">
-            {isThinking ? 'Pip is thinking' : streaming ? 'Pip is typing' : ''}
+            {isThinking ? t.aiTutor.thinkingStatus : streaming ? t.aiTutor.typingStatus : ''}
           </div>
 
           <div className="border-t-2 border-line bg-paper px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:rounded-b-blob">
@@ -286,7 +301,7 @@ export function TutorLauncher({ user }: ShellAddonProps) {
               </p>
             ) : null}
             {showChips ? (
-              <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1" aria-label="Quick questions" role="group">
+              <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1" aria-label={t.aiTutor.quickPrompts.label} role="group">
                 {QUICK_PROMPTS.map((q) => (
                   <button
                     key={q}
@@ -301,7 +316,7 @@ export function TutorLauncher({ user }: ShellAddonProps) {
             ) : null}
             <form onSubmit={onSubmit} className="flex items-end gap-2">
               <label htmlFor="pip-tutor-input" className="sr-only">
-                Message Pip
+                {t.aiTutor.composer.label}
               </label>
               <textarea
                 id="pip-tutor-input"
@@ -311,20 +326,20 @@ export function TutorLauncher({ user }: ShellAddonProps) {
                 onKeyDown={onInputKeyDown}
                 rows={2}
                 maxLength={MAX_MESSAGE_CHARS}
-                placeholder="Ask a question…"
+                placeholder={t.aiTutor.composer.placeholder}
                 className="max-h-32 min-h-10 flex-1 resize-none rounded-xl border-2 border-line bg-paper px-3 py-2 text-sm focus:ring-4 focus:ring-sky/50 focus:outline-none"
               />
               {streaming ? (
-                <Button variant="secondary" onClick={stop} aria-label="Stop Pip's answer">
-                  <Square className="h-4 w-4" aria-hidden /> Stop
+                <Button variant="secondary" onClick={stop} aria-label={t.aiTutor.composer.stopAnswer}>
+                  <Square className="h-4 w-4" aria-hidden /> {t.aiTutor.composer.stop}
                 </Button>
               ) : (
-                <Button type="submit" variant="primary" disabled={input.trim().length === 0} aria-label="Send message">
+                <Button type="submit" variant="primary" disabled={input.trim().length === 0} aria-label={t.aiTutor.composer.send}>
                   <Send className="h-4 w-4" aria-hidden />
                 </Button>
               )}
             </form>
-            <p className="mt-1.5 text-[0.7rem] text-ink-soft">Enter to send, Shift+Enter for a new line, Esc to close.</p>
+            <p className="mt-1.5 text-[0.7rem] text-ink-soft">{t.aiTutor.composer.hint}</p>
           </div>
         </section>
       ) : null}
@@ -333,6 +348,7 @@ export function TutorLauncher({ user }: ShellAddonProps) {
 }
 
 function TypingDots() {
+  const t = useT();
   return (
     <span className="flex items-center gap-2 py-1 text-sm text-ink-soft">
       <span className="flex gap-1" aria-hidden>
@@ -340,7 +356,7 @@ function TypingDots() {
         <span className="h-2 w-2 animate-bounce rounded-full bg-mint-deep [animation-delay:-0.15s]" />
         <span className="h-2 w-2 animate-bounce rounded-full bg-mint-deep" />
       </span>
-      Pip is thinking…
+      {t.aiTutor.thinking}
     </span>
   );
 }

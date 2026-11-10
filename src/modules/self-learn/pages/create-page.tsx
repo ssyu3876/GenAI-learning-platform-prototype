@@ -2,32 +2,40 @@
 import Link from 'next/link';
 import type { SessionUser } from '@/core/types';
 import { asTint, Card, EmptyState, PageHeader, PipSays, TINT_SOLID } from '@/components/ui';
+import { getT } from '@/i18n';
+import { fmt } from '@/i18n/format';
+import { localizeContent } from '@/i18n/content';
 import { LearnForm } from '../components/learn-form';
 import { countCoursesGeneratedToday, DAILY_COURSE_LIMIT, listOwnCourses } from '../queries';
 
 export async function CreatePage({ user }: { user: SessionUser }) {
-  const [own, today] = await Promise.all([listOwnCourses(user.id), countCoursesGeneratedToday(user.id)]);
-  const firstName = user.name.split(' ')[0];
+  const { locale, t } = await getT();
+
+  const [rawOwn, today] = await Promise.all([listOwnCourses(user.id), countCoursesGeneratedToday(user.id)]);
+  const own = localizeContent(rawOwn, locale);
+  const firstName = user.name.split(' ')[0] ?? user.name;
+  const whatCuriousText = fmt(t.selfLearn.curiousAbout, { name: firstName });
+
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
       <PageHeader
-        title="Learn anything"
-        subtitle="Type a topic. Pip writes a short course just for you, with quick activities to check you got it."
+        title={t.selfLearn.title}
+        subtitle={t.selfLearn.subtitle}
       />
       <PipSays mood="cheer" size={76}>
-        <p className="font-display text-lg font-bold">What are you curious about, {firstName}?</p>
-        <p className="text-sm text-ink-soft">Cooking chemistry, tax basics, a programming language. Anything goes.</p>
+        <p className="font-display text-lg font-bold">{whatCuriousText}</p>
+        <p className="text-sm text-ink-soft">{t.selfLearn.anythingGoes}</p>
       </PipSays>
 
       <LearnForm remaining={Math.max(DAILY_COURSE_LIMIT - today, 0)} limit={DAILY_COURSE_LIMIT} />
 
       <section aria-labelledby="own-courses" className="flex flex-col gap-3">
         <h2 id="own-courses" className="text-xl font-bold">
-          Your own courses
+          {t.selfLearn.yourOwnCourses}
         </h2>
         {own.length === 0 ? (
-          <EmptyState title="Nothing here yet" mood="happy">
-            Courses Pip makes for you show up here. Only you can see them.
+          <EmptyState title={t.selfLearn.nothingHereYet} mood="happy">
+            {t.selfLearn.coursesShowHere}
           </EmptyState>
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2">
@@ -44,7 +52,9 @@ export async function CreatePage({ user }: { user: SessionUser }) {
                     <span className="min-w-0">
                       <span className="block font-display text-lg leading-tight font-bold">{course.title}</span>
                       <span className="mt-1 block text-sm text-ink-soft">
-                        {course.lessonCount} lesson{course.lessonCount === 1 ? '' : 's'}
+                        {fmt(course.lessonCount === 1 ? t.selfLearn.lessonCountOne : t.selfLearn.lessonCountMany, {
+                          count: course.lessonCount,
+                        })}
                       </span>
                     </span>
                   </Card>

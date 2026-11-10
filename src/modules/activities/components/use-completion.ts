@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import type { ActivityCompletion, ActivityOutcome } from '@/core/activity-types';
+import { useT } from '@/i18n/client';
 
 /** Wraps a player's onComplete: tracks submitting state, the saved outcome and errors. */
 export function useCompletion(onComplete: (r: ActivityCompletion) => Promise<ActivityOutcome | null>) {
+  const t = useT();
   const [submitting, setSubmitting] = useState(false);
   const [outcome, setOutcome] = useState<ActivityOutcome | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -15,7 +17,7 @@ export function useCompletion(onComplete: (r: ActivityCompletion) => Promise<Act
     try {
       setOutcome(await onComplete(result));
     } catch {
-      setError('Could not save your result. Check your connection and try again.');
+      setError(t.activities.completion.saveFailed);
     } finally {
       setSubmitting(false);
     }

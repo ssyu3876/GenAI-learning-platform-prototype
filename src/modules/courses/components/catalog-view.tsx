@@ -2,10 +2,13 @@ import Link from 'next/link';
 import { WandSparkles } from 'lucide-react';
 import type { SessionUser } from '@/core/types';
 import { buttonClasses, cn, EmptyState, PageHeader } from '@/components/ui';
+import { getT } from '@/i18n';
 import { getCatalog } from '../queries';
 import { CourseCard } from './course-card';
 
 export async function CatalogView({ user, subject }: { user: SessionUser; subject?: string }) {
+  const { t } = await getT();
+
   const { cards, profile } = await getCatalog(user);
   const subjects = [...new Set(cards.map((c) => c.subject))].sort();
   const filtered = subject ? cards.filter((c) => c.subject === subject) : cards;
@@ -21,12 +24,12 @@ export async function CatalogView({ user, subject }: { user: SessionUser; subjec
   return (
     <div>
       <PageHeader
-        title="Courses"
-        subtitle="Short mini-courses. Each lesson takes about 10 minutes and ends with something to try."
+        title={t.courses.title}
+        subtitle={t.courses.subtitle}
         action={
           user.role === 'learner' ? (
             <Link href="/create" className={buttonClasses('mint')}>
-              <WandSparkles className="h-4 w-4" /> Learn something else
+              <WandSparkles className="h-4 w-4" /> {t.courses.learnSomethingElse}
             </Link>
           ) : null
         }
@@ -34,19 +37,19 @@ export async function CatalogView({ user, subject }: { user: SessionUser; subjec
 
       {recommended.length && !subject ? (
         <section className="mb-8">
-          <h2 className="mb-3 text-xl font-bold">Picked for you</h2>
+          <h2 className="mb-3 text-xl font-bold">{t.courses.pickedForYou}</h2>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {recommended.map((c, i) => (
-              <CourseCard key={c.id} course={c} highlight={i === 0 ? 'Start here' : 'Recommended'} />
+              <CourseCard key={c.id} course={c} highlight={i === 0 ? t.courses.startHere : t.courses.recommended} />
             ))}
           </div>
         </section>
       ) : null}
 
       {subjects.length > 1 ? (
-        <nav aria-label="Filter by subject" className="mb-5 flex flex-wrap gap-2">
+        <nav aria-label={t.courses.filterBySubject} className="mb-5 flex flex-wrap gap-2">
           <Link href="/courses" className={cn('rounded-pill border-2 border-line px-3 py-1 text-sm font-semibold', !subject ? 'bg-butter shadow-sticker-sm' : 'bg-paper')}>
-            All
+            {t.courses.all}
           </Link>
           {subjects.map((s) => (
             <Link
@@ -62,7 +65,7 @@ export async function CatalogView({ user, subject }: { user: SessionUser; subjec
 
       {mine.length ? (
         <section className="mb-8">
-          <h2 className="mb-3 text-xl font-bold">Made by you</h2>
+          <h2 className="mb-3 text-xl font-bold">{t.courses.madeByYou}</h2>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {mine.map((c) => (
               <CourseCard key={c.id} course={c} />
@@ -72,7 +75,7 @@ export async function CatalogView({ user, subject }: { user: SessionUser; subjec
       ) : null}
 
       <section>
-        <h2 className="mb-3 text-xl font-bold">{subject ?? 'All courses'}</h2>
+        <h2 className="mb-3 text-xl font-bold">{subject ?? t.courses.allCourses}</h2>
         {rest.length ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {rest.map((c) => (
@@ -80,7 +83,7 @@ export async function CatalogView({ user, subject }: { user: SessionUser; subjec
             ))}
           </div>
         ) : (
-          <EmptyState title="No courses here yet">Try another subject, or ask Pip to make one for you.</EmptyState>
+          <EmptyState title={t.courses.noCourses}>{t.courses.noCoursesHint}</EmptyState>
         )}
       </section>
     </div>

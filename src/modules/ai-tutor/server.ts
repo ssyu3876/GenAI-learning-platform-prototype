@@ -4,6 +4,9 @@ import { z } from 'zod';
 import { streamText, type ChatMessage } from '@/core/ai/client';
 import { getSessionUser } from '@/core/auth/session';
 import { EVENT_TYPES, recordEvent } from '@/core/events';
+import { getT } from '@/i18n';
+import { byLocale } from '@/i18n/ai';
+import { localizeContent } from '@/i18n/content';
 import { loadLearnerProfile, loadLessonContext } from './context';
 import { buildMockReply, buildSystemPrompt } from './prompt';
 import { MAX_HISTORY, MAX_MESSAGE_CHARS } from './shared';
@@ -27,29 +30,40 @@ function errorResponse(status: number, error: string): Response {
 }
 
 export async function handleTutorRequest(request: Request): Promise<Response> {
+  const { locale } = await getT();
   const user = await getSessionUser();
-  if (!user) return errorResponse(401, 'Please log in again to chat with Pip.');
+  if (!user) {
+    return errorResponse(401, byLocale(locale, 'Please log in again to chat with Pip.', '请重新登录后再和 Pip 聊天。'));
+  }
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return errorResponse(400, 'The request was not valid JSON.');
+    return errorResponse(400, byLocale(locale, 'The request was not valid JSON.', '请求内容不是有效的 JSON。'));
   }
   const parsed = tutorRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return errorResponse(400, `Pip could not read that message. Keep it under ${MAX_MESSAGE_CHARS} characters.`);
+    return errorResponse(
+      400,
+      byLocale(
+        locale,
+        `Pip could not read that message. Keep it under ${MAX_MESSAGE_CHARS} characters.`,
+        `Pip 没能读懂这条消息。请把字数控制在 ${MAX_MESSAGE_CHARS} 个字符以内。`,
+      ),
+    );
   }
 
   const { messages, lessonId } = parsed.data;
-  const [lesson, profile] = await Promise.all([
+  const [rawLesson, profile] = await Promise.all([
     lessonId ? loadLessonContext(user, lessonId) : Promise.resolve(null),
     user.role === 'learner' ? loadLearnerProfile(user.id) : Promise.resolve(null),
   ]);
+  const lesson = rawLesson ? localizeContent(rawLesson, locale) : null;
   const question = messages.at(-1)?.content ?? '';
 
   const chat: ChatMessage[] = [
-    { role: 'system', content: buildSystemPrompt({ lesson, profile, learnerName: user.name }) },
+    { role: 'system', content: buildSystemPrompt({ lesson, profile, learnerName: user.name, locale }) },
     ...messages,
   ];
 
@@ -67,7 +81,7 @@ export async function handleTutorRequest(request: Request): Promise<Response> {
     userId: user.id,
     tier: 'fast',
     maxTokens: 700,
-    mock: () => buildMockReply({ question, lesson }),
+    mock: () => buildMockReply({ question, lesson, locale }),
   });
 
   return new Response(stream, {

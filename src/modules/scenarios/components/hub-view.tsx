@@ -6,9 +6,13 @@ import { growthStage } from '@/core/progress/xp';
 import { getUserStats } from '@/core/progress/service';
 import { getScenarioCards, getScenarioStats } from '../queries';
 import { ScenarioCard } from './scenario-card';
+import { getT } from '@/i18n';
+import { fmt, plural } from '@/i18n/format';
 
 /** The /scenarios page: two long scenarios, then the interview formats. */
 export async function ScenarioHubView({ user }: { user: SessionUser }) {
+  const { t } = await getT();
+
   const [cards, stats, userStats] = await Promise.all([
     getScenarioCards(user.id),
     getScenarioStats(user.id),
@@ -20,30 +24,31 @@ export async function ScenarioHubView({ user }: { user: SessionUser }) {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="Practice"
-        title="Scenarios"
-        subtitle="Longer than an activity and shorter than a project. Your decisions stay with you, and the ending is built from them."
+        eyebrow={t.scenarios.hub.eyebrow}
+        title={t.scenarios.title}
+        subtitle={t.scenarios.subtitle}
       />
 
       <PipSays mood={stats.finished > 0 ? 'cheer' : 'happy'} stage={growthStage(userStats.level.level)} size={76}>
         <p className="font-display text-lg font-bold">
           {stats.finished > 0
-            ? `You finished ${stats.finished} scenario${stats.finished === 1 ? '' : 's'}. Best score ${stats.best}.`
-            : 'Pick one and play it through. Nothing here is graded against other people.'}
+            ? fmt(plural(stats.finished, t.scenarios.hub.finishedOne, t.scenarios.hub.finishedMany), {
+                count: stats.finished,
+                best: stats.best,
+              })
+            : t.scenarios.hub.pipPrompt}
         </p>
-        <p className="mt-1 text-sm text-ink-soft">
-          These do not replace the courses. They are where the courses add up.
-        </p>
+        <p className="mt-1 text-sm text-ink-soft">{t.scenarios.hub.pipNote}</p>
       </PipSays>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <Stat label="Started" value={stats.started} icon={<Compass className="h-5 w-5" aria-hidden />} />
-        <Stat label="Finished" value={stats.finished} tint="mint" />
-        <Stat label="Best score" value={stats.best} tint="butter" />
+        <Stat label={t.scenarios.hub.statStarted} value={stats.started} icon={<Compass className="h-5 w-5" aria-hidden />} />
+        <Stat label={t.scenarios.hub.statFinished} value={stats.finished} tint="mint" />
+        <Stat label={t.scenarios.hub.statBest} value={stats.best} tint="butter" />
       </div>
 
       <section>
-        <h2 className="mb-3 text-xl font-bold">Two long scenarios</h2>
+        <h2 className="mb-3 text-xl font-bold">{t.scenarios.hub.longScenarios}</h2>
         <div className="grid gap-4 md:grid-cols-2">
           {main.map((card) => (
             <ScenarioCard key={card.key} data={card} />
@@ -54,9 +59,9 @@ export async function ScenarioHubView({ user }: { user: SessionUser }) {
       <section>
         <Card>
           <CardHeader
-            title="Practice interviews"
-            subtitle="Seven formats. One question at a time, with hints when you stall."
-            action={<Badge tint="lilac">Coach</Badge>}
+            title={t.scenarios.hub.interviewsTitle}
+            subtitle={t.scenarios.hub.interviewsSubtitle}
+            action={<Badge tint="lilac">{t.scenarios.hub.coach}</Badge>}
           />
           <CardBody>
             <ul className="grid gap-2 sm:grid-cols-2">
@@ -79,10 +84,7 @@ export async function ScenarioHubView({ user }: { user: SessionUser }) {
         </Card>
       </section>
 
-      <p className="text-sm text-ink-soft">
-        Scenario scores add to your XP, so Pip grows from them too. They are not a hiring tool: nothing here is
-        a judgement about you as a person, only about one attempt.
-      </p>
+      <p className="text-sm text-ink-soft">{t.scenarios.hub.footer}</p>
     </div>
   );
 }

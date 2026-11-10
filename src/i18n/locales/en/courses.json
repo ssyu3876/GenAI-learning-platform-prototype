@@ -1,0 +1,78 @@
+{
+  "title": "Courses",
+  "subtitle": "Short mini-courses. Each lesson takes about 10 minutes and ends with something to try.",
+  "learnSomethingElse": "Learn something else",
+  "pickedForYou": "Picked for you",
+  "startHere": "Start here",
+  "recommended": "Recommended",
+  "madeByYou": "Made by you",
+  "allCourses": "All courses",
+  "all": "All",
+  "filterBySubject": "Filter by subject",
+  "noCourses": "No courses here yet",
+  "noCoursesHint": "Try another subject, or ask Pip to make one for you.",
+  "card": {
+    "beginner": "Beginner",
+    "intermediate": "Intermediate",
+    "advanced": "Advanced",
+    "forEveryone": "For everyone",
+    "noCodingNeeded": "No coding needed",
+    "forCS": "For CS folks",
+    "completed": "Completed",
+    "inProgress": "In progress",
+    "progressLabel": "{title} progress"
+  },
+  "page": {
+    "allCourses": "All courses",
+    "lessons": "lessons",
+    "lessonsTitle": "Lessons",
+    "upNext": "Up next",
+    "about": "~",
+    "min": "min",
+    "complete": "complete",
+    "continue": "Continue",
+    "startCourse": "Start course",
+    "review": "Review",
+    "opening": "Opening…",
+    "courseProgress": "Course progress",
+    "status": {
+      "draft": "Draft",
+      "pending_review": "Pending review",
+      "published": "Published",
+      "archived": "Archived"
+    },
+    "done": "Done"
+  },
+  "lesson": {
+    "lessonOf": "Lesson {current} of {total}",
+    "courseProgress": "Course progress",
+    "minutes": "{minutes} min",
+    "done": "Done",
+    "yourTurn": "Your turn",
+    "activities": "Activities",
+    "readThis": "I have read this (+10 XP)",
+    "saving": "Saving…",
+    "previous": "Previous",
+    "nextLesson": "Next lesson",
+    "doneCourse": "Done course",
+    "navigation": "Lesson navigation"
+  },
+  "continue": {
+    "title": "Keep going",
+    "nothingInProgress": "Nothing in progress",
+    "pickCourse": "Pick a course",
+    "hint": "Start any course and it will show up here.",
+    "lessonOf": "Lesson {current} of {total}",
+    "button": "Continue",
+    "progressLabel": "Course progress"
+  },
+  "adapt": {
+    "prompt": "Not clicking? Ask Pip to",
+    "simpler": "Explain it simpler",
+    "example": "Show a real story",
+    "technical": "Go more technical",
+    "rewriting": "Rewriting this lesson for you…",
+    "error": "Pip could not rewrite this right now. Try again in a moment.",
+    "close": "Close the rewritten version"
+  }
+}

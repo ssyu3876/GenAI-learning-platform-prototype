@@ -29,6 +29,8 @@ import {
 } from './insights';
 import { fillDaySeries, mean, nudgeReason, type DayPoint, type NudgeReason } from './logic';
 import { classInsightSummaries } from './schema';
+import { getLocale } from '@/i18n';
+import { localizeContent } from '@/i18n/content';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const daysAgo = (n: number) => new Date(Date.now() - n * DAY_MS);
@@ -48,7 +50,8 @@ export async function getManagedClass(user: SessionUser, classId: string): Promi
   const db = await getDb();
   const [row] = await db.select().from(classes).where(eq(classes.id, classId)).limit(1);
   if (!row || !canManageClass(user, row)) return null;
-  return row;
+  const locale = await getLocale();
+  return localizeContent(row, locale);
 }
 
 export interface StaffClassSummary {
@@ -90,11 +93,15 @@ export async function listStaffClasses(user: SessionUser): Promise<StaffClassSum
     .groupBy(classCourses.classId);
   const memberMap = new Map(members.map((m) => [m.classId, m.n]));
   const courseMap = new Map(assigned.map((c) => [c.classId, c.n]));
-  return rows.map((r) => ({
-    ...r,
-    memberCount: memberMap.get(r.id) ?? 0,
-    courseCount: courseMap.get(r.id) ?? 0,
-  }));
+  const locale = await getLocale();
+  return localizeContent(
+    rows.map((r) => ({
+      ...r,
+      memberCount: memberMap.get(r.id) ?? 0,
+      courseCount: courseMap.get(r.id) ?? 0,
+    })),
+    locale,
+  );
 }
 
 export interface LearnerClassSummary {
@@ -135,12 +142,16 @@ export async function listLearnerClasses(userId: string): Promise<LearnerClassSu
         .where(and(inArray(classCourses.classId, ids), eq(courses.status, 'published')))
         .orderBy(asc(classCourses.assignedAt))
     : [];
-  return rows.map((r) => ({
-    ...r,
-    courses: assigned
-      .filter((a) => a.classId === r.id)
-      .map(({ id, slug, title, emoji, color }) => ({ id, slug, title, emoji, color })),
-  }));
+  const locale = await getLocale();
+  return localizeContent(
+    rows.map((r) => ({
+      ...r,
+      courses: assigned
+        .filter((a) => a.classId === r.id)
+        .map(({ id, slug, title, emoji, color }) => ({ id, slug, title, emoji, color })),
+    })),
+    locale,
+  );
 }
 
 export interface ClassMemberRow {
@@ -226,7 +237,11 @@ export async function listAssignedCourses(classId: string): Promise<ClassCourseR
     .where(eq(classCourses.classId, classId))
     .orderBy(asc(classCourses.assignedAt));
   const counts = await lessonCounts(rows.map((r) => r.id));
-  return rows.map((r) => ({ ...r, lessonCount: counts.get(r.id) ?? 0, isAssigned: true }));
+  const locale = await getLocale();
+  return localizeContent(
+    rows.map((r) => ({ ...r, lessonCount: counts.get(r.id) ?? 0, isAssigned: true })),
+    locale,
+  );
 }
 
 /** Published courses this staff user may assign: own + public catalog (admins: all published). */
@@ -250,7 +265,11 @@ export async function listCourseCandidates(user: SessionUser, classId: string): 
     .orderBy(asc(courses.title));
   const available = rows.filter((r) => !assignedIds.has(r.id));
   const counts = await lessonCounts(available.map((r) => r.id));
-  return available.map((r) => ({ ...r, lessonCount: counts.get(r.id) ?? 0, isAssigned: false }));
+  const locale = await getLocale();
+  return localizeContent(
+    available.map((r) => ({ ...r, lessonCount: counts.get(r.id) ?? 0, isAssigned: false })),
+    locale,
+  );
 }
 
 export interface StudentEngagement {
@@ -553,11 +572,12 @@ export async function getClassQuestionInsights(classId: string): Promise<ClassQu
 
   const answerCount = questions.reduce((n, q) => n + q.answered, 0);
   const wrongCount = questions.reduce((n, q) => n + q.wrong, 0);
+  const locale = await getLocale();
   return {
     ...empty,
     studentsWithAnswers: answeredBy.size,
     answerCount,
     averageErrorRate: answerCount ? errorRate(wrongCount, answerCount) : null,
-    questions,
+    questions: localizeContent(questions, locale),
   };
 }

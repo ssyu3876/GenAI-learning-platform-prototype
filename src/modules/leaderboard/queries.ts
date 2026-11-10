@@ -17,6 +17,8 @@ import { computeStreak, getLevel } from '@/core/progress/xp';
 import type { SessionUser } from '@/core/types';
 import { chaseInfo, pickHighlights, rankEntries } from './ranking';
 import { leaderboardClassSettings, leaderboardPrefs, type DisplayMode } from './schema';
+import { getLocale } from '@/i18n';
+import { localizeContent } from '@/i18n/content';
 
 export type Period = 'week' | 'month' | 'all';
 export const PERIODS: { id: Period; label: string }[] = [
@@ -53,16 +55,20 @@ export async function getScopes(user: SessionUser): Promise<Scope[]> {
     ? await db.select().from(leaderboardClassSettings).where(inArray(leaderboardClassSettings.classId, rows.map((r) => r.id)))
     : [];
   const enabled = new Map(settings.map((s) => [s.classId, s.enabled]));
-  return [
-    ...rows.map((r) => ({
-      id: r.id,
-      label: r.name,
-      isClass: true,
-      enabled: enabled.get(r.id) ?? true,
-      canManage: user.role === 'admin' || r.instructorId === user.id,
-    })),
-    { id: 'global', label: 'Everyone', isClass: false, enabled: true, canManage: false },
-  ];
+  const locale = await getLocale();
+  return localizeContent(
+    [
+      ...rows.map((r) => ({
+        id: r.id,
+        label: r.name,
+        isClass: true,
+        enabled: enabled.get(r.id) ?? true,
+        canManage: user.role === 'admin' || r.instructorId === user.id,
+      })),
+      { id: 'global', label: 'Everyone', isClass: false, enabled: true, canManage: false },
+    ],
+    locale,
+  );
 }
 
 async function participantIds(scope: Scope): Promise<string[]> {

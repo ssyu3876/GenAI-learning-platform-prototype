@@ -4,6 +4,9 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Lightbulb, RotateCcw, SkipForward } from 'lucide-react';
 import { Badge, Button, Card, CardBody, CardHeader, ProgressBar, cn } from '@/components/ui';
+import { useT } from '@/i18n/client';
+import { useLocale } from '@/i18n/client';
+import { fmt } from '@/i18n/format';
 import { answerInterview, skipInterviewQuestion, startInterviewRun } from '../actions';
 import type { InterviewReport } from '../content/interview-engine';
 
@@ -21,17 +24,21 @@ export interface InterviewRunnerProps {
 }
 
 function ScorePill({ score }: { score: number }) {
+  const t = useT();
   const tint = score >= 4 ? 'mint' : score >= 3 ? 'butter' : 'coral';
-  return <Badge tint={tint}>{score.toFixed(1)} / 5</Badge>;
+  return <Badge tint={tint}>{fmt(t.scenarios.interview.scoreOutOf, { score: score.toFixed(1) })}</Badge>;
 }
 
 export function InterviewRunner(props: InterviewRunnerProps) {
   const { typeId, typeName, blurb, started, questionIndex, total, question, followUp, answers, report } = props;
+  const t = useT();
+  const locale = useLocale();
   const [answer, setAnswer] = useState('');
   const [hintsUsed, setHintsUsed] = useState(0);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
-  const words = answer.trim().split(/\s+/).filter(Boolean).length;
+  const cjkCount = (answer.match(/[\u4e00-\u9fff]/g) ?? []).length;
+  const words = locale === 'zh' ? Math.round(cjkCount / 2) : answer.trim().split(/\s+/).filter(Boolean).length;
 
   const begin = () =>
     startTransition(async () => {
@@ -61,13 +68,13 @@ export function InterviewRunner(props: InterviewRunnerProps) {
       <div className="flex flex-col gap-4">
         <Card tint={tone}>
           <CardHeader
-            title={`Overall ${report.overall.toFixed(1)} / 5`}
+            title={fmt(t.scenarios.interview.overall, { score: report.overall.toFixed(1) })}
             subtitle={report.nextTime}
-            action={<Badge tint="paper">Debrief</Badge>}
+            action={<Badge tint="paper">{t.scenarios.interview.debrief}</Badge>}
           />
           <CardBody className="flex flex-col gap-4">
             <div>
-              <h4 className="mb-2 font-display font-semibold">What you did well</h4>
+              <h4 className="mb-2 font-display font-semibold">{t.scenarios.interview.strengths}</h4>
               <ul className="flex flex-col gap-2">
                 {report.strengths.map((s) => (
                   <li key={s.competency} className="rounded-blob border-2 border-line bg-paper px-3 py-2">
@@ -85,7 +92,7 @@ export function InterviewRunner(props: InterviewRunnerProps) {
             </div>
 
             <div>
-              <h4 className="mb-2 font-display font-semibold">Fix these first</h4>
+              <h4 className="mb-2 font-display font-semibold">{t.scenarios.interview.gaps}</h4>
               <ol className="flex flex-col gap-2">
                 {report.gaps.map((g, i) => (
                   <li key={g.competency} className="rounded-blob border-2 border-line bg-paper px-3 py-2">
@@ -108,8 +115,10 @@ export function InterviewRunner(props: InterviewRunnerProps) {
 
         <Card>
           <CardHeader
-            title="AI fluency"
-            subtitle={report.aiDiscussed ? 'Scored from what you actually said' : 'AI never came up, so this could not be scored'}
+            title={t.scenarios.interview.aiFluency}
+            subtitle={
+              report.aiDiscussed ? t.scenarios.interview.aiScored : t.scenarios.interview.aiNotScored
+            }
           />
           <CardBody>
             <ul className="grid gap-2 sm:grid-cols-2">
@@ -124,15 +133,16 @@ export function InterviewRunner(props: InterviewRunnerProps) {
               ))}
             </ul>
             {!report.aiDiscussed ? (
-              <p className="mt-3 text-sm text-ink-soft">
-                In a real engineering conversation, never mentioning how you work with AI is itself a gap.
-              </p>
+              <p className="mt-3 text-sm text-ink-soft">{t.scenarios.interview.aiGapNote}</p>
             ) : null}
           </CardBody>
         </Card>
 
         <Card>
-          <CardHeader title="Seven days" subtitle="Small, specific, doable" />
+          <CardHeader
+            title={t.scenarios.interview.sevenDays}
+            subtitle={t.scenarios.interview.sevenDaysSubtitle}
+          />
           <CardBody>
             <ol className="flex flex-col gap-2">
               {report.plan.map((p) => (
@@ -147,10 +157,10 @@ export function InterviewRunner(props: InterviewRunnerProps) {
 
         <div className="flex flex-wrap gap-2">
           <Button variant="primary" onClick={begin} disabled={isPending}>
-            <RotateCcw className="h-4 w-4" aria-hidden /> Run it again
+            <RotateCcw className="h-4 w-4" aria-hidden /> {t.scenarios.interview.runAgain}
           </Button>
           <Button variant="ghost" onClick={() => router.push('/scenarios')}>
-            Back to scenarios
+            {t.scenarios.common.backToScenarios}
           </Button>
         </div>
       </div>
@@ -163,12 +173,9 @@ export function InterviewRunner(props: InterviewRunnerProps) {
       <Card>
         <CardHeader title={typeName} subtitle={blurb} />
         <CardBody className="flex flex-col gap-3">
-          <p className="text-sm text-ink-soft">
-            Five questions. Answer in your own words; there is no model marking you on style. You can ask for a
-            hint at any point, and using one lowers the score slightly, because the point is to answer unaided.
-          </p>
+          <p className="text-sm text-ink-soft">{t.scenarios.interview.introBody}</p>
           <Button variant="primary" onClick={begin} disabled={isPending}>
-            Start the interview <ArrowRight className="h-4 w-4" aria-hidden />
+            {t.scenarios.interview.startInterview} <ArrowRight className="h-4 w-4" aria-hidden />
           </Button>
         </CardBody>
       </Card>
@@ -182,14 +189,18 @@ export function InterviewRunner(props: InterviewRunnerProps) {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-sm font-semibold text-ink-soft">
-          Question {questionIndex + 1} of {total}
+          {fmt(t.scenarios.interview.questionOf, { current: questionIndex + 1, total })}
         </span>
         <Badge tint="lilac">{question.competency}</Badge>
       </div>
-      <ProgressBar value={Math.round((questionIndex / total) * 100)} label="Interview progress" size="sm" />
+      <ProgressBar
+        value={Math.round((questionIndex / total) * 100)}
+        label={t.scenarios.interview.progressLabel}
+        size="sm"
+      />
 
       <Card tint="lilac">
-        <CardHeader title="Interviewer" subtitle={typeName} />
+        <CardHeader title={t.scenarios.interview.interviewer} subtitle={typeName} />
         <CardBody>
           <p className="text-[1.02rem] leading-relaxed">{question.prompt}</p>
         </CardBody>
@@ -197,7 +208,10 @@ export function InterviewRunner(props: InterviewRunnerProps) {
 
       {followUp ? (
         <Card tint="butter">
-          <CardHeader title="Following up" subtitle="The answer was missing something specific" />
+          <CardHeader
+            title={t.scenarios.interview.followingUp}
+            subtitle={t.scenarios.interview.followingUpSubtitle}
+          />
           <CardBody>
             <p className="text-sm">{followUp}</p>
           </CardBody>
@@ -208,7 +222,9 @@ export function InterviewRunner(props: InterviewRunnerProps) {
         <ul className="flex flex-col gap-2">
           {revealed.map((hint, i) => (
             <li key={hint} className="rounded-blob border-2 border-line bg-butter-soft px-3 py-2 text-sm">
-              <span className="mr-2 text-xs font-bold tracking-wide text-ink-soft uppercase">Hint {i + 1}</span>
+              <span className="mr-2 text-xs font-bold tracking-wide text-ink-soft uppercase">
+                {fmt(t.scenarios.interview.hint, { number: i + 1 })}
+              </span>
               {hint}
             </li>
           ))}
@@ -217,41 +233,48 @@ export function InterviewRunner(props: InterviewRunnerProps) {
 
       <div>
         <label htmlFor="interview-answer" className="mb-1 block text-sm font-semibold">
-          Your answer
+          {t.scenarios.interview.yourAnswer}
         </label>
         <textarea
           id="interview-answer"
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
           rows={6}
-          placeholder="Type it as you would say it. Specifics beat polish."
+          placeholder={t.scenarios.interview.answerPlaceholder}
           className="w-full rounded-blob border-2 border-line bg-paper px-4 py-3 text-[0.95rem] shadow-sticker-sm"
         />
         <div className="mt-1 flex justify-between text-xs font-semibold text-ink-soft">
-          <span className={cn(words >= 40 && 'text-mint-deep')}>{words} words</span>
-          <span>Aim for 40 or more, with one concrete example.</span>
+          <span className={cn(words >= 40 && 'text-mint-deep')}>
+            {fmt(t.scenarios.interview.wordCount, { count: words })}
+          </span>
+          <span>{t.scenarios.interview.answerHint}</span>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
         <Button variant="primary" onClick={submit} disabled={isPending || words < 5}>
-          {isPending ? 'Sending...' : 'Answer'} <ArrowRight className="h-4 w-4" aria-hidden />
+          {isPending ? t.scenarios.interview.sending : t.scenarios.interview.answer}{' '}
+          <ArrowRight className="h-4 w-4" aria-hidden />
         </Button>
         <Button
           variant="secondary"
           onClick={() => setHintsUsed((n) => Math.min(3, n + 1))}
           disabled={hintsUsed >= 3}
         >
-          <Lightbulb className="h-4 w-4" aria-hidden /> {hintsUsed === 0 ? 'I am stuck' : 'Another hint'}
+          <Lightbulb className="h-4 w-4" aria-hidden />{' '}
+          {hintsUsed === 0 ? t.scenarios.interview.stuck : t.scenarios.interview.anotherHint}
         </Button>
         <Button variant="ghost" onClick={skip} disabled={isPending}>
-          <SkipForward className="h-4 w-4" aria-hidden /> Skip
+          <SkipForward className="h-4 w-4" aria-hidden /> {t.scenarios.interview.skip}
         </Button>
       </div>
 
       {answers.length > 0 ? (
         <Card>
-          <CardHeader title="Answered so far" subtitle={`${answers.length} of ${total}`} />
+          <CardHeader
+            title={t.scenarios.interview.answeredSoFar}
+            subtitle={fmt(t.scenarios.interview.answeredCount, { done: answers.length, total })}
+          />
           <CardBody>
             <ul className="flex flex-col gap-2">
               {answers.map((a, i) => (

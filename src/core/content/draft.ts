@@ -13,6 +13,8 @@ import {
   type CourseVisibility,
 } from '@/core/db/schema';
 import { newId, randomString, slugify } from '@/core/ids';
+import type { Locale } from '@/i18n/config';
+import { byLocale, outputLanguage } from '@/i18n/ai';
 
 export const COURSE_COLORS = ['coral', 'mint', 'butter', 'sky', 'lilac'] as const;
 export type CourseColor = (typeof COURSE_COLORS)[number];
@@ -27,7 +29,7 @@ export interface ActivitySpec {
   /** Explains the `config` JSON shape to the model, with a short example */
   promptGuide: string;
   schema: z.ZodType<unknown>;
-  mock: (ctx: { topic: string; lessonTitle: string }) => unknown;
+  mock: (ctx: { topic: string; lessonTitle: string; locale: Locale }) => unknown;
 }
 
 export const activityDraftSchema = z.object({
@@ -159,16 +161,30 @@ export interface GenerateCourseInput {
   specs: ActivitySpec[];
   userId: string;
   feature: string;
+  /** UI language for model output and the offline mock. Defaults to English. */
+  locale?: Locale;
 }
 
 function mockDraft(input: GenerateCourseInput): CourseDraft {
+  const locale = input.locale ?? 'en';
   const n = Math.min(Math.max(input.lessonCount ?? 3, 1), 6);
-  const topic = input.topic.trim() || 'Something new';
+  const topic = input.topic.trim() || byLocale(locale, 'Something new', '一些新东西');
   const pick = (type: string) => input.specs.find((s) => s.type === type) ?? input.specs[0];
-  const titles = ['The big picture', 'Key ideas, one by one', 'Putting it into practice', 'Common mistakes', 'Going further', 'Wrap-up'];
+  const titles = byLocale(locale, ['The big picture', 'Key ideas, one by one', 'Putting it into practice', 'Common mistakes', 'Going further', 'Wrap-up'], [
+    '先看全局',
+    '逐个理解关键概念',
+    '动手实践',
+    '常见错误',
+    '继续深入',
+    '收个尾',
+  ]);
   return {
-    title: `${topic}: a friendly start`,
-    summary: `A short, hands-on introduction to ${topic}. (Offline demo content: add an AI_API_KEY to generate a real course.)`,
+    title: byLocale(locale, `${topic}: a friendly start`, `${topic}：轻松入门`),
+    summary: byLocale(
+      locale,
+      `A short, hands-on introduction to ${topic}. (Offline demo content: add an AI_API_KEY to generate a real course.)`,
+      `一门关于${topic}的简短动手入门课。（离线演示内容：配置 AI_API_KEY 后即可生成真实课程。）`,
+    ),
     subject: topic.split(' ').slice(0, 3).join(' '),
     level: input.level ?? 'beginner',
     audience: 'everyone',
@@ -176,14 +192,25 @@ function mockDraft(input: GenerateCourseInput): CourseDraft {
     emoji: '🌱',
     color: 'mint',
     lessons: Array.from({ length: n }, (_, i) => {
-      const lessonTitle = titles[i] ?? `Part ${i + 1}`;
+      const lessonTitle = titles[i] ?? byLocale(locale, `Part ${i + 1}`, `第 ${i + 1} 部分`);
       const spec = pick(i % 2 === 0 ? 'quiz' : 'sort');
       return {
         title: lessonTitle,
         estimatedMinutes: 8,
-        content: `## ${lessonTitle}\n\nThis lesson is about **${topic}**.\n\n- What it is and why people care\n- One concrete example you can picture\n- A question to think about before the activity\n\n> Tip from Pip: try explaining today's idea to a friend in one sentence.`,
+        content: byLocale(
+          locale,
+          `## ${lessonTitle}\n\nThis lesson is about **${topic}**.\n\n- What it is and why people care\n- One concrete example you can picture\n- A question to think about before the activity\n\n> Tip from Pip: try explaining today's idea to a friend in one sentence.`,
+          `## ${lessonTitle}\n\n这一课讲的是**${topic}**。\n\n- 它是什么，为什么值得关心\n- 一个你能想象出来的具体例子\n- 做活动前可以先想一想的问题\n\n> Pip 的小建议：试着用一句话把今天的内容讲给朋友听。`,
+        ),
         activities: spec
-          ? [{ type: spec.type, title: `Check-in: ${lessonTitle}`, config: spec.mock({ topic, lessonTitle }), xpReward: 20 }]
+          ? [
+              {
+                type: spec.type,
+                title: byLocale(locale, `Check-in: ${lessonTitle}`, `小测：${lessonTitle}`),
+                config: spec.mock({ topic, lessonTitle, locale }),
+                xpReward: 20,
+              },
+            ]
           : [],
       };
     }),
@@ -203,6 +230,7 @@ export async function generateCourseDraft(
     'Write like a warm, clear human teacher: concrete examples, short paragraphs, no hype words',
     '("unlock", "empower", "journey", "dive in"), no emoji spam. Lesson content is Markdown',
     '(headings, lists, a small example or table where it helps), 150-350 words per lesson.',
+    outputLanguage(input.locale ?? 'en'),
     'Reply with ONE JSON object only, matching exactly:',
     '{ "title": string, "summary": string (1-2 sentences), "subject": string, "level": "beginner"|"intermediate"|"advanced",',
     '  "audience": "everyone"|"non_cs"|"cs", "tags": string[] (max 5), "emoji": one emoji,',

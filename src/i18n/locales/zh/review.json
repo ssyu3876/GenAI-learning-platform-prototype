@@ -1,0 +1,63 @@
+{
+  "title": "复习",
+  "subtitle": "测验里答错的问题会回到这里，隔几天再出现一次，帮你真正记住。",
+  "nothingToReview": "还没有需要复习的内容",
+  "browseCourses": "去看看课程",
+  "whenMissQuestion": "答错一道测验题，它就会来到这里，一天后再出现，之后隔几天再来一次，直到你连续答对 {count} 次。",
+  "dueNow": "现在要复习",
+  "inRotation": "复习中",
+  "mastered": "已掌握",
+  "moreDueAfter": "这一轮之后还有 {count} 张在等着。",
+  "allCaughtUp": "全都复习完了",
+  "nextCardDue": "下次复习时间：{time}。",
+  "everyMastered": "你答错过的每一道题都已掌握，很棒。",
+  "mistakeNotebook": "错题本",
+  "mistakeNotebookSubtitle": "你答错过的每一道测验题，以及它们离掌握还有多远。",
+  "progressToMastered": "掌握进度",
+  "backLater": "{time}再复习",
+  "sessionAria": "复习环节",
+  "relative": {
+    "today": "今天",
+    "tomorrow": "明天",
+    "inDays": "{count} 天后",
+    "laterToday": "今天稍后"
+  },
+  "widget": {
+    "rotation": "{rotation} 张在复习中 · 已掌握 {mastered} 张",
+    "questionOne": "有 {count} 道题想再试一次",
+    "questionMany": "有 {count} 道题想再试一次",
+    "missedHint": "这些是你在测验里答错的题，花几分钟就能再过一遍。",
+    "startReview": "开始复习",
+    "caughtUpDue": "全都复习完了。下次复习时间：{time}。",
+    "caughtUpMastered": "全都复习完了，所有题目都已掌握。",
+    "emptyHint": "测验里答错的题，一天后会回到这里，让你再试一次。"
+  },
+  "session": {
+    "missedBefore": "之前答错过",
+    "cardOf": "第 {current} / {total} 张",
+    "progress": "复习进度",
+    "answerOptions": "答案选项",
+    "rightThisTime": "这次对了！",
+    "notQuite": "还差一点。",
+    "quizPicked": "测验时你选了 {letter}。",
+    "masteredNote": "已掌握，这张卡片会离开你的复习列表。",
+    "backIn": "{time}再复习。",
+    "checkError": "没能检查这个答案，请检查网络后再试一次。",
+    "nextCard": "下一张",
+    "seeResult": "看看结果",
+    "skip": "跳过这张",
+    "checking": "检查中…",
+    "checkAnswer": "检查答案",
+    "finishedPerfect": "这次全对了，那些漏洞正在一点点补上。",
+    "finishedMissed": "答错的题明天会再回来。",
+    "masteredCount": "已掌握 {count} 张",
+    "updating": "更新中…",
+    "backToNotebook": "回到错题本"
+  },
+  "errors": {
+    "pickFirst": "先选一个答案。",
+    "cardGone": "这张卡片已经不在你的复习列表里了。",
+    "questionChanged": "课程作者修改了这道题，先跳过它吧。",
+    "pickOption": "请选择一个选项。"
+  }
+}

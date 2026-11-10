@@ -1,0 +1,171 @@
+{
+  "metadata": {
+    "title": "Sprout · grow your software skills",
+    "description": "Bite-sized, playful mini-courses on software engineering, AI coding agents and the soft skills around them."
+  },
+  "common": {
+    "loading": "Loading…",
+    "saving": "Saving…",
+    "opening": "Opening…",
+    "sending": "Sending…",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "search": "Search",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "close": "Close",
+    "all": "All",
+    "optional": "optional",
+    "xp": "XP",
+    "min": "min",
+    "minutes": "min",
+    "lesson": "lesson",
+    "lessons": "lessons",
+    "course": "course",
+    "courses": "courses",
+    "student": "student",
+    "students": "students",
+    "member": "member",
+    "members": "members",
+    "level": "Level",
+    "progress": "Progress",
+    "error": "Something went wrong.",
+    "nothingHere": "Nothing here yet",
+    "you": "You",
+    "day": "day",
+    "days": "days"
+  },
+  "nav": {
+    "home": "Home",
+    "courses": "Courses",
+    "learnAnything": "Learn anything",
+    "review": "Review",
+    "leaderboard": "Leaderboard",
+    "classes": "Classes",
+    "scenarios": "Scenarios",
+    "badges": "Badges",
+    "studio": "Studio",
+    "admin": "Admin",
+    "skipToContent": "Skip to content",
+    "mainNavigation": "Main",
+    "mobileNavigation": "Main mobile"
+  },
+  "shell": {
+    "learner": "Learner",
+    "instructor": "Instructor",
+    "admin": "Admin",
+    "logout": "Log out",
+    "level": "Lv",
+    "dayStreak": "Day streak",
+    "totalXp": "Total XP",
+    "levelProgress": "Level progress",
+    "language": "Language",
+    "switchToChinese": "切换到中文",
+    "switchToEnglish": "Switch to English"
+  },
+  "levels": {
+    "Seed": "Seed",
+    "Sprout": "Sprout",
+    "Seedling": "Seedling",
+    "Sapling": "Sapling",
+    "Young Tree": "Young Tree",
+    "Tree": "Tree",
+    "Grove": "Grove",
+    "Forest": "Forest"
+  },
+  "landing": {
+    "siteName": "Sprout",
+    "tagline": "Mini-courses for the AI era",
+    "heroTitle": "Software skills, one small sprout at a time.",
+    "heroDescription": "Sprout teaches how software really gets built: requirements, teamwork, testing, and how to work with AI coding agents without letting them drive. Made for curious non-CS folks and CS grads getting job-ready.",
+    "startLearning": "Start learning, it is free",
+    "tryDemo": "Try a demo account",
+    "login": "Log in",
+    "signup": "Sign up",
+    "pipGreeting": "Hi, I am Pip. I grow a new leaf every time you level up.",
+    "footer": "Built by a student team for COMP software engineering, 2026. Prototype, demo data only.",
+    "features": {
+      "practice": {
+        "title": "Practise the awkward parts",
+        "description": "Run a requirements meeting with a picky client or sit a mock interview. The other side is played by AI, and it gives you honest feedback afterwards."
+      },
+      "learn": {
+        "title": "Learn by poking at things",
+        "description": "Sort cards, put steps in order, fix code that an AI agent got wrong. Short lessons, then you try it straight away."
+      },
+      "compete": {
+        "title": "See how the class is doing",
+        "description": "A weekly leaderboard and a course race show who is ahead and by how much. Friendly pressure, opt-in nicknames."
+      },
+      "custom": {
+        "title": "Any topic, your pace",
+        "description": "Type what you want to learn and Pip builds you a mini-course. Teachers can do the same for their own classes."
+      }
+    }
+  },
+  "auth": {
+    "welcomeBack": "Welcome back",
+    "pipKeptSeat": "Pip kept your seat warm.",
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "loggingIn": "Logging in…",
+    "demoAccounts": "Demo accounts (password {password})",
+    "demoLearner": "Learner (Mia)",
+    "demoNewLearner": "New learner (Alex)",
+    "demoInstructor": "Instructor (Dr. Chan)",
+    "demoAdmin": "Admin",
+    "newHere": "New here?",
+    "createAccount": "Create an account",
+    "alreadyHave": "Already have an account?",
+    "loginInstead": "Log in instead",
+    "createAccountButton": "Create account",
+    "creatingAccount": "Creating your account…",
+    "namePlaceholder": "Mia Wong",
+    "emailPlaceholder": "you@example.com",
+    "passwordPlaceholder": "At least 8 characters",
+    "passwordHint": "At least 8 characters.",
+    "invalidCredentials": "That email and password did not match.",
+    "loginMissing": "Enter your email and password.",
+    "signupFailed": "Could not create the account.",
+    "fixFields": "Please fix the highlighted fields.",
+    "nameRequired": "Tell us what to call you.",
+    "emailInvalid": "That does not look like an email.",
+    "emailTaken": "An account with that email already exists.",
+    "emailRegistered": "Already registered",
+    "passwordShort": "Use at least 8 characters.",
+    "yourName": "Your name",
+    "roleLegend": "I am joining as",
+    "roleLearner": "A learner",
+    "roleLearnerNote": "I want to learn",
+    "roleInstructor": "An instructor",
+    "roleInstructorNote": "I teach a class",
+    "planting": "Planting…",
+    "signupTitle": "Plant your seed",
+    "signupSubtitle": "Takes less than a minute.",
+    "backHome": "Back to home",
+    "loginTitle": "Log in"
+  },
+  "home": {
+    "greeting": {
+      "stillUp": "Still up, {name}? Pip is too.",
+      "morning": "Morning, {name}! Fresh brain, good time to learn.",
+      "afternoon": "Hey {name}, ready for a quick lesson?",
+      "evening": "Evening, {name}. One small step before bed?"
+    },
+    "levelStatus": "You are a <strong>{levelName}</strong> with {xp} XP",
+    "withStreak": "and a {days}-day streak",
+    "instructorGreeting": "Here is what is happening on Sprout today."
+  },
+  "notFound": {
+    "title": "This page did not sprout",
+    "body": "The link may be old, or this page may have moved. Let us get you back to something growing.",
+    "home": "Back to home"
+  }
+}

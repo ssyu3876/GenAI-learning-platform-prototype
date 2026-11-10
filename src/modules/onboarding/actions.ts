@@ -8,6 +8,9 @@ import { requireUser } from '@/core/auth/session';
 import { getDb } from '@/core/db/client';
 import { courses, learnerProfiles } from '@/core/db/schema';
 import { EVENT_TYPES, recordEvent } from '@/core/events';
+import { getT } from '@/i18n';
+import { byLocale, outputLanguage } from '@/i18n/ai';
+import { localizeContent } from '@/i18n/content';
 import { pickTrack, recommendCourses } from './recommend';
 
 const answersSchema = z.object({
@@ -20,6 +23,7 @@ const answersSchema = z.object({
 
 export async function completeOnboarding(input: z.infer<typeof answersSchema>): Promise<void> {
   const user = await requireUser(['learner']);
+  const { locale } = await getT();
   const answers = answersSchema.parse(input);
   const db = await getDb();
 
@@ -29,14 +33,19 @@ export async function completeOnboarding(input: z.infer<typeof answersSchema>): 
     .where(and(eq(courses.status, 'published'), eq(courses.visibility, 'public')));
   const recommended = recommendCourses(answers, catalog);
   const track = pickTrack(answers);
-  const titles = recommended.map((id) => catalog.find((c) => c.id === id)?.title).filter(Boolean);
+  const titles = recommended
+    .map((id) => catalog.find((c) => c.id === id)?.title)
+    .filter((title): title is string => Boolean(title))
+    .map((title) => localizeContent(title, locale));
 
   const { text: welcomeNote } = await generateText(
     [
       {
         role: 'system',
-        content:
+        content: [
           'You are Pip, a friendly sprout mascot on a learning platform. Write 2 short sentences (max 45 words) welcoming the learner and saying why their first course fits them. Warm, specific, no hype words, no emoji.',
+          outputLanguage(locale),
+        ].join('\n'),
       },
       {
         role: 'user',
@@ -49,7 +58,11 @@ export async function completeOnboarding(input: z.infer<typeof answersSchema>): 
       tier: 'fast',
       maxTokens: 120,
       mock: () =>
-        `Nice to meet you, ${user.name.split(' ')[0]}! I put "${titles[0] ?? 'a starter course'}" first because it matches what you told me, and we will build up from there.`,
+        byLocale(
+          locale,
+          `Nice to meet you, ${user.name.split(' ')[0]}! I put "${titles[0] ?? 'a starter course'}" first because it matches what you told me, and we will build up from there.`,
+          `很高兴认识你，${user.name.split(' ')[0]}！我把“${titles[0] ?? '一门入门课程'}”放在第一位，因为它最符合你告诉我的情况，之后我们再一步步往上走。`,
+        ),
     },
   );
 

@@ -1,5 +1,6 @@
 import { Code } from 'lucide-react';
 import { defineActivity } from '@/core/activity-types';
+import { byLocale } from '@/i18n/ai';
 import { CodingPlayer } from './player';
 import { codingConfigSchema, type CodingConfig } from './schema';
 
@@ -21,8 +22,8 @@ export const codingActivity = defineActivity<CodingConfig>({
       { args: [0], expected: true },
     ],
   },
-  mock: () => ({
-    instructions: 'Write `double(n)` that returns `n` times two.',
+  mock: ({ locale }) => ({
+    instructions: byLocale(locale, 'Write `double(n)` that returns `n` times two.', '写一个 `double(n)`，返回 `n` 的两倍。'),
     starterCode: 'function double(n) {\n  return n;\n}\n',
     functionName: 'double',
     tests: [

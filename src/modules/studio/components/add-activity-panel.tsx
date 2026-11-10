@@ -6,14 +6,19 @@ import { useState } from 'react';
 import { Plus, WandSparkles } from 'lucide-react';
 import type { ActivityDefinition } from '@/core/activity-types';
 import { Button, Card, CardBody, CardHeader, EmptyState, Field, Input, Notice } from '@/components/ui';
+import { fmt } from '@/i18n/format';
+import { useT } from '@/i18n/client';
 import { ACTIVITY_TYPES } from '@/registry/activities';
 import { addActivity } from '../actions';
+import { activityTypeDescription, activityTypeLabel } from './activity-editor';
 import { useFormAction } from './use-form-action';
 
 function TypeCard({ def, lessonId, note }: { def: ActivityDefinition; lessonId: string; note: string }) {
+  const t = useT();
   const { state, pending, onSubmit } = useFormAction(addActivity);
   const [mode, setMode] = useState<'blank' | 'ai'>('blank');
   const Icon = def.icon;
+  const label = activityTypeLabel(t, def.type, def.label);
   return (
     <li className="flex flex-col gap-2 rounded-xl border-2 border-line bg-paper p-3">
       <div className="flex items-start gap-2">
@@ -21,8 +26,8 @@ function TypeCard({ def, lessonId, note }: { def: ActivityDefinition; lessonId: 
           <Icon className="h-4 w-4" aria-hidden />
         </span>
         <div className="min-w-0">
-          <p className="font-display font-bold">{def.label}</p>
-          <p className="text-sm text-ink-soft">{def.description}</p>
+          <p className="font-display font-bold">{label}</p>
+          <p className="text-sm text-ink-soft">{activityTypeDescription(t, def.type, def.description)}</p>
         </div>
       </div>
       <form onSubmit={onSubmit} className="mt-auto flex flex-wrap gap-2">
@@ -38,10 +43,10 @@ function TypeCard({ def, lessonId, note }: { def: ActivityDefinition; lessonId: 
           variant="secondary"
           disabled={pending}
           onClick={() => setMode('blank')}
-          aria-label={`Add a blank ${def.label}`}
+          aria-label={fmt(t.studio.addActivity.addBlankLabel, { label })}
         >
           <Plus className="h-4 w-4" aria-hidden />
-          {pending && mode === 'blank' ? 'Adding…' : 'Add blank'}
+          {pending && mode === 'blank' ? t.studio.common.adding : t.studio.addActivity.addBlank}
         </Button>
         <Button
           type="submit"
@@ -51,10 +56,10 @@ function TypeCard({ def, lessonId, note }: { def: ActivityDefinition; lessonId: 
           variant="mint"
           disabled={pending}
           onClick={() => setMode('ai')}
-          aria-label={`Generate a ${def.label} with AI`}
+          aria-label={fmt(t.studio.addActivity.generateWithAiLabel, { label })}
         >
           <WandSparkles className="h-4 w-4" aria-hidden />
-          {pending && mode === 'ai' ? 'Pip is writing…' : 'Generate with AI'}
+          {pending && mode === 'ai' ? t.studio.addActivity.pipWriting : t.studio.common.generateWithAi}
         </Button>
       </form>
       {state && !state.ok ? <Notice tone="error">{state.error}</Notice> : null}
@@ -64,25 +69,17 @@ function TypeCard({ def, lessonId, note }: { def: ActivityDefinition; lessonId: 
 }
 
 export function AddActivityPanel({ lessonId }: { lessonId: string }) {
+  const t = useT();
   const [note, setNote] = useState('');
   return (
     <Card tint="lilac">
-      <CardHeader
-        title="Add an activity"
-        subtitle="Start blank and fill in the setup, or let Pip write one from this lesson’s text."
-      />
+      <CardHeader title={t.studio.addActivity.title} subtitle={t.studio.addActivity.subtitle} />
       <CardBody className="flex flex-col gap-4">
         {ACTIVITY_TYPES.length === 0 ? (
-          <EmptyState title="No activity types installed">
-            Activity types are added in the activities registry. Once they are, they show up here.
-          </EmptyState>
+          <EmptyState title={t.studio.addActivity.emptyTitle}>{t.studio.addActivity.emptyBody}</EmptyState>
         ) : (
           <>
-            <Field
-              label="Note for Pip"
-              htmlFor="activity-note"
-              hint="Optional, used by “Generate with AI”. e.g. “focus on the difference between bugs and features”."
-            >
+            <Field label={t.studio.addActivity.note} htmlFor="activity-note" hint={t.studio.addActivity.noteHint}>
               <Input id="activity-note" value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} />
             </Field>
             <ul className="grid gap-3 sm:grid-cols-2">

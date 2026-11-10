@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Copy, Pencil, Plus, WandSparkles } from 'lucide-react';
 import type { SessionUser } from '@/core/types';
 import { asTint, buttonClasses, Card, EmptyState, PageHeader, TINT_SOLID } from '@/components/ui';
+import { fmt, getT, plural, type Translations } from '@/i18n';
 import { duplicateCourse } from '../actions';
 import { ActionButton } from '../components/action-button';
 import { formatDate, StatusBadge, VisibilityBadge } from '../components/course-badges';
@@ -19,28 +20,25 @@ function CourseEmoji({ course }: { course: StudioCourse }) {
   );
 }
 
-function lessonsLabel(n: number) {
-  return `${n} lesson${n === 1 ? '' : 's'}`;
+function lessonsLabel(t: Translations, n: number) {
+  return fmt(plural(n, t.studio.common.lessonsOne, t.studio.common.lessonsMany), { count: n });
 }
 
 export async function StudioHomePage({ user }: { user: SessionUser }) {
+  const { locale, t } = await getT();
   const [mine, catalog] = await Promise.all([listStudioCourses(user), listForkableCourses(user)]);
   return (
     <div>
       <PageHeader
-        title="Course studio"
-        subtitle={
-          user.role === 'admin'
-            ? 'Every course made by staff. Edit, publish, or duplicate one to customise it.'
-            : 'Write mini-courses for your classes, or let Pip draft one for you to edit.'
-        }
+        title={t.studio.home.title}
+        subtitle={user.role === 'admin' ? t.studio.home.subtitleAdmin : t.studio.home.subtitleInstructor}
         action={
           <>
             <Link href="/studio/new?mode=blank" className={buttonClasses('secondary')}>
-              <Plus className="h-4 w-4" aria-hidden /> New course
+              <Plus className="h-4 w-4" aria-hidden /> {t.studio.home.newCourse}
             </Link>
             <Link href="/studio/new" className={buttonClasses('primary')}>
-              <WandSparkles className="h-4 w-4" aria-hidden /> Generate with AI
+              <WandSparkles className="h-4 w-4" aria-hidden /> {t.studio.common.generateWithAi}
             </Link>
           </>
         }
@@ -48,19 +46,19 @@ export async function StudioHomePage({ user }: { user: SessionUser }) {
 
       <section aria-labelledby="my-courses" className="flex flex-col gap-3">
         <h2 id="my-courses" className="text-xl font-bold">
-          {user.role === 'admin' ? 'All staff courses' : 'My courses'}
+          {user.role === 'admin' ? t.studio.home.allStaffCourses : t.studio.home.myCourses}
         </h2>
         {mine.length === 0 ? (
           <EmptyState
-            title="No courses yet"
+            title={t.studio.home.emptyTitle}
             mood="happy"
             action={
               <Link href="/studio/new" className={buttonClasses('primary', 'sm')}>
-                Generate your first course
+                {t.studio.home.emptyAction}
               </Link>
             }
           >
-            Start from a topic and Pip drafts the lessons and activities. You can change everything after.
+            {t.studio.home.emptyBody}
           </EmptyState>
         ) : (
           <ul className="grid gap-3 md:grid-cols-2">
@@ -80,16 +78,17 @@ export async function StudioHomePage({ user }: { user: SessionUser }) {
                       <VisibilityBadge visibility={course.visibility} />
                     </div>
                     <p className="mt-2 text-sm text-ink-soft">
-                      {lessonsLabel(course.lessonCount)} · edited {formatDate(course.updatedAt)}
-                      {course.source === 'ai' ? ' · drafted by Pip' : ''}
+                      {lessonsLabel(t, course.lessonCount)} ·{' '}
+                      {fmt(t.studio.home.edited, { date: formatDate(course.updatedAt, locale) })}
+                      {course.source === 'ai' ? ` · ${t.studio.home.draftedByPip}` : ''}
                     </p>
                   </div>
                   <Link
                     href={`/studio/${course.id}`}
                     className={buttonClasses('secondary', 'sm')}
-                    aria-label={`Edit ${course.title}`}
+                    aria-label={fmt(t.studio.home.editCourse, { title: course.title })}
                   >
-                    <Pencil className="h-4 w-4" aria-hidden /> Edit
+                    <Pencil className="h-4 w-4" aria-hidden /> {t.chrome.common.edit}
                   </Link>
                 </Card>
               </li>
@@ -101,14 +100,12 @@ export async function StudioHomePage({ user }: { user: SessionUser }) {
       <section aria-labelledby="catalog" className="mt-10 flex flex-col gap-3">
         <div>
           <h2 id="catalog" className="text-xl font-bold">
-            Start from an existing course
+            {t.studio.home.catalogTitle}
           </h2>
-          <p className="text-sm text-ink-soft">
-            Duplicate a published course to get your own private copy. The original stays as it is.
-          </p>
+          <p className="text-sm text-ink-soft">{t.studio.home.catalogSubtitle}</p>
         </div>
         {catalog.length === 0 ? (
-          <EmptyState title="Nothing to duplicate yet">Published courses from other teachers show up here.</EmptyState>
+          <EmptyState title={t.studio.home.catalogEmptyTitle}>{t.studio.home.catalogEmptyBody}</EmptyState>
         ) : (
           <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {catalog.map((course) => (
@@ -121,7 +118,7 @@ export async function StudioHomePage({ user }: { user: SessionUser }) {
                         {course.title}
                       </Link>
                       <p className="text-sm text-ink-soft">
-                        {course.subject} · {lessonsLabel(course.lessonCount)}
+                        {course.subject} · {lessonsLabel(t, course.lessonCount)}
                       </p>
                     </div>
                   </div>
@@ -129,10 +126,10 @@ export async function StudioHomePage({ user }: { user: SessionUser }) {
                     <ActionButton
                       action={duplicateCourse}
                       fields={{ courseId: course.id }}
-                      pendingText="Copying…"
-                      ariaLabel={`Duplicate ${course.title}`}
+                      pendingText={t.studio.common.copying}
+                      ariaLabel={fmt(t.studio.home.duplicateCourse, { title: course.title })}
                     >
-                      <Copy className="h-4 w-4" aria-hidden /> Duplicate
+                      <Copy className="h-4 w-4" aria-hidden /> {t.studio.common.duplicate}
                     </ActionButton>
                   </div>
                 </Card>

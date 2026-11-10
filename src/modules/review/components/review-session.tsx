@@ -6,6 +6,8 @@ import { Check, ChevronRight, RotateCcw, X, Zap } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { Badge, Button, Card, cn, Notice, Pip, ProgressBar } from '@/components/ui';
+import { useT } from '@/i18n/client';
+import { fmt } from '@/i18n/format';
 import { answerReviewCard, type ReviewAnswer } from '../actions';
 
 export interface SessionCard {
@@ -21,6 +23,7 @@ export interface SessionCard {
 const letter = (i: number) => String.fromCharCode(65 + i);
 
 export function ReviewSession({ cards }: { cards: SessionCard[] }) {
+  const t = useT();
   const router = useRouter();
   const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
@@ -52,7 +55,7 @@ export function ReviewSession({ cards }: { cards: SessionCard[] }) {
           mastered: t.mastered + (data.mastered ? 1 : 0),
         }));
       } catch {
-        setError('Could not check that answer. Check your connection and try again.');
+        setError(t.review.session.checkError);
       }
     });
   }
@@ -83,21 +86,22 @@ export function ReviewSession({ cards }: { cards: SessionCard[] }) {
               {tally.right} / {total}
             </div>
             <p className="font-semibold">
-              {tally.right === total
-                ? 'All right this time. Those gaps are closing.'
-                : 'The ones you missed come back tomorrow.'}
+              {tally.right === total ? t.review.session.finishedPerfect : t.review.session.finishedMissed}
             </p>
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2" aria-live="polite">
           <Badge tint="butter">
-            <Zap className="h-3.5 w-3.5" aria-hidden /> +{tally.xp} XP
+            <Zap className="h-3.5 w-3.5" aria-hidden /> +{tally.xp} {t.chrome.common.xp}
           </Badge>
-          {tally.mastered ? <Badge tint="mint">{tally.mastered} mastered</Badge> : null}
+          {tally.mastered ? (
+            <Badge tint="mint">{fmt(t.review.session.masteredCount, { count: tally.mastered })}</Badge>
+          ) : null}
         </div>
         <div className="mt-4">
           <Button variant="secondary" onClick={() => startLeaving(() => router.refresh())} disabled={leaving}>
-            <RotateCcw className="h-4 w-4" aria-hidden /> {leaving ? 'Updating…' : 'Back to my notebook'}
+            <RotateCcw className="h-4 w-4" aria-hidden />{' '}
+            {leaving ? t.review.session.updating : t.review.session.backToNotebook}
           </Button>
         </div>
       </Card>
@@ -109,22 +113,27 @@ export function ReviewSession({ cards }: { cards: SessionCard[] }) {
     <Card className="overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-line bg-paper px-5 py-3">
         <div className="min-w-0">
-          <div className="text-xs font-bold tracking-wide text-ink-soft uppercase">Review</div>
+          <div className="text-xs font-bold tracking-wide text-ink-soft uppercase">{t.review.title}</div>
           <h3 className="truncate text-lg font-bold">
             <span aria-hidden>{card.courseEmoji}</span> {card.lessonTitle}
           </h3>
         </div>
-        <Badge tint="coral">Missed before</Badge>
+        <Badge tint="coral">{t.review.session.missedBefore}</Badge>
       </div>
       <div className="flex flex-col gap-4 p-5">
         <div className="flex items-center gap-3">
           <span className="text-sm font-semibold text-ink-soft">
-            Card {index + 1} / {total}
+            {fmt(t.review.session.cardOf, { current: index + 1, total })}
           </span>
-          <ProgressBar value={(index / total) * 100} label="Review progress" size="sm" className="flex-1" />
+          <ProgressBar
+            value={(index / total) * 100}
+            label={t.review.session.progress}
+            size="sm"
+            className="flex-1"
+          />
         </div>
         <p className="font-display text-xl font-semibold">{card.prompt}</p>
-        <div role="radiogroup" aria-label="Answer options" className="flex flex-col gap-2">
+        <div role="radiogroup" aria-label={t.review.session.answerOptions} className="flex flex-col gap-2">
           {card.options.map((opt, i) => {
             const isAnswer = checked && i === result.answerIndex;
             const isPicked = i === picked;
@@ -158,16 +167,18 @@ export function ReviewSession({ cards }: { cards: SessionCard[] }) {
             className={cn('rounded-xl border-2 border-line px-4 py-3', result.correct ? 'bg-mint-soft' : 'bg-coral-soft')}
             aria-live="polite"
           >
-            <p className="font-display font-bold">{result.correct ? 'Right this time!' : 'Not quite.'}</p>
+            <p className="font-display font-bold">
+              {result.correct ? t.review.session.rightThisTime : t.review.session.notQuite}
+            </p>
             {result.explanation ? <p className="mt-1">{result.explanation}</p> : null}
             <p className="mt-2 text-sm text-ink-soft">
               {card.wrongAnswer !== null && card.wrongAnswer !== result.answerIndex
-                ? `In the quiz you picked ${letter(card.wrongAnswer)}. `
+                ? fmt(t.review.session.quizPicked, { letter: letter(card.wrongAnswer) })
                 : ''}
               {result.mastered
-                ? 'Mastered. This card leaves your review list.'
+                ? t.review.session.masteredNote
                 : result.nextLabel
-                  ? `Back ${result.nextLabel}.`
+                  ? fmt(t.review.session.backIn, { time: result.nextLabel })
                   : ''}
             </p>
           </div>
@@ -177,17 +188,18 @@ export function ReviewSession({ cards }: { cards: SessionCard[] }) {
         <div className="flex flex-wrap justify-end gap-2">
           {checked ? (
             <Button onClick={next}>
-              {index + 1 < total ? 'Next card' : 'See my result'} <ChevronRight className="h-4 w-4" />
+              {index + 1 < total ? t.review.session.nextCard : t.review.session.seeResult}{' '}
+              <ChevronRight className="h-4 w-4" />
             </Button>
           ) : (
             <>
               {error ? (
                 <Button variant="ghost" onClick={skip}>
-                  Skip this card
+                  {t.review.session.skip}
                 </Button>
               ) : null}
               <Button onClick={check} disabled={picked === null || checking}>
-                {checking ? 'Checking…' : 'Check answer'}
+                {checking ? t.review.session.checking : t.review.session.checkAnswer}
               </Button>
             </>
           )}

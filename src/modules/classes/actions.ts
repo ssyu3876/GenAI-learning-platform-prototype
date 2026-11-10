@@ -12,6 +12,8 @@ import { classCourses, classes, classMembers, courses, users } from '@/core/db/s
 import { EVENT_TYPES, recordEvent } from '@/core/events';
 import { newId, newInviteCode, randomString } from '@/core/ids';
 import type { ActionResult } from '@/core/types';
+import { fmt, getT } from '@/i18n';
+import { outputLanguage } from '@/i18n/ai';
 import {
   buildMisconceptionInput,
   MISCONCEPTION_SYSTEM_PROMPT,
@@ -28,18 +30,22 @@ import { classInsightSummaries } from './schema';
 const PASSWORD_ALPHABET = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const MAX_CSV_CHARS = 100_000;
 
-const createClassSchema = z.object({
-  name: z.string().trim().min(1, 'Give the class a name.').max(80, 'Keep the name under 80 characters.'),
-  description: z.string().trim().max(300, 'Keep the description under 300 characters.').default(''),
-});
-
 export async function createClass(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await requireUser(['instructor', 'admin']);
+  const { t } = await getT();
+  const createClassSchema = z.object({
+    name: z
+      .string()
+      .trim()
+      .min(1, t.classes.actions.nameRequired)
+      .max(80, t.classes.actions.nameTooLong),
+    description: z.string().trim().max(300, t.classes.actions.descriptionTooLong).default(''),
+  });
   const parsed = createClassSchema.safeParse({
     name: formData.get('name') ?? '',
     description: formData.get('description') ?? '',
   });
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? 'Check the form.' };
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? t.classes.actions.checkForm };
   const db = await getDb();
   // Invite codes are unique; retry on the rare collision.
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -54,39 +60,39 @@ export async function createClass(_prev: ActionResult | null, formData: FormData
       inviteCode,
     });
     revalidatePath('/classes');
-    return { ok: true, message: `Class created. Share the code ${inviteCode} with your students.` };
+    return { ok: true, message: fmt(t.classes.actions.classCreated, { code: inviteCode }) };
   }
-  return { ok: false, error: 'Could not make an invite code. Try again.' };
+  return { ok: false, error: t.classes.actions.inviteCodeFailed };
 }
-
-const joinSchema = z.object({
-  code: z
-    .string()
-    .transform((v) => v.replace(/[\s-]/g, '').toUpperCase())
-    .pipe(z.string().length(6, 'Invite codes have 6 letters and numbers.')),
-});
 
 export async function joinClass(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await requireUser(['learner']);
+  const { t } = await getT();
+  const joinSchema = z.object({
+    code: z
+      .string()
+      .transform((v) => v.replace(/[\s-]/g, '').toUpperCase())
+      .pipe(z.string().length(6, t.classes.actions.codeLength)),
+  });
   const parsed = joinSchema.safeParse({ code: formData.get('code') ?? '' });
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? 'Check the code.' };
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? t.classes.actions.checkCode };
   const db = await getDb();
   const [cls] = await db
     .select({ id: classes.id, name: classes.name })
     .from(classes)
     .where(eq(classes.inviteCode, parsed.data.code))
     .limit(1);
-  if (!cls) return { ok: false, error: 'No class uses that code. Check it with your teacher.' };
+  if (!cls) return { ok: false, error: t.classes.actions.codeNotFound };
   const inserted = await db
     .insert(classMembers)
     .values({ classId: cls.id, userId: user.id })
     .onConflictDoNothing()
     .returning();
-  if (inserted.length === 0) return { ok: false, error: `You are already in ${cls.name}.` };
+  if (inserted.length === 0) return { ok: false, error: fmt(t.classes.actions.alreadyJoined, { className: cls.name }) };
   await recordEvent({ userId: user.id, type: EVENT_TYPES.classJoined, payload: { classId: cls.id } });
   revalidatePath('/classes');
   revalidatePath('/home');
-  return { ok: true, message: `You joined ${cls.name}.` };
+  return { ok: true, message: fmt(t.classes.actions.joined, { className: cls.name }) };
 }
 
 export interface ImportSummary {
@@ -96,28 +102,28 @@ export interface ImportSummary {
   skipped: SkippedRow[];
 }
 
-const importSchema = z.object({
-  classId: z.string().min(1),
-  csv: z.string().max(MAX_CSV_CHARS, 'That list is too long. Import up to 200 students at a time.'),
-});
-
 export async function importStudents(
   _prev: ActionResult<ImportSummary> | null,
   formData: FormData,
 ): Promise<ActionResult<ImportSummary>> {
   const user = await requireUser(['instructor', 'admin']);
+  const { t } = await getT();
+  const importSchema = z.object({
+    classId: z.string().min(1),
+    csv: z.string().max(MAX_CSV_CHARS, t.classes.actions.csvTooLong),
+  });
   const parsed = importSchema.safeParse({ classId: formData.get('classId'), csv: formData.get('csv') ?? '' });
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? 'Check the list.' };
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? t.classes.actions.checkList };
   const cls = await getManagedClass(user, parsed.data.classId);
-  if (!cls) return { ok: false, error: 'You can only import students into your own classes.' };
+  if (!cls) return { ok: false, error: t.classes.actions.importOwnClassesOnly };
 
   const { rows, skipped } = parseStudentCsv(parsed.data.csv);
   if (rows.length === 0) {
     return {
       ok: false,
       error: skipped.length
-        ? 'None of the rows had a usable email. Use one student per line: name,email.'
-        : 'Paste at least one line like: Mia Wong,mia@uni.edu',
+        ? t.classes.actions.noUsableEmail
+        : t.classes.actions.pasteOneRow,
     };
   }
 
@@ -141,7 +147,7 @@ export async function importStudents(
     const found = byEmail.get(row.email);
     if (found) {
       if (found.role !== 'learner') {
-        summary.skipped.push({ row: row.row, text: row.email, reason: 'This is a staff account, not a learner' });
+        summary.skipped.push({ row: row.row, text: row.email, reason: t.classes.actions.staffAccountSkipped });
         continue;
       }
       if (memberIds.has(found.id)) {
@@ -172,7 +178,10 @@ export async function importStudents(
   return {
     ok: true,
     data: summary,
-    message: total === 1 ? 'Added 1 student.' : `Added ${total} students.`,
+    message:
+      total === 1
+        ? t.classes.actions.addedOne
+        : fmt(t.classes.actions.addedMany, { count: total }),
   };
 }
 
@@ -180,50 +189,53 @@ const memberSchema = z.object({ classId: z.string().min(1), userId: z.string().m
 
 export async function removeStudent(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await requireUser(['instructor', 'admin']);
+  const { t } = await getT();
   const parsed = memberSchema.safeParse({ classId: formData.get('classId'), userId: formData.get('userId') });
-  if (!parsed.success) return { ok: false, error: 'Pick a student to remove.' };
+  if (!parsed.success) return { ok: false, error: t.classes.actions.pickStudent };
   const cls = await getManagedClass(user, parsed.data.classId);
-  if (!cls) return { ok: false, error: 'You can only change your own classes.' };
+  if (!cls) return { ok: false, error: t.classes.actions.ownClassesOnly };
   const db = await getDb();
   await db
     .delete(classMembers)
     .where(and(eq(classMembers.classId, cls.id), eq(classMembers.userId, parsed.data.userId)));
   revalidatePath(`/classes/${cls.id}`);
-  return { ok: true, message: 'Removed from the class. Their progress is kept.' };
+  return { ok: true, message: t.classes.actions.removed };
 }
 
 const courseSchema = z.object({ classId: z.string().min(1), courseId: z.string().min(1) });
 
 export async function assignCourse(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await requireUser(['instructor', 'admin']);
+  const { t } = await getT();
   const parsed = courseSchema.safeParse({ classId: formData.get('classId'), courseId: formData.get('courseId') });
-  if (!parsed.success) return { ok: false, error: 'Pick a course to assign.' };
+  if (!parsed.success) return { ok: false, error: t.classes.actions.pickCourse };
   const cls = await getManagedClass(user, parsed.data.classId);
-  if (!cls) return { ok: false, error: 'You can only change your own classes.' };
+  if (!cls) return { ok: false, error: t.classes.actions.ownClassesOnly };
   const db = await getDb();
   const [course] = await db
     .select({ id: courses.id })
     .from(courses)
     .where(and(eq(courses.id, parsed.data.courseId), assignableCourseCondition(user)))
     .limit(1);
-  if (!course) return { ok: false, error: 'That course is not published or not available to you.' };
+  if (!course) return { ok: false, error: t.classes.actions.courseUnavailable };
   await db.insert(classCourses).values({ classId: cls.id, courseId: course.id }).onConflictDoNothing();
   revalidatePath(`/classes/${cls.id}`);
-  return { ok: true, message: 'Course assigned.' };
+  return { ok: true, message: t.classes.actions.courseAssigned };
 }
 
 export async function unassignCourse(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await requireUser(['instructor', 'admin']);
+  const { t } = await getT();
   const parsed = courseSchema.safeParse({ classId: formData.get('classId'), courseId: formData.get('courseId') });
-  if (!parsed.success) return { ok: false, error: 'Pick a course to remove.' };
+  if (!parsed.success) return { ok: false, error: t.classes.actions.pickCourseToRemove };
   const cls = await getManagedClass(user, parsed.data.classId);
-  if (!cls) return { ok: false, error: 'You can only change your own classes.' };
+  if (!cls) return { ok: false, error: t.classes.actions.ownClassesOnly };
   const db = await getDb();
   await db
     .delete(classCourses)
     .where(and(eq(classCourses.classId, cls.id), eq(classCourses.courseId, parsed.data.courseId)));
   revalidatePath(`/classes/${cls.id}`);
-  return { ok: true, message: 'Course removed from the class.' };
+  return { ok: true, message: t.classes.actions.courseRemoved };
 }
 
 const classIdSchema = z.object({ classId: z.string().min(1) });
@@ -231,20 +243,21 @@ const classIdSchema = z.object({ classId: z.string().min(1) });
 /** Insights tab: ask the AI to group the class's wrong quiz answers into misconceptions. */
 export async function summariseMisconceptions(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await requireUser(['instructor', 'admin']);
+  const { locale, t } = await getT();
   const parsed = classIdSchema.safeParse({ classId: formData.get('classId') });
-  if (!parsed.success) return { ok: false, error: 'Pick a class first.' };
+  if (!parsed.success) return { ok: false, error: t.classes.actions.pickClass };
   const cls = await getManagedClass(user, parsed.data.classId);
-  if (!cls) return { ok: false, error: 'You can only summarise your own classes.' };
+  if (!cls) return { ok: false, error: t.classes.actions.summariseOwnClasses };
 
   const insights = await getClassQuestionInsights(cls.id);
   const focus = pickFocusQuestions(insights.questions);
   if (focus.length === 0) {
-    return { ok: false, error: 'Not enough wrong answers yet to spot a pattern. Check back after the next quiz.' };
+    return { ok: false, error: t.classes.actions.notEnoughAnswers };
   }
 
   const { data, mocked } = await generateJson(
     [
-      { role: 'system', content: MISCONCEPTION_SYSTEM_PROMPT },
+      { role: 'system', content: `${MISCONCEPTION_SYSTEM_PROMPT}\n${outputLanguage(locale)}` },
       { role: 'user', content: buildMisconceptionInput(cls.name, focus) },
     ],
     misconceptionSummarySchema,
@@ -254,7 +267,7 @@ export async function summariseMisconceptions(_prev: ActionResult | null, formDa
       tier: 'fast',
       temperature: 0.4,
       maxTokens: 900,
-      mock: () => mockMisconceptionSummary(focus),
+      mock: () => mockMisconceptionSummary(focus, locale),
     },
   );
   const content = mocked ? data : resolveQuestionRefs(data, focus);
@@ -265,5 +278,5 @@ export async function summariseMisconceptions(_prev: ActionResult | null, formDa
     .values({ classId: cls.id, ...values })
     .onConflictDoUpdate({ target: classInsightSummaries.classId, set: values });
   revalidatePath(`/classes/${cls.id}`);
-  return { ok: true, message: 'Summary updated.' };
+  return { ok: true, message: t.classes.actions.summaryUpdated };
 }

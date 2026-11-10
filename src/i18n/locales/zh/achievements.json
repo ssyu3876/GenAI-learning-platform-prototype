@@ -1,0 +1,132 @@
+{
+  "title": "徽章与成长",
+  "eyebrow": "进度",
+  "subtitle": "徽章记录你做过的事，Pip 让你看见练习把你带到了哪里。",
+  "badgesLabel": "徽章",
+  "totalXp": "总经验值",
+  "streak": "连续学习",
+  "scenarios": "完成场景",
+  "streakValue": "{days} 天",
+  "earned": "已获得",
+  "done": "完成",
+  "groupCount": "{earned} / {total}",
+  "badgeProgress": "{name}的进度",
+  "remainingToNext": "距离{next}还差 {xp} 经验值",
+  "groups": {
+    "learning": "学习",
+    "practice": "练习",
+    "consistency": "坚持"
+  },
+  "badges": {
+    "first-activity": {
+      "name": "第一次作答",
+      "description": "在任意一课里完成一个活动。"
+    },
+    "ten-activities": {
+      "name": "渐入佳境",
+      "description": "完成十个活动。"
+    },
+    "twenty-five-activities": {
+      "name": "稳步前进",
+      "description": "完成二十五个活动。"
+    },
+    "perfect-one": {
+      "name": "完美一次",
+      "description": "在任意一个活动中拿到 100 分。"
+    },
+    "perfect-five": {
+      "name": "五次满分",
+      "description": "在五个不同的活动中拿到 100 分。"
+    },
+    "first-lesson": {
+      "name": "第一课",
+      "description": "完成一节课。"
+    },
+    "ten-lessons": {
+      "name": "十节课",
+      "description": "完成十节课。"
+    },
+    "first-course": {
+      "name": "完成第一门课",
+      "description": "完整学完一门课程。"
+    },
+    "three-courses": {
+      "name": "三门课程",
+      "description": "学完三门课程。"
+    },
+    "first-scenario": {
+      "name": "亲身经历",
+      "description": "完成任意一个场景。"
+    },
+    "both-long": {
+      "name": "两个长场景",
+      "description": "完成《发布时刻》和《第零个冲刺》。"
+    },
+    "clean-release": {
+      "name": "干净发布",
+      "description": "在《发布时刻》中拿到 80 分或以上。"
+    },
+    "still-standing": {
+      "name": "依然挺立",
+      "description": "在《第零个冲刺》中拿到 80 分或以上。"
+    },
+    "interviewed": {
+      "name": "坐上面试椅",
+      "description": "完成一次模拟面试。"
+    },
+    "all-formats": {
+      "name": "全部形式",
+      "description": "完成全部七种面试类型。"
+    },
+    "streak-3": {
+      "name": "连续三天",
+      "description": "连续三天学习。"
+    },
+    "streak-7": {
+      "name": "整整一周",
+      "description": "连续七天学习。"
+    },
+    "stage-3": {
+      "name": "小树",
+      "description": "把 Pip 养到第 3 阶段。"
+    },
+    "stage-4": {
+      "name": "树林",
+      "description": "把 Pip 养到最后一个阶段。"
+    }
+  },
+  "closest": {
+    "title": "离你最近的徽章",
+    "subtitle": "接下来完成其中一个",
+    "allEarned": "所有徽章都是你的了",
+    "allEarnedNote": "没有可收集的了。试试更难的场景，或者帮别人也走到这里。"
+  },
+  "growth": {
+    "title": "Pip 正在长大",
+    "levelLine": "等级 {level}：{name}",
+    "xp": "{xp} 经验值",
+    "fullyGrown": "已经长满啦",
+    "progressTo": "距离{next}的进度",
+    "advice": "每完成一个活动、一节课、一门课程或一个场景，都会增加经验值。Pip 在固定节点长大，所以下一片叶子始终是看得见的目标。",
+    "maxed": "Pip 的叶子已经长齐了。没有更多可长的了，这些数字现在只用于排行榜。",
+    "fiveStages": "五个阶段",
+    "now": "当前",
+    "notes": {
+      "Seed": "刚刚种下",
+      "Sprout": "第一片叶子",
+      "Seedling": "两片叶子",
+      "Young Tree": "三片叶子",
+      "Grove": "开花啦"
+    }
+  },
+  "widget": {
+    "title": "你的小芽",
+    "subtitle": "{xp} 经验值 · {earned} / {total} 枚徽章",
+    "badgesLink": "徽章",
+    "fullyGrown": "已经长满",
+    "growthProgress": "成长进度",
+    "newLeaf": "再过 {xp} 经验值，就会长出一片新叶子。",
+    "allLeaves": "叶子已经全部长出来了，做得真好。",
+    "withinReach": "触手可及"
+  }
+}

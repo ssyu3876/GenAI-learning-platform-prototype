@@ -1,0 +1,63 @@
+{
+  "title": "Review",
+  "subtitle": "Quiz questions you missed come back here, spaced out over a few days so they stick.",
+  "nothingToReview": "Nothing to review yet",
+  "browseCourses": "Browse courses",
+  "whenMissQuestion": "When you miss a quiz question, it lands here and comes back a day later, then a few days after that, until you get it right {count} times in a row.",
+  "dueNow": "Due now",
+  "inRotation": "In rotation",
+  "mastered": "Mastered",
+  "moreDueAfter": "{count} more due after this round.",
+  "allCaughtUp": "All caught up",
+  "nextCardDue": "Your next card is due {time}.",
+  "everyMastered": "Every question you missed is mastered. Nice.",
+  "mistakeNotebook": "Mistake notebook",
+  "mistakeNotebookSubtitle": "Every quiz question you missed, and how close it is to mastered.",
+  "progressToMastered": "Progress towards mastered",
+  "backLater": "Back {time}",
+  "sessionAria": "Review session",
+  "relative": {
+    "today": "today",
+    "tomorrow": "tomorrow",
+    "inDays": "in {count} days",
+    "laterToday": "later today"
+  },
+  "widget": {
+    "rotation": "{rotation} in rotation · {mastered} mastered",
+    "questionOne": "{count} question to try again",
+    "questionMany": "{count} questions to try again",
+    "missedHint": "You missed these in a quiz. A couple of minutes is enough.",
+    "startReview": "Start review",
+    "caughtUpDue": "All caught up. Next card is due {time}.",
+    "caughtUpMastered": "All caught up. Everything is mastered.",
+    "emptyHint": "Quiz questions you miss come back here a day later for a second try."
+  },
+  "session": {
+    "missedBefore": "Missed before",
+    "cardOf": "Card {current} / {total}",
+    "progress": "Review progress",
+    "answerOptions": "Answer options",
+    "rightThisTime": "Right this time!",
+    "notQuite": "Not quite.",
+    "quizPicked": "In the quiz you picked {letter}. ",
+    "masteredNote": "Mastered. This card leaves your review list.",
+    "backIn": "Back {time}.",
+    "checkError": "Could not check that answer. Check your connection and try again.",
+    "nextCard": "Next card",
+    "seeResult": "See my result",
+    "skip": "Skip this card",
+    "checking": "Checking…",
+    "checkAnswer": "Check answer",
+    "finishedPerfect": "All right this time. Those gaps are closing.",
+    "finishedMissed": "The ones you missed come back tomorrow.",
+    "masteredCount": "{count} mastered",
+    "updating": "Updating…",
+    "backToNotebook": "Back to my notebook"
+  },
+  "errors": {
+    "pickFirst": "Pick an answer first.",
+    "cardGone": "This card is no longer in your review list.",
+    "questionChanged": "The course author changed this question. Skip it for now.",
+    "pickOption": "Pick one of the options."
+  }
+}

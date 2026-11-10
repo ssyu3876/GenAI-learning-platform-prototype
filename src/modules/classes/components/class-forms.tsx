@@ -4,38 +4,51 @@
 import { useActionState } from 'react';
 import { Field, Input, Notice, Textarea } from '@/components/ui';
 import { SubmitButton } from '@/components/ui/submit-button';
+import { useT } from '@/i18n/client';
 import { createClass, joinClass } from '../actions';
 
 export function CreateClassForm() {
+  const t = useT();
   const [state, action] = useActionState(createClass, null);
   return (
     <form action={action} className="flex flex-col gap-4">
       {state ? <Notice tone={state.ok ? 'success' : 'error'}>{state.ok ? state.message : state.error}</Notice> : null}
-      <Field label="Class name" htmlFor="class-name">
-        <Input id="class-name" name="name" required maxLength={80} placeholder="COMP7503 Group A" />
+      <Field label={t.classes.createForm.className} htmlFor="class-name">
+        <Input
+          id="class-name"
+          name="name"
+          required
+          maxLength={80}
+          placeholder={t.classes.createForm.classNamePlaceholder}
+        />
       </Field>
-      <Field label="Description" htmlFor="class-description" hint="Optional. Students see this.">
+      <Field
+        label={t.classes.createForm.description}
+        htmlFor="class-description"
+        hint={t.classes.createForm.descriptionHint}
+      >
         <Textarea
           id="class-description"
           name="description"
           maxLength={300}
           rows={3}
-          placeholder="Thursday evening section, software engineering basics."
+          placeholder={t.classes.createForm.descriptionPlaceholder}
         />
       </Field>
-      <SubmitButton pendingText="Creating…" className="self-start">
-        Create class
+      <SubmitButton pendingText={t.classes.createForm.creating} className="self-start">
+        {t.classes.createForm.create}
       </SubmitButton>
     </form>
   );
 }
 
 export function JoinClassForm() {
+  const t = useT();
   const [state, action] = useActionState(joinClass, null);
   return (
     <form action={action} className="flex flex-col gap-4">
       {state ? <Notice tone={state.ok ? 'success' : 'error'}>{state.ok ? state.message : state.error}</Notice> : null}
-      <Field label="Invite code" htmlFor="invite-code" hint="Your teacher gives you a 6-character code.">
+      <Field label={t.classes.joinForm.inviteCode} htmlFor="invite-code" hint={t.classes.joinForm.hint}>
         <Input
           id="invite-code"
           name="code"
@@ -44,12 +57,12 @@ export function JoinClassForm() {
           autoCapitalize="characters"
           spellCheck={false}
           maxLength={9}
-          placeholder="ABC234"
+          placeholder={t.classes.joinForm.codePlaceholder}
           className="font-mono tracking-[0.3em] uppercase"
         />
       </Field>
-      <SubmitButton pendingText="Joining…" className="self-start">
-        Join class
+      <SubmitButton pendingText={t.classes.joinForm.joining} className="self-start">
+        {t.classes.joinForm.join}
       </SubmitButton>
     </form>
   );

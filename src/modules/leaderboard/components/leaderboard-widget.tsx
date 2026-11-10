@@ -2,10 +2,14 @@ import Link from 'next/link';
 import { ChevronRight, Swords } from 'lucide-react';
 import type { HomeWidgetProps } from '@/core/types';
 import { Avatar, buttonClasses, Card, CardBody, CardHeader, cn } from '@/components/ui';
+import { getT } from '@/i18n';
+import { fmt } from '@/i18n/format';
 import { getBoard, getScopes } from '../queries';
 import { Movement } from './board-parts';
 
 export async function LeaderboardWidget({ user }: HomeWidgetProps) {
+  const { t } = await getT();
+
   const scopes = await getScopes(user);
   const scope = scopes.find((s) => s.isClass && s.enabled) ?? scopes.find((s) => !s.isClass)!;
   const board = await getBoard(user, scope, 'week');
@@ -17,11 +21,11 @@ export async function LeaderboardWidget({ user }: HomeWidgetProps) {
   return (
     <Card className="h-full">
       <CardHeader
-        title="This week"
+        title={t.leaderboard.periods.week}
         subtitle={scope.label}
         action={
           <Link href={`/leaderboard?scope=${scope.id}`} className={buttonClasses('ghost', 'sm')}>
-            Full board <ChevronRight className="h-4 w-4" />
+            {t.leaderboard.widget.fullBoard} <ChevronRight className="h-4 w-4" />
           </Link>
         }
       />
@@ -33,7 +37,7 @@ export async function LeaderboardWidget({ user }: HomeWidgetProps) {
               <div className={cn('flex items-center gap-2 rounded-lg px-2 py-1', e.isMe && 'border-2 border-line bg-butter-soft')}>
                 <span className="w-6 text-center font-display font-bold">{e.rank}</span>
                 <Avatar seed={e.avatarSeed} name={e.name} size={26} />
-                <span className="flex-1 truncate text-sm font-semibold">{e.isMe ? 'You' : e.name}</span>
+                <span className="flex-1 truncate text-sm font-semibold">{e.isMe ? t.chrome.common.you : e.name}</span>
                 <span className="text-sm font-bold">{e.xp}</span>
                 <Movement value={e.movement} />
               </div>
@@ -43,10 +47,11 @@ export async function LeaderboardWidget({ user }: HomeWidgetProps) {
         {board.chase?.ahead && board.chase.xpToPass ? (
           <p className="rounded-xl border-2 border-dashed border-line/50 px-3 py-2 text-sm">
             <Swords className="mr-1 inline h-4 w-4" aria-hidden />
-            {board.chase.xpToPass} XP to pass <strong>{board.chase.ahead.name}</strong>. One good activity could do it.
+            {fmt(t.leaderboard.widget.xpToPass, { xp: board.chase.xpToPass })} <strong>{board.chase.ahead.name}</strong>
+            {t.leaderboard.widget.oneActivity}
           </p>
         ) : me?.rank === 1 ? (
-          <p className="text-sm font-semibold">You are top of the board this week. 🌳</p>
+          <p className="text-sm font-semibold">{t.leaderboard.widget.topOfBoard}</p>
         ) : null}
       </CardBody>
     </Card>

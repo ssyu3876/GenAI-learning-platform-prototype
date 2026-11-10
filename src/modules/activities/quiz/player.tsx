@@ -4,11 +4,14 @@ import { Check, ChevronRight, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { ActivityPlayerProps } from '@/core/activity-types';
 import { Button, cn, ProgressBar } from '@/components/ui';
+import { useT } from '@/i18n/client';
+import { fmt } from '@/i18n/format';
 import { ActivityFrame, ResultPanel } from '../components/activity-frame';
 import { seededShuffle, useCompletion } from '../components/use-completion';
 import type { QuizConfig } from './schema';
 
 export function QuizPlayer({ activity, config, onComplete, previousBest, preview }: ActivityPlayerProps<QuizConfig>) {
+  const t = useT();
   const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [answers, setAnswers] = useState<number[]>([]);
@@ -54,23 +57,21 @@ export function QuizPlayer({ activity, config, onComplete, previousBest, preview
   }
 
   return (
-    <ActivityFrame kind="Quiz" title={activity.title} xpReward={activity.xpReward} previousBest={previousBest} preview={preview}>
+    <ActivityFrame kind={t.activities.frame.quiz} title={activity.title} xpReward={activity.xpReward} previousBest={previousBest} preview={preview}>
       {finished ? (
         <ResultPanel score={score} outcome={outcome} submitting={submitting} error={error} preview={preview} onRetry={retry}>
-          <p className="text-ink-soft">
-            {correctCount} of {total} correct.
-          </p>
+          <p className="text-ink-soft">{fmt(t.activities.quiz.scoreLine, { correct: correctCount, total })}</p>
         </ResultPanel>
       ) : (
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <span className="text-sm font-semibold text-ink-soft">
-              Question {index + 1} / {total}
+              {fmt(t.activities.quiz.questionOf, { current: index + 1, total })}
             </span>
-            <ProgressBar value={(index / total) * 100} label="Quiz progress" size="sm" className="flex-1" />
+            <ProgressBar value={(index / total) * 100} label={t.activities.quiz.progress} size="sm" className="flex-1" />
           </div>
           <p className="font-display text-xl font-semibold">{q.prompt}</p>
-          <div role="radiogroup" aria-label="Answer options" className="flex flex-col gap-2">
+          <div role="radiogroup" aria-label={t.activities.quiz.answerOptions} className="flex flex-col gap-2">
             {optionOrder[index]!.map((i, pos) => {
               const opt = q.options[i]!;
               const isAnswer = i === q.answerIndex;
@@ -104,18 +105,18 @@ export function QuizPlayer({ activity, config, onComplete, previousBest, preview
               className={cn('rounded-xl border-2 border-line px-4 py-3', picked === q.answerIndex ? 'bg-mint-soft' : 'bg-coral-soft')}
               aria-live="polite"
             >
-              <p className="font-display font-bold">{picked === q.answerIndex ? 'Correct!' : 'Not quite.'}</p>
+              <p className="font-display font-bold">{picked === q.answerIndex ? t.activities.quiz.correct : t.activities.quiz.notQuite}</p>
               {q.explanation ? <p className="mt-1">{q.explanation}</p> : null}
             </div>
           ) : null}
           <div className="flex justify-end">
             {checked ? (
               <Button onClick={next}>
-                {index + 1 < total ? 'Next question' : 'See my result'} <ChevronRight className="h-4 w-4" />
+                {index + 1 < total ? t.activities.quiz.nextQuestion : t.activities.quiz.seeResult} <ChevronRight className="h-4 w-4" />
               </Button>
             ) : (
               <Button onClick={check} disabled={picked === null}>
-                Check answer
+                {t.activities.quiz.checkAnswer}
               </Button>
             )}
           </div>

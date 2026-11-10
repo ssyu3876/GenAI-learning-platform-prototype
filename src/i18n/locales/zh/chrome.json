@@ -1,0 +1,171 @@
+{
+  "metadata": {
+    "title": "Sprout · 让你的软件技能发芽",
+    "description": "关于软件工程、AI 编程助手和软技能的轻量趣味迷你课程。"
+  },
+  "common": {
+    "loading": "加载中…",
+    "saving": "保存中…",
+    "opening": "正在打开…",
+    "sending": "发送中…",
+    "cancel": "取消",
+    "confirm": "确认",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "back": "返回",
+    "next": "下一步",
+    "submit": "提交",
+    "search": "搜索",
+    "copy": "复制",
+    "copied": "已复制！",
+    "close": "关闭",
+    "all": "全部",
+    "optional": "选填",
+    "xp": "经验值",
+    "min": "分钟",
+    "minutes": "分钟",
+    "lesson": "课",
+    "lessons": "课",
+    "course": "门课程",
+    "courses": "门课程",
+    "student": "名学生",
+    "students": "名学生",
+    "member": "名成员",
+    "members": "名成员",
+    "level": "等级",
+    "progress": "进度",
+    "error": "出了点问题，请稍后再试。",
+    "nothingHere": "这里还没有内容",
+    "you": "你",
+    "day": "天",
+    "days": "天"
+  },
+  "nav": {
+    "home": "首页",
+    "courses": "课程",
+    "learnAnything": "学习任何内容",
+    "review": "复习",
+    "leaderboard": "排行榜",
+    "classes": "班级",
+    "scenarios": "场景",
+    "badges": "徽章",
+    "studio": "工作室",
+    "admin": "管理",
+    "skipToContent": "跳到主要内容",
+    "mainNavigation": "主导航",
+    "mobileNavigation": "移动端主导航"
+  },
+  "shell": {
+    "learner": "学习者",
+    "instructor": "教师",
+    "admin": "管理员",
+    "logout": "退出登录",
+    "level": "等级",
+    "dayStreak": "连续学习天数",
+    "totalXp": "总经验值",
+    "levelProgress": "等级进度",
+    "language": "语言",
+    "switchToChinese": "切换到中文",
+    "switchToEnglish": "Switch to English"
+  },
+  "levels": {
+    "Seed": "种子",
+    "Sprout": "嫩芽",
+    "Seedling": "幼苗",
+    "Sapling": "小树苗",
+    "Young Tree": "小树",
+    "Tree": "大树",
+    "Grove": "树林",
+    "Forest": "森林"
+  },
+  "landing": {
+    "siteName": "Sprout",
+    "tagline": "AI 时代的迷你课程",
+    "heroTitle": "软件技能，一步一个小芽。",
+    "heroDescription": "Sprout 教你软件是如何真正做出来的：需求、团队协作、测试，以及如何与 AI 编程助手合作而不被它牵着走。为好奇的非计算机专业学生和准备求职的计算机毕业生而做。",
+    "startLearning": "开始学习，完全免费",
+    "tryDemo": "试用演示账户",
+    "login": "登录",
+    "signup": "注册",
+    "pipGreeting": "嗨，我是 Pip。你每升一级，我就会长出一片新叶子。",
+    "footer": "由学生团队为 COMP 软件工程课程制作，2026 年。原型项目，仅使用演示数据。",
+    "features": {
+      "practice": {
+        "title": "练习那些不好开口的部分",
+        "description": "和挑剔的客户开一次需求会议，或者参加一场模拟面试。对方由 AI 扮演，结束后会给你中肯的反馈。"
+      },
+      "learn": {
+        "title": "动手试一试，才能真正学会",
+        "description": "给卡片分类、把步骤排好序、修复 AI 助手写错的代码。课程很短，看完马上就能上手。"
+      },
+      "compete": {
+        "title": "看看班级里大家的进度",
+        "description": "每周排行榜和课程竞赛会显示谁领先、领先多少。友好的竞争，昵称可选。"
+      },
+      "custom": {
+        "title": "任何主题，按你的节奏",
+        "description": "输入你想学的内容，Pip 会为你搭一门迷你课程。老师也可以为自己的班级这样做。"
+      }
+    }
+  },
+  "auth": {
+    "welcomeBack": "欢迎回来",
+    "pipKeptSeat": "Pip 一直帮你留着座位。",
+    "email": "邮箱",
+    "password": "密码",
+    "name": "姓名",
+    "loggingIn": "正在登录…",
+    "demoAccounts": "演示账户（密码 {password}）",
+    "demoLearner": "学习者（Mia）",
+    "demoNewLearner": "新学习者（Alex）",
+    "demoInstructor": "教师（陈博士）",
+    "demoAdmin": "管理员",
+    "newHere": "第一次来？",
+    "createAccount": "创建账户",
+    "alreadyHave": "已经有账户了？",
+    "loginInstead": "直接登录",
+    "createAccountButton": "创建账户",
+    "creatingAccount": "正在创建账户…",
+    "namePlaceholder": "Mia Wong",
+    "emailPlaceholder": "you@example.com",
+    "passwordPlaceholder": "至少 8 个字符",
+    "passwordHint": "至少 8 个字符。",
+    "invalidCredentials": "邮箱和密码不匹配。",
+    "loginMissing": "请输入邮箱和密码。",
+    "signupFailed": "创建账户失败。",
+    "fixFields": "请修改标出的字段。",
+    "nameRequired": "告诉我们该怎么称呼你。",
+    "emailInvalid": "这看起来不像一个邮箱地址。",
+    "emailTaken": "这个邮箱已经注册过账户了。",
+    "emailRegistered": "已注册",
+    "passwordShort": "请使用至少 8 个字符。",
+    "yourName": "你的名字",
+    "roleLegend": "我的身份是",
+    "roleLearner": "学习者",
+    "roleLearnerNote": "我想学习",
+    "roleInstructor": "教师",
+    "roleInstructorNote": "我在带一个班级",
+    "planting": "正在播种…",
+    "signupTitle": "种下你的种子",
+    "signupSubtitle": "用不了一分钟。",
+    "backHome": "返回首页",
+    "loginTitle": "登录"
+  },
+  "home": {
+    "greeting": {
+      "stillUp": "还没睡吗，{name}？Pip 也还醒着。",
+      "morning": "早上好，{name}！头脑清醒，正是学习的好时候。",
+      "afternoon": "嗨 {name}，来上一节小课怎么样？",
+      "evening": "晚上好，{name}。睡前学一小步？"
+    },
+    "levelStatus": "你现在是 <strong>{levelName}</strong>，共有 {xp} 经验值",
+    "withStreak": "并已连续学习 {days} 天",
+    "instructorGreeting": "这是今天 Sprout 上发生的事情。"
+  },
+  "notFound": {
+    "title": "这个页面还没发芽",
+    "body": "链接可能过期了，或者页面已经搬走。我们带你回到还在生长的内容吧。",
+    "home": "返回首页"
+  }
+}

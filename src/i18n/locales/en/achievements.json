@@ -1,0 +1,132 @@
+{
+  "title": "Badges and growth",
+  "eyebrow": "Progress",
+  "subtitle": "Badges mark what you have done. Pip shows how far the practice has taken you.",
+  "badgesLabel": "Badges",
+  "totalXp": "Total XP",
+  "streak": "Streak",
+  "scenarios": "Scenarios",
+  "streakValue": "{days}d",
+  "earned": "earned",
+  "done": "Done",
+  "groupCount": "{earned} of {total}",
+  "badgeProgress": "{name} progress",
+  "remainingToNext": "{xp} XP to {next}",
+  "groups": {
+    "learning": "Learning",
+    "practice": "Practice",
+    "consistency": "Showing up"
+  },
+  "badges": {
+    "first-activity": {
+      "name": "First answer",
+      "description": "Finish one activity in any lesson."
+    },
+    "ten-activities": {
+      "name": "Getting warm",
+      "description": "Finish ten activities."
+    },
+    "twenty-five-activities": {
+      "name": "Steady",
+      "description": "Finish twenty-five activities."
+    },
+    "perfect-one": {
+      "name": "Perfect run",
+      "description": "Score 100 on any activity."
+    },
+    "perfect-five": {
+      "name": "Five clean",
+      "description": "Score 100 on five different activities."
+    },
+    "first-lesson": {
+      "name": "First lesson",
+      "description": "Complete a lesson."
+    },
+    "ten-lessons": {
+      "name": "Ten lessons",
+      "description": "Complete ten lessons."
+    },
+    "first-course": {
+      "name": "One course down",
+      "description": "Finish a whole course."
+    },
+    "three-courses": {
+      "name": "Three courses",
+      "description": "Finish three courses."
+    },
+    "first-scenario": {
+      "name": "Played through",
+      "description": "Finish any scenario."
+    },
+    "both-long": {
+      "name": "Both long ones",
+      "description": "Finish Ship It and Sprint Zero."
+    },
+    "clean-release": {
+      "name": "Clean release",
+      "description": "Score 80 or more in Ship It."
+    },
+    "still-standing": {
+      "name": "Still standing",
+      "description": "Score 80 or more in Sprint Zero."
+    },
+    "interviewed": {
+      "name": "In the chair",
+      "description": "Finish one practice interview."
+    },
+    "all-formats": {
+      "name": "Every format",
+      "description": "Finish all seven interview types."
+    },
+    "streak-3": {
+      "name": "Three days",
+      "description": "Learn three days in a row."
+    },
+    "streak-7": {
+      "name": "A full week",
+      "description": "Learn seven days in a row."
+    },
+    "stage-3": {
+      "name": "Young tree",
+      "description": "Grow Pip to stage 3."
+    },
+    "stage-4": {
+      "name": "Grove",
+      "description": "Grow Pip to the last stage."
+    }
+  },
+  "closest": {
+    "title": "Closest to earned",
+    "subtitle": "Finish one of these next",
+    "allEarned": "Every badge is yours",
+    "allEarnedNote": "Nothing left to collect. Try a harder scenario, or help someone else get here."
+  },
+  "growth": {
+    "title": "Pip is growing",
+    "levelLine": "Level {level}: {name}",
+    "xp": "{xp} XP",
+    "fullyGrown": "Fully grown",
+    "progressTo": "Progress to {next}",
+    "advice": "Every finished activity, lesson, course and scenario adds XP. Pip grows at set thresholds, so the next leaf is always a target you can see.",
+    "maxed": "Pip has every leaf. There is nothing left to grow, so the numbers are only there for the leaderboard now.",
+    "fiveStages": "The five stages",
+    "now": "now",
+    "notes": {
+      "Seed": "Just planted",
+      "Sprout": "First leaf",
+      "Seedling": "Two leaves",
+      "Young Tree": "Three leaves",
+      "Grove": "In flower"
+    }
+  },
+  "widget": {
+    "title": "Your sprout",
+    "subtitle": "{xp} XP · {earned} of {total} badges",
+    "badgesLink": "Badges",
+    "fullyGrown": "fully grown",
+    "growthProgress": "Growth progress",
+    "newLeaf": "A new leaf appears at {xp} XP.",
+    "allLeaves": "Every leaf is out. Nicely done.",
+    "withinReach": "Within reach"
+  }
+}

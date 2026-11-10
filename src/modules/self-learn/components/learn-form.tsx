@@ -6,18 +6,12 @@ import { startTransition, useActionState, useState, type FormEvent } from 'react
 import { WandSparkles } from 'lucide-react';
 import type { ActionResult } from '@/core/types';
 import { Button, Card, Field, Input, Notice, PipSays, Select } from '@/components/ui';
+import { useT } from '@/i18n/client';
+import { fmt } from '@/i18n/format';
 import { generateLearnerCourse } from '../actions';
 
-const EXAMPLES = [
-  'How the stock market works',
-  'Basics of photography',
-  'Git for beginners',
-  'Ancient Rome in 5 lessons',
-  'How vaccines train your immune system',
-  'Writing a clear cover letter',
-];
-
 export function LearnForm({ remaining, limit }: { remaining: number; limit: number }) {
+  const t = useT();
   const [state, dispatch, pending] = useActionState<ActionResult | null, FormData>(generateLearnerCourse, null);
   const [topic, setTopic] = useState('');
 
@@ -31,13 +25,13 @@ export function LearnForm({ remaining, limit }: { remaining: number; limit: numb
     <Card className="p-5 sm:p-6">
       <form onSubmit={onSubmit} className="flex flex-col gap-4" aria-busy={pending}>
         {state && !state.ok ? <Notice tone="error">{state.error}</Notice> : null}
-        <Field label="What do you want to learn?" htmlFor="topic">
+        <Field label={t.selfLearn.form.topicLabel} htmlFor="topic">
           <Input
             id="topic"
             name="topic"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="e.g. How the stock market works"
+            placeholder={t.selfLearn.form.topicPlaceholder}
             required
             minLength={3}
             maxLength={200}
@@ -45,8 +39,8 @@ export function LearnForm({ remaining, limit }: { remaining: number; limit: numb
             className="h-12 text-lg"
           />
         </Field>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Example topics">
-          {EXAMPLES.map((example) => (
+        <div className="flex flex-wrap gap-2" role="group" aria-label={t.selfLearn.form.exampleTopics}>
+          {t.selfLearn.form.examples.map((example) => (
             <button
               key={example}
               type="button"
@@ -60,40 +54,40 @@ export function LearnForm({ remaining, limit }: { remaining: number; limit: numb
           ))}
         </div>
         <div className="grid gap-4 sm:grid-cols-[1fr_12rem]">
-          <Field label="Why do you want to learn this?" htmlFor="why" hint="Optional. Pip picks examples that fit.">
+          <Field label={t.selfLearn.form.whyLabel} htmlFor="why" hint={t.selfLearn.form.whyHint}>
             <Input
               id="why"
               name="why"
               maxLength={300}
-              placeholder="e.g. I start an internship at a bank next month"
+              placeholder={t.selfLearn.form.whyPlaceholder}
               disabled={pending}
             />
           </Field>
-          <Field label="Your level" htmlFor="level">
+          <Field label={t.selfLearn.form.levelLabel} htmlFor="level">
             <Select id="level" name="level" defaultValue="beginner" disabled={pending}>
-              <option value="beginner">New to it</option>
-              <option value="intermediate">Know the basics</option>
-              <option value="advanced">Fairly confident</option>
+              <option value="beginner">{t.selfLearn.form.levelBeginner}</option>
+              <option value="intermediate">{t.selfLearn.form.levelIntermediate}</option>
+              <option value="advanced">{t.selfLearn.form.levelAdvanced}</option>
             </Select>
           </Field>
         </div>
 
         {pending ? (
           <PipSays mood="think" size={64}>
-            <p className="font-display font-bold">Pip is writing your course… ~30s</p>
-            <p className="text-sm text-ink-soft">Short lessons plus a few activities. You will land on it when it is ready.</p>
+            <p className="font-display font-bold">{t.selfLearn.form.writingTitle}</p>
+            <p className="text-sm text-ink-soft">{t.selfLearn.form.writingNote}</p>
           </PipSays>
         ) : null}
 
         <div className="flex flex-wrap items-center gap-3">
           <Button type="submit" variant="primary" size="lg" disabled={pending || remaining <= 0} aria-busy={pending}>
             <WandSparkles className="h-4 w-4" aria-hidden />
-            {pending ? 'Writing your course…' : 'Make my course'}
+            {pending ? t.selfLearn.form.writingButton : t.selfLearn.form.makeCourse}
           </Button>
           <p className="text-sm text-ink-soft">
             {remaining > 0
-              ? `${remaining} of ${limit} new courses left today.`
-              : `That is ${limit} courses today. Pip can make more tomorrow.`}
+              ? fmt(t.selfLearn.form.remaining, { remaining, limit })
+              : fmt(t.selfLearn.form.limitReached, { limit })}
           </p>
         </div>
       </form>

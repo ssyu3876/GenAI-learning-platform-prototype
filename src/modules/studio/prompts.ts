@@ -1,4 +1,6 @@
 // Prompts for studio AI features. Plain module (no 'use server') so the client can read the presets.
+import type { Locale } from '@/i18n/config';
+import { outputLanguage } from '@/i18n/ai';
 
 export const REWRITE_PRESETS = [
   {
@@ -59,12 +61,13 @@ export function stripOuterFence(text: string): string {
   return (m?.[1] ?? text).trim();
 }
 
-export function buildActivitySystemPrompt(input: { label: string; type: string; promptGuide: string }): string {
+export function buildActivitySystemPrompt(input: { label: string; type: string; promptGuide: string; locale?: Locale }): string {
   return [
     'You write one interactive activity for a lesson on a learning platform.',
     `Activity type: "${input.type}" (${input.label}).`,
     `Config shape: ${input.promptGuide}`,
     'Base the activity on the lesson content you are given. Use plain, warm language, no hype words.',
+    outputLanguage(input.locale ?? 'en'),
     'Reply with ONE JSON object only: the config object itself, no wrapper, no commentary.',
   ].join('\n');
 }

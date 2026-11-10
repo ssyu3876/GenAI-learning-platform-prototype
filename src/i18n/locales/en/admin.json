@@ -1,0 +1,240 @@
+{
+  "metadata": {
+    "overview": "Admin",
+    "users": "Users · Admin",
+    "courses": "Courses · Admin",
+    "aiUsage": "AI usage · Admin",
+    "modules": "Modules · Admin"
+  },
+  "nav": {
+    "label": "Admin sections",
+    "overview": "Overview",
+    "users": "Users",
+    "courses": "Courses",
+    "aiUsage": "AI usage",
+    "modules": "Modules"
+  },
+  "roles": {
+    "learner": "Learner",
+    "instructor": "Instructor",
+    "admin": "Admin"
+  },
+  "status": {
+    "draft": "Draft",
+    "pending_review": "Waiting review",
+    "published": "Published",
+    "archived": "Archived"
+  },
+  "source": {
+    "seed": "Seed",
+    "manual": "Written by hand",
+    "ai": "AI (instructor)",
+    "learner_ai": "AI (learner)"
+  },
+  "visibility": {
+    "public": "Public",
+    "class": "Class",
+    "private": "Private"
+  },
+  "common": {
+    "unknown": "unknown",
+    "anyStatus": "Any status",
+    "anySource": "Any source",
+    "anyone": "Anyone"
+  },
+  "overview": {
+    "title": "Admin console",
+    "subtitle": "Keep an eye on people, courses and AI calls.",
+    "people": "People",
+    "learners": "Learners",
+    "instructors": "Instructors",
+    "admins": "Admins",
+    "courses": "Courses",
+    "last7Days": "Last 7 days",
+    "learningEvents": "Learning events",
+    "activePeople": "Active people",
+    "aiCallsToday": "AI calls today",
+    "sinceMidnightUtc": "Since midnight UTC",
+    "realAi": "Real AI",
+    "demoMode": "Demo mode",
+    "goTo": "Go to",
+    "card": {
+      "usersTitle": "Users and roles",
+      "usersBody": "Search people and change who is a learner, instructor or admin.",
+      "coursesTitle": "Course review",
+      "coursesPending": "{count} waiting for review. Approve or send back.",
+      "coursesClear": "Nothing waiting. Browse every course with filters.",
+      "aiTitle": "AI usage",
+      "aiBody": "Calls per feature, real vs demo mode, tokens and speed.",
+      "modulesTitle": "Modules",
+      "modulesBody": "Feature modules installed in this build."
+    }
+  },
+  "widget": {
+    "title": "Platform",
+    "subtitle": "Sprout at a glance",
+    "admin": "Admin",
+    "users": "Users",
+    "events7Days": "Events, 7 days",
+    "aiCallsToday": "AI calls today",
+    "waitingReview": "Waiting review",
+    "reviewOne": "Review {count} course",
+    "reviewMany": "Review {count} courses"
+  },
+  "users": {
+    "title": "Users and roles",
+    "subtitle": "Find someone and change what they can do on Sprout.",
+    "searchLabel": "Search by name or email",
+    "searchPlaceholder": "Search by name or email",
+    "emptyTitle": "Nobody matches that",
+    "emptyBody": "Try part of a name or an email address.",
+    "matchOne": "{count} match for \"{query}\"",
+    "matchMany": "{count} matches for \"{query}\"",
+    "newest": "{count} newest users",
+    "showingFirst": " (showing the first {limit})",
+    "never": "Never",
+    "roleLabel": "Role for {name}",
+    "saveRoleLabel": "Save role for {name}",
+    "selfNote": "That is you. Another admin can change your role.",
+    "columns": {
+      "person": "Person",
+      "joined": "Joined",
+      "lastLogin": "Last login",
+      "role": "Role"
+    }
+  },
+  "courses": {
+    "title": "Courses",
+    "subtitle": "Review what people want to publish, and browse everything else.",
+    "reviewQueue": "Review queue",
+    "queueEmptyTitle": "Queue is empty",
+    "queueEmptyBody": "Nothing is waiting for review right now.",
+    "pendingMeta": "{subject} · {lessons} · by {owner}",
+    "lessonsOne": "{count} lesson",
+    "lessonsMany": "{count} lessons",
+    "preview": "Preview course",
+    "allCourses": "All courses",
+    "filters": {
+      "status": "Status",
+      "source": "Source",
+      "owner": "Owner",
+      "apply": "Apply filters",
+      "clear": "Clear"
+    },
+    "emptyTitle": "No courses match",
+    "emptyBody": "Try a different filter.",
+    "columns": {
+      "course": "Course",
+      "status": "Status",
+      "visibility": "Visibility",
+      "source": "Source",
+      "owner": "Owner",
+      "lessons": "Lessons",
+      "updated": "Updated"
+    }
+  },
+  "review": {
+    "approve": "Approve",
+    "approvePending": "Publishing…",
+    "approveLabel": "Approve and publish {title}",
+    "sendBack": "Send back",
+    "sendBackPending": "Sending back…",
+    "sendBackConfirm": "Send {title} back to its author as a private draft?",
+    "rejectLabel": "Reject {title}"
+  },
+  "aiUsage": {
+    "title": "AI usage",
+    "subtitle": "Every AI call is logged with its feature, model, tokens and speed.",
+    "configured": "An AI key is set. Calls go to the real provider until a user hits the daily limit.",
+    "demo": "No AI key is set, so every feature answers in demo mode with built-in mock replies.",
+    "allCalls": "All calls",
+    "realVsDemo": "Real / demo",
+    "tokensInOut": "Tokens in / out",
+    "avgLatency": "Avg real latency",
+    "callsPerDay": "Calls per day",
+    "callsPerDaySubtitle": "Last {days} days, UTC",
+    "byFeature": "By feature",
+    "byFeatureSubtitle": "Feature names follow module.action, e.g. tutor.chat",
+    "emptyTitle": "No AI calls yet",
+    "emptyBody": "Try the tutor or generate a course, then come back.",
+    "latencySeconds": "{value} s",
+    "latencyMs": "{value} ms",
+    "columns": {
+      "feature": "Feature",
+      "calls": "Calls",
+      "real": "Real",
+      "demo": "Demo",
+      "tokensIn": "Tokens in",
+      "tokensOut": "Tokens out",
+      "avgLatency": "Avg latency"
+    },
+    "chart": {
+      "realAi": "Real AI",
+      "demoMode": "Demo mode (mock)",
+      "caption": "Last {days} days: {real} real AI calls and {mock} mock calls."
+    }
+  },
+  "modules": {
+    "title": "Modules",
+    "subtitle": "Each feature is a module listed once in src/registry/modules.ts. Remove the line and it disappears.",
+    "empty": "No modules installed",
+    "navItemsOne": "{count} nav item",
+    "navItemsMany": "{count} nav items",
+    "navItemsWithLabelsOne": "{count} nav item: {labels}",
+    "navItemsWithLabelsMany": "{count} nav items: {labels}",
+    "listSeparator": ", ",
+    "widgetOne": "{count} home widget",
+    "widgetMany": "{count} home widgets",
+    "addonOne": "{count} shell add-on",
+    "addonMany": "{count} shell add-ons",
+    "owner": "Owner: {owner}"
+  },
+  "modulesMeta": {
+    "names": {
+      "onboarding": "Onboarding & personal path",
+      "courses": "Course catalog & player",
+      "activities": "Interactive activities",
+      "self-learn": "Learn anything",
+      "review": "Mistake notebook & spaced review",
+      "leaderboard": "Leaderboard & course race",
+      "ai-tutor": "AI tutor",
+      "studio": "Course studio",
+      "classes": "Classes & engagement",
+      "scenarios": "Scenarios",
+      "achievements": "Badges and growth",
+      "admin": "Admin console"
+    },
+    "descriptions": {
+      "onboarding": "A short chat with Pip that builds a learner profile and a recommended path.",
+      "courses": "Browse mini-courses, enrol, and learn lesson by lesson.",
+      "activities": "Quiz, sorting game, sequencing, in-browser coding, narrated slides and AI role-play.",
+      "self-learn": "Learners type any topic and get a personal mini-course generated by AI.",
+      "review": "Collects the quiz questions a learner missed and brings them back on a spaced schedule.",
+      "leaderboard": "Weekly and all-time XP rankings, class boards and a transparent course race.",
+      "ai-tutor": "Ask Pip anything, with the current lesson as context.",
+      "studio": "Instructors create, AI-generate, edit and publish mini-courses.",
+      "classes": "Instructors import students, assign courses and track engagement.",
+      "scenarios": "Long-form practice: supervise an AI agent, run a small team for three weeks, or sit a practice interview. Choices carry forward.",
+      "achievements": "Badges derived from the event log, plus the Pip growth journey: XP in, leaves out. Nothing is stored twice.",
+      "admin": "Users and roles, course review queue, AI usage and platform stats."
+    }
+  },
+  "actions": {
+    "pickRole": "Pick learner, instructor or admin.",
+    "cannotChangeOwnRole": "You cannot change your own role. Ask another admin.",
+    "userGone": "That user no longer exists.",
+    "roleChanged": "{name} is now a {role}.",
+    "roleChangedAdmin": "{name} is now an admin.",
+    "roles": {
+      "learner": "learner",
+      "instructor": "instructor",
+      "admin": "admin"
+    },
+    "thisUser": "User",
+    "pickCourse": "Pick a course to review.",
+    "courseNotPending": "This course is no longer waiting for review.",
+    "thisCourse": "The course",
+    "approved": "{title} is now in the public catalog.",
+    "rejected": "{title} went back to its author as a draft."
+  }
+}

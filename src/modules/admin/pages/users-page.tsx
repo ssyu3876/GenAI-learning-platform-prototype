@@ -3,47 +3,51 @@ import Form from 'next/form';
 import { Search } from 'lucide-react';
 import type { SessionUser } from '@/core/types';
 import { Avatar, Button, Card, CardBody, EmptyState, Input, PageHeader } from '@/components/ui';
+import { fmt, getT, plural } from '@/i18n';
 import { AdminNav } from '../components/admin-nav';
 import { RoleForm } from '../components/role-form';
 import { searchUsers, USER_LIST_LIMIT } from '../queries';
 
-function formatDate(d: Date | null): string {
-  return d ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Never';
-}
-
 export async function AdminUsersPage({ user, q }: { user: SessionUser; q: string }) {
+  const { locale, t } = await getT();
   const rows = await searchUsers(q);
+  const dateLocale = locale === 'zh' ? 'zh-CN' : 'en-GB';
+  const formatDate = (d: Date | null): string =>
+    d ? d.toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', year: 'numeric' }) : t.admin.users.never;
+
   return (
     <div>
-      <PageHeader title="Users and roles" subtitle="Find someone and change what they can do on Sprout." />
+      <PageHeader title={t.admin.users.title} subtitle={t.admin.users.subtitle} />
       <AdminNav current="/admin/users" />
       <Form action="/admin/users" role="search" className="mb-4 flex max-w-xl gap-2">
         <label htmlFor="user-search" className="sr-only">
-          Search by name or email
+          {t.admin.users.searchLabel}
         </label>
-        <Input id="user-search" name="q" type="search" defaultValue={q} placeholder="Search by name or email" />
+        <Input id="user-search" name="q" type="search" defaultValue={q} placeholder={t.admin.users.searchPlaceholder} />
         <Button type="submit" variant="secondary">
-          <Search className="h-4 w-4" aria-hidden /> Search
+          <Search className="h-4 w-4" aria-hidden /> {t.chrome.common.search}
         </Button>
       </Form>
       <Card>
         <CardBody className="pt-5">
           {rows.length === 0 ? (
-            <EmptyState title="Nobody matches that">Try part of a name or an email address.</EmptyState>
+            <EmptyState title={t.admin.users.emptyTitle}>{t.admin.users.emptyBody}</EmptyState>
           ) : (
             <>
               <p className="mb-2 text-sm text-ink-soft" role="status">
-                {q ? `${rows.length} match${rows.length === 1 ? '' : 'es'} for "${q}"` : `${rows.length} newest users`}
-                {rows.length === USER_LIST_LIMIT ? ` (showing the first ${USER_LIST_LIMIT})` : ''}
+                {q
+                  ? fmt(plural(rows.length, t.admin.users.matchOne, t.admin.users.matchMany), { count: rows.length, query: q })
+                  : fmt(t.admin.users.newest, { count: rows.length })}
+                {rows.length === USER_LIST_LIMIT ? fmt(t.admin.users.showingFirst, { limit: USER_LIST_LIMIT }) : ''}
               </p>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[40rem] text-left text-sm">
                   <thead className="font-display text-ink-soft">
                     <tr>
-                      <th scope="col" className="py-2 pr-3">Person</th>
-                      <th scope="col" className="py-2 pr-3">Joined</th>
-                      <th scope="col" className="py-2 pr-3">Last login</th>
-                      <th scope="col" className="py-2">Role</th>
+                      <th scope="col" className="py-2 pr-3">{t.admin.users.columns.person}</th>
+                      <th scope="col" className="py-2 pr-3">{t.admin.users.columns.joined}</th>
+                      <th scope="col" className="py-2 pr-3">{t.admin.users.columns.lastLogin}</th>
+                      <th scope="col" className="py-2">{t.admin.users.columns.role}</th>
                     </tr>
                   </thead>
                   <tbody>

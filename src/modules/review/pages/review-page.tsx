@@ -14,10 +14,25 @@ import {
   Stat,
 } from '@/components/ui';
 import { ReviewSession } from '../components/review-session';
-import { boxProgress, formatDue, MASTERED_BOX } from '../logic';
+import { boxProgress, MASTERED_BOX } from '../logic';
 import { getReviewOverview, type ReviewCard } from '../queries';
+import { getT } from '@/i18n';
+import type { Translations } from '@/i18n';
+import { fmt } from '@/i18n/format';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Same calendar-day math as logic.formatDue(), in the active locale. */
+function dueIn(dueAt: Date, now: Date, t: Translations, sameDay = t.review.relative.today): string {
+  const days = Math.floor(dueAt.getTime() / DAY_MS) - Math.floor(now.getTime() / DAY_MS);
+  if (days <= 0) return sameDay;
+  if (days === 1) return t.review.relative.tomorrow;
+  return fmt(t.review.relative.inDays, { count: days });
+}
 
 export async function ReviewPage({ user }: { user: SessionUser }) {
+  const { t } = await getT();
+
   const data = await getReviewOverview(user.id);
   const now = new Date();
   const hasCards = data.notebook.length > 0;
@@ -25,33 +40,32 @@ export async function ReviewPage({ user }: { user: SessionUser }) {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Review"
-        subtitle="Quiz questions you missed come back here, spaced out over a few days so they stick."
+        title={t.review.title}
+        subtitle={t.review.subtitle}
       />
 
       {!hasCards ? (
         <EmptyState
-          title="Nothing to review yet"
+          title={t.review.nothingToReview}
           mood="happy"
           action={
             <Link href="/courses" className={buttonClasses('secondary', 'sm')}>
-              Browse courses
+              {t.review.browseCourses}
             </Link>
           }
         >
-          When you miss a quiz question, it lands here and comes back a day later, then a few days
-          after that, until you get it right {MASTERED_BOX} times in a row.
+          {fmt(t.review.whenMissQuestion, { count: MASTERED_BOX })}
         </EmptyState>
       ) : (
         <>
           <div className="grid gap-3 sm:grid-cols-3">
-            <Stat label="Due now" value={data.dueCount} icon={<CalendarClock className="h-5 w-5" aria-hidden />} tint="butter" />
-            <Stat label="In rotation" value={data.inRotation} icon={<Layers className="h-5 w-5" aria-hidden />} tint="sky" />
-            <Stat label="Mastered" value={data.masteredCount} icon={<Sprout className="h-5 w-5" aria-hidden />} tint="mint" />
+            <Stat label={t.review.dueNow} value={data.dueCount} icon={<CalendarClock className="h-5 w-5" aria-hidden />} tint="butter" />
+            <Stat label={t.review.inRotation} value={data.inRotation} icon={<Layers className="h-5 w-5" aria-hidden />} tint="sky" />
+            <Stat label={t.review.mastered} value={data.masteredCount} icon={<Sprout className="h-5 w-5" aria-hidden />} tint="mint" />
           </div>
 
           {data.session.length > 0 ? (
-            <section aria-label="Review session">
+            <section aria-label={t.review.sessionAria}>
               <ReviewSession
                 key={data.session.map((c) => c.id).join(',')}
                 cards={data.session.map((c) => ({
@@ -66,22 +80,22 @@ export async function ReviewPage({ user }: { user: SessionUser }) {
               />
               {data.dueCount > data.session.length ? (
                 <p className="mt-2 text-sm text-ink-soft">
-                  {data.dueCount - data.session.length} more due after this round.
+                  {fmt(t.review.moreDueAfter, { count: data.dueCount - data.session.length })}
                 </p>
               ) : null}
             </section>
           ) : (
-            <EmptyState title="All caught up" mood="cheer">
+            <EmptyState title={t.review.allCaughtUp} mood="cheer">
               {data.nextDueAt
-                ? `Your next card is due ${formatDue(data.nextDueAt, now)}.`
-                : 'Every question you missed is mastered. Nice.'}
+                ? fmt(t.review.nextCardDue, { time: dueIn(data.nextDueAt, now, t) })
+                : t.review.everyMastered}
             </EmptyState>
           )}
 
           <Card>
             <CardHeader
-              title="Mistake notebook"
-              subtitle="Every quiz question you missed, and how close it is to mastered."
+              title={t.review.mistakeNotebook}
+              subtitle={t.review.mistakeNotebookSubtitle}
             />
             <CardBody className="flex flex-col gap-5">
               {data.notebook.map(({ course, cards }) => (
@@ -104,9 +118,11 @@ export async function ReviewPage({ user }: { user: SessionUser }) {
   );
 }
 
-function NotebookLine({ card, now }: { card: ReviewCard; now: Date }) {
+async function NotebookLine({ card, now }: { card: ReviewCard; now: Date }) {
+  const { t } = await getT();
+
   const isDue = !card.masteredAt && card.dueAt.getTime() <= now.getTime();
-  const dueLabel = formatDue(card.dueAt, now);
+  const dueLabel = dueIn(card.dueAt, now, t, t.review.relative.laterToday);
   return (
     <li className="flex flex-wrap items-center justify-between gap-3 border-t-2 border-line/15 py-3 first:border-t-0">
       <div className="min-w-0 flex-1">
@@ -121,16 +137,16 @@ function NotebookLine({ card, now }: { card: ReviewCard; now: Date }) {
       <div className="flex shrink-0 items-center gap-3">
         <ProgressBar
           value={card.masteredAt ? 100 : boxProgress(card.box)}
-          label="Progress towards mastered"
+          label={t.review.progressToMastered}
           size="sm"
           className="w-20"
         />
         {card.masteredAt ? (
-          <Badge tint="mint">Mastered</Badge>
+          <Badge tint="mint">{t.review.mastered}</Badge>
         ) : isDue ? (
-          <Badge tint="butter">Due now</Badge>
+          <Badge tint="butter">{t.review.dueNow}</Badge>
         ) : (
-          <Badge tint="paper">Back {dueLabel === 'today' ? 'later today' : dueLabel}</Badge>
+          <Badge tint="paper">{fmt(t.review.backLater, { time: dueLabel })}</Badge>
         )}
       </div>
     </li>

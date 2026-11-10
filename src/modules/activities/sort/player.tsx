@@ -4,6 +4,8 @@ import { Check, Undo2, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { ActivityPlayerProps } from '@/core/activity-types';
 import { Button, cn } from '@/components/ui';
+import { useT } from '@/i18n/client';
+import { fmt } from '@/i18n/format';
 import { ActivityFrame, ResultPanel } from '../components/activity-frame';
 import { seededShuffle, useCompletion } from '../components/use-completion';
 import type { SortConfig } from './schema';
@@ -12,6 +14,7 @@ const BUCKET_TINTS = ['bg-sky-soft', 'bg-coral-soft', 'bg-mint-soft', 'bg-lilac-
 
 // Click-to-place instead of drag-and-drop: works with keyboard, touch and screen readers.
 export function SortPlayer({ activity, config, onComplete, previousBest, preview }: ActivityPlayerProps<SortConfig>) {
+  const t = useT();
   const items = useMemo(
     () => seededShuffle(config.items.map((it, i) => ({ ...it, key: i })), activity.id),
     [config.items, activity.id],
@@ -54,14 +57,14 @@ export function SortPlayer({ activity, config, onComplete, previousBest, preview
   }
 
   return (
-    <ActivityFrame kind="Sorting game" title={activity.title} xpReward={activity.xpReward} previousBest={previousBest} preview={preview}>
+    <ActivityFrame kind={t.activities.frame.sort} title={activity.title} xpReward={activity.xpReward} previousBest={previousBest} preview={preview}>
       <div className="flex flex-col gap-4">
         <p className="font-semibold">{config.instructions}</p>
 
         {!checked ? (
           <div className="rounded-xl border-2 border-dashed border-line/40 p-3">
             <p className="mb-2 text-sm text-ink-soft">
-              {pool.length ? 'Pick a card, then press the group it belongs to.' : 'All cards placed. Check when you are ready.'}
+              {pool.length ? t.activities.sort.pickCard : t.activities.sort.allPlaced}
             </p>
             <div className="flex flex-wrap gap-2">
               {pool.map((it) => (
@@ -88,8 +91,14 @@ export function SortPlayer({ activity, config, onComplete, previousBest, preview
               <div className="flex items-center justify-between gap-2">
                 <h4 className="font-display font-bold">{bucket}</h4>
                 {!checked ? (
-                  <Button size="sm" variant="secondary" disabled={selected === null} onClick={() => place(bucket)} aria-label={`Place selected card in ${bucket}`}>
-                    Place here
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={selected === null}
+                    onClick={() => place(bucket)}
+                    aria-label={fmt(t.activities.sort.placeIn, { bucket })}
+                  >
+                    {t.activities.sort.placeHere}
                   </Button>
                 ) : null}
               </div>
@@ -108,7 +117,11 @@ export function SortPlayer({ activity, config, onComplete, previousBest, preview
                             'flex w-full items-center gap-2 rounded-lg border-2 border-line bg-paper px-2.5 py-1.5 text-left text-sm',
                             checked && (ok ? 'bg-mint' : 'bg-coral'),
                           )}
-                          aria-label={checked ? `${it.text}: ${ok ? 'correct' : `wrong, belongs in ${it.bucket}`}` : `${it.text}, press to take back`}
+                          aria-label={
+                            checked
+                              ? `${it.text}: ${ok ? t.activities.sort.correct : fmt(t.activities.sort.wrong, { bucket: it.bucket })}`
+                              : fmt(t.activities.sort.takeBack, { text: it.text })
+                          }
                         >
                           {checked ? ok ? <Check className="h-4 w-4 shrink-0" /> : <X className="h-4 w-4 shrink-0" /> : <Undo2 className="h-3.5 w-3.5 shrink-0 opacity-50" />}
                           <span>
@@ -126,14 +139,12 @@ export function SortPlayer({ activity, config, onComplete, previousBest, preview
 
         {checked ? (
           <ResultPanel score={score} outcome={outcome} submitting={submitting} error={error} preview={preview} onRetry={retry}>
-            <p className="text-ink-soft">
-              {correct} of {items.length} cards in the right place.
-            </p>
+            <p className="text-ink-soft">{fmt(t.activities.sort.scoreLine, { correct, total: items.length })}</p>
           </ResultPanel>
         ) : (
           <div className="flex justify-end">
             <Button onClick={check} disabled={pool.length > 0}>
-              Check my sorting
+              {t.activities.sort.check}
             </Button>
           </div>
         )}

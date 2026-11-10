@@ -4,8 +4,10 @@
 import { useState } from 'react';
 import { WandSparkles, FilePlus2 } from 'lucide-react';
 import { Button, Card, cn, Field, Input, Notice, PipSays, Select, Textarea } from '@/components/ui';
+import { useT } from '@/i18n/client';
 import { ACTIVITY_TYPES } from '@/registry/activities';
 import { createBlankCourse, generateCourse } from '../actions';
+import { activityTypeDescription, activityTypeLabel } from './activity-editor';
 import { useFormAction } from './use-form-action';
 
 type Mode = 'ai' | 'blank';
@@ -13,13 +15,10 @@ type Mode = 'ai' | 'blank';
 /** Types ticked by default when they exist in the registry. */
 const PREFERRED_TYPES = ['quiz', 'sort'];
 
-const LEVELS = [
-  { value: 'beginner', label: 'Beginner' },
-  { value: 'intermediate', label: 'Intermediate' },
-  { value: 'advanced', label: 'Advanced' },
-];
+const LEVELS = ['beginner', 'intermediate', 'advanced'] as const;
 
 function GenerateForm() {
+  const t = useT();
   const { state, pending, onSubmit } = useFormAction(generateCourse);
   const preferred = ACTIVITY_TYPES.filter((d) => PREFERRED_TYPES.includes(d.type)).map((d) => d.type);
   const defaults = new Set(preferred.length ? preferred : ACTIVITY_TYPES.map((d) => d.type));
@@ -27,27 +26,27 @@ function GenerateForm() {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4" aria-busy={pending}>
       {state && !state.ok ? <Notice tone="error">{state.error}</Notice> : null}
-      <Field label="Topic" htmlFor="topic" hint="One sentence is enough, e.g. “Writing user stories for a mobile app”.">
+      <Field label={t.studio.generate.topic} htmlFor="topic" hint={t.studio.generate.topicHint}>
         <Input id="topic" name="topic" required minLength={3} maxLength={200} disabled={pending} />
       </Field>
       <Field
-        label="Who are the learners?"
+        label={t.studio.generate.audienceNote}
         htmlFor="audienceNote"
-        hint="Optional. e.g. “first-year business students who have never coded”."
+        hint={t.studio.generate.audienceNoteHint}
       >
         <Input id="audienceNote" name="audienceNote" maxLength={300} disabled={pending} />
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Level" htmlFor="level">
+        <Field label={t.studio.fields.level} htmlFor="level">
           <Select id="level" name="level" defaultValue="beginner" disabled={pending}>
-            {LEVELS.map((l) => (
-              <option key={l.value} value={l.value}>
-                {l.label}
+            {LEVELS.map((level) => (
+              <option key={level} value={level}>
+                {t.studio.levels[level]}
               </option>
             ))}
           </Select>
         </Field>
-        <Field label="Number of lessons" htmlFor="lessonCount">
+        <Field label={t.studio.generate.lessonCount} htmlFor="lessonCount">
           <Select id="lessonCount" name="lessonCount" defaultValue="3" disabled={pending}>
             {[1, 2, 3, 4, 5, 6].map((n) => (
               <option key={n} value={n}>
@@ -59,11 +58,9 @@ function GenerateForm() {
       </div>
 
       <fieldset className="flex flex-col gap-2" disabled={pending}>
-        <legend className="mb-1.5 font-display text-sm font-semibold">Activity types to use</legend>
+        <legend className="mb-1.5 font-display text-sm font-semibold">{t.studio.generate.activityTypes}</legend>
         {ACTIVITY_TYPES.length === 0 ? (
-          <p className="text-sm text-ink-soft">
-            No activity types are installed yet, so the lessons will be reading only.
-          </p>
+          <p className="text-sm text-ink-soft">{t.studio.generate.noActivityTypes}</p>
         ) : (
           <div className="grid gap-2 sm:grid-cols-2">
             {ACTIVITY_TYPES.map((def) => {
@@ -82,9 +79,9 @@ function GenerateForm() {
                   />
                   <span className="min-w-0">
                     <span className="flex items-center gap-1.5 font-semibold">
-                      <Icon className="h-4 w-4" aria-hidden /> {def.label}
+                      <Icon className="h-4 w-4" aria-hidden /> {activityTypeLabel(t, def.type, def.label)}
                     </span>
-                    <span className="block text-sm text-ink-soft">{def.description}</span>
+                    <span className="block text-sm text-ink-soft">{activityTypeDescription(t, def.type, def.description)}</span>
                   </span>
                 </label>
               );
@@ -93,31 +90,27 @@ function GenerateForm() {
         )}
       </fieldset>
 
-      <Field
-        label="Teaching material"
-        htmlFor="materials"
-        hint="Optional. Paste notes, a lecture outline or an article and Pip builds the course from it."
-      >
+      <Field label={t.studio.generate.materials} htmlFor="materials" hint={t.studio.generate.materialsHint}>
         <Textarea id="materials" name="materials" rows={5} maxLength={20000} disabled={pending} />
       </Field>
       <Field
-        label="Anything else?"
+        label={t.studio.generate.requirements}
         htmlFor="requirements"
-        hint="Optional. e.g. “include a role-play with a client” or “use examples from banking”."
+        hint={t.studio.generate.requirementsHint}
       >
         <Textarea id="requirements" name="requirements" rows={2} maxLength={1000} disabled={pending} />
       </Field>
 
       {pending ? (
         <PipSays mood="think" size={64}>
-          <p className="font-display font-bold">Pip is writing your course… ~30s</p>
-          <p className="text-sm text-ink-soft">Lessons first, then the activities. Keep this tab open.</p>
+          <p className="font-display font-bold">{t.studio.generate.writingTitle}</p>
+          <p className="text-sm text-ink-soft">{t.studio.generate.writingBody}</p>
         </PipSays>
       ) : null}
       <div>
         <Button type="submit" variant="primary" disabled={pending} aria-busy={pending}>
           <WandSparkles className="h-4 w-4" aria-hidden />
-          {pending ? 'Writing your course…' : 'Generate course'}
+          {pending ? t.studio.generate.writing : t.studio.generate.submit}
         </Button>
       </div>
     </form>
@@ -125,38 +118,39 @@ function GenerateForm() {
 }
 
 function BlankForm() {
+  const t = useT();
   const { state, pending, onSubmit } = useFormAction(createBlankCourse);
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       {state && !state.ok ? <Notice tone="error">{state.error}</Notice> : null}
-      <Field label="Course title" htmlFor="title">
+      <Field label={t.studio.blank.courseTitle} htmlFor="title">
         <Input id="title" name="title" required minLength={3} maxLength={100} disabled={pending} />
       </Field>
-      <Field label="Subject" htmlFor="subject" hint="e.g. Software Engineering, History, Biology">
+      <Field label={t.studio.fields.subject} htmlFor="subject" hint={t.studio.blank.subjectHint}>
         <Input id="subject" name="subject" maxLength={60} disabled={pending} />
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Level" htmlFor="blank-level">
+        <Field label={t.studio.fields.level} htmlFor="blank-level">
           <Select id="blank-level" name="level" defaultValue="beginner" disabled={pending}>
-            {LEVELS.map((l) => (
-              <option key={l.value} value={l.value}>
-                {l.label}
+            {LEVELS.map((level) => (
+              <option key={level} value={level}>
+                {t.studio.levels[level]}
               </option>
             ))}
           </Select>
         </Field>
-        <Field label="Audience" htmlFor="audience">
+        <Field label={t.studio.fields.audience} htmlFor="audience">
           <Select id="audience" name="audience" defaultValue="everyone" disabled={pending}>
-            <option value="everyone">Everyone</option>
-            <option value="non_cs">Non-CS learners</option>
-            <option value="cs">CS students and grads</option>
+            <option value="everyone">{t.studio.audiences.everyone}</option>
+            <option value="non_cs">{t.studio.audiences.non_cs}</option>
+            <option value="cs">{t.studio.audiences.cs}</option>
           </Select>
         </Field>
       </div>
       <div>
         <Button type="submit" variant="primary" disabled={pending} aria-busy={pending}>
           <FilePlus2 className="h-4 w-4" aria-hidden />
-          {pending ? 'Creating…' : 'Create course'}
+          {pending ? t.studio.blank.creating : t.studio.blank.submit}
         </Button>
       </div>
     </form>
@@ -164,29 +158,30 @@ function BlankForm() {
 }
 
 export function NewCourseForms({ initialMode }: { initialMode: Mode }) {
+  const t = useT();
   const [mode, setMode] = useState<Mode>(initialMode);
   const tabs: { id: Mode; label: string }[] = [
-    { id: 'ai', label: 'Generate with AI' },
-    { id: 'blank', label: 'Blank course' },
+    { id: 'ai', label: t.studio.common.generateWithAi },
+    { id: 'blank', label: t.studio.newCourse.tabBlank },
   ];
   return (
     <div className="mx-auto max-w-3xl">
-      <div role="tablist" aria-label="How to start" className="mb-4 flex flex-wrap gap-2">
-        {tabs.map((t) => (
+      <div role="tablist" aria-label={t.studio.newCourse.howToStart} className="mb-4 flex flex-wrap gap-2">
+        {tabs.map((tab) => (
           <button
-            key={t.id}
-            id={`tab-${t.id}`}
+            key={tab.id}
+            id={`tab-${tab.id}`}
             type="button"
             role="tab"
-            aria-selected={mode === t.id}
-            aria-controls={`panel-${t.id}`}
-            onClick={() => setMode(t.id)}
+            aria-selected={mode === tab.id}
+            aria-controls={`panel-${tab.id}`}
+            onClick={() => setMode(tab.id)}
             className={cn(
               'rounded-pill border-2 border-line px-4 py-1.5 font-display font-semibold',
-              mode === t.id ? 'bg-butter shadow-sticker-sm' : 'bg-paper hover:bg-butter-soft',
+              mode === tab.id ? 'bg-butter shadow-sticker-sm' : 'bg-paper hover:bg-butter-soft',
             )}
           >
-            {t.label}
+            {tab.label}
           </button>
         ))}
       </div>

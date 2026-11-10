@@ -1,0 +1,240 @@
+{
+  "metadata": {
+    "overview": "管理控制台",
+    "users": "用户 · 管理控制台",
+    "courses": "课程 · 管理控制台",
+    "aiUsage": "AI 用量 · 管理控制台",
+    "modules": "模块 · 管理控制台"
+  },
+  "nav": {
+    "label": "管理后台导航",
+    "overview": "总览",
+    "users": "用户",
+    "courses": "课程",
+    "aiUsage": "AI 用量",
+    "modules": "模块"
+  },
+  "roles": {
+    "learner": "学习者",
+    "instructor": "教师",
+    "admin": "管理员"
+  },
+  "status": {
+    "draft": "草稿",
+    "pending_review": "待审核",
+    "published": "已发布",
+    "archived": "已归档"
+  },
+  "source": {
+    "seed": "种子数据",
+    "manual": "手工创建",
+    "ai": "AI（教师）",
+    "learner_ai": "AI（学习者）"
+  },
+  "visibility": {
+    "public": "公开",
+    "class": "班级",
+    "private": "私密"
+  },
+  "common": {
+    "unknown": "未知",
+    "anyStatus": "全部状态",
+    "anySource": "全部来源",
+    "anyone": "所有人"
+  },
+  "overview": {
+    "title": "管理控制台",
+    "subtitle": "随时关注用户、课程和 AI 调用的情况。",
+    "people": "用户",
+    "learners": "学习者",
+    "instructors": "教师",
+    "admins": "管理员",
+    "courses": "课程",
+    "last7Days": "最近 7 天",
+    "learningEvents": "学习事件",
+    "activePeople": "活跃用户",
+    "aiCallsToday": "今日 AI 调用",
+    "sinceMidnightUtc": "自 UTC 零点起",
+    "realAi": "真实 AI",
+    "demoMode": "演示模式",
+    "goTo": "快速前往",
+    "card": {
+      "usersTitle": "用户与角色",
+      "usersBody": "搜索用户，调整谁是学习者、教师或管理员。",
+      "coursesTitle": "课程审核",
+      "coursesPending": "{count} 门课程等待审核。可以通过或退回。",
+      "coursesClear": "没有待审核的课程。可以用筛选浏览所有课程。",
+      "aiTitle": "AI 用量",
+      "aiBody": "按功能查看调用量、真实与演示模式、Token 和耗时。",
+      "modulesTitle": "模块",
+      "modulesBody": "当前版本已安装的功能模块。"
+    }
+  },
+  "widget": {
+    "title": "平台",
+    "subtitle": "Sprout 一览",
+    "admin": "管理后台",
+    "users": "用户",
+    "events7Days": "7 天事件数",
+    "aiCallsToday": "今日 AI 调用",
+    "waitingReview": "待审核",
+    "reviewOne": "去审核 {count} 门课程",
+    "reviewMany": "去审核 {count} 门课程"
+  },
+  "users": {
+    "title": "用户与角色",
+    "subtitle": "找到某个人，调整对方在 Sprout 上能做什么。",
+    "searchLabel": "按姓名或邮箱搜索",
+    "searchPlaceholder": "按姓名或邮箱搜索",
+    "emptyTitle": "没有找到匹配的用户",
+    "emptyBody": "试试姓名的一部分，或者直接输入邮箱地址。",
+    "matchOne": "找到 {count} 位与“{query}”匹配的用户",
+    "matchMany": "找到 {count} 位与“{query}”匹配的用户",
+    "newest": "最近注册的 {count} 位用户",
+    "showingFirst": "（只显示前 {limit} 位）",
+    "never": "从未登录",
+    "roleLabel": "为 {name} 选择角色",
+    "saveRoleLabel": "保存 {name} 的角色",
+    "selfNote": "这是你自己。其他管理员可以修改你的角色。",
+    "columns": {
+      "person": "用户",
+      "joined": "注册时间",
+      "lastLogin": "最近登录",
+      "role": "角色"
+    }
+  },
+  "courses": {
+    "title": "课程",
+    "subtitle": "审核用户想发布的课程，也可以浏览其他所有课程。",
+    "reviewQueue": "审核队列",
+    "queueEmptyTitle": "队列是空的",
+    "queueEmptyBody": "目前没有等待审核的课程。",
+    "pendingMeta": "{subject} · {lessons} · 作者：{owner}",
+    "lessonsOne": "{count} 节课",
+    "lessonsMany": "{count} 节课",
+    "preview": "预览课程",
+    "allCourses": "所有课程",
+    "filters": {
+      "status": "状态",
+      "source": "来源",
+      "owner": "作者",
+      "apply": "应用筛选",
+      "clear": "清除"
+    },
+    "emptyTitle": "没有匹配的课程",
+    "emptyBody": "换个筛选条件试试。",
+    "columns": {
+      "course": "课程",
+      "status": "状态",
+      "visibility": "可见范围",
+      "source": "来源",
+      "owner": "作者",
+      "lessons": "课节数",
+      "updated": "更新时间"
+    }
+  },
+  "review": {
+    "approve": "通过",
+    "approvePending": "正在发布…",
+    "approveLabel": "通过并发布 {title}",
+    "sendBack": "退回",
+    "sendBackPending": "正在退回…",
+    "sendBackConfirm": "把 {title} 作为私密草稿退回给作者？",
+    "rejectLabel": "退回 {title}"
+  },
+  "aiUsage": {
+    "title": "AI 用量",
+    "subtitle": "每次 AI 调用都会记录功能、模型、Token 和耗时。",
+    "configured": "已设置 AI 密钥。在用户达到每日上限之前，调用会走真实服务商。",
+    "demo": "没有设置 AI 密钥，所以所有功能都会用内置的模拟回复，以演示模式运行。",
+    "allCalls": "全部调用",
+    "realVsDemo": "真实 / 演示",
+    "tokensInOut": "输入 / 输出 Token",
+    "avgLatency": "真实调用平均耗时",
+    "callsPerDay": "每日调用量",
+    "callsPerDaySubtitle": "最近 {days} 天，UTC",
+    "byFeature": "按功能",
+    "byFeatureSubtitle": "功能名遵循 module.action 格式，例如 tutor.chat",
+    "emptyTitle": "还没有 AI 调用",
+    "emptyBody": "去试试 AI 导师，或者生成一门课程，再回来看看。",
+    "latencySeconds": "{value} 秒",
+    "latencyMs": "{value} 毫秒",
+    "columns": {
+      "feature": "功能",
+      "calls": "调用次数",
+      "real": "真实",
+      "demo": "演示",
+      "tokensIn": "输入 Token",
+      "tokensOut": "输出 Token",
+      "avgLatency": "平均耗时"
+    },
+    "chart": {
+      "realAi": "真实 AI",
+      "demoMode": "演示模式（模拟）",
+      "caption": "最近 {days} 天：{real} 次真实 AI 调用，{mock} 次模拟调用。"
+    }
+  },
+  "modules": {
+    "title": "模块",
+    "subtitle": "每个功能都是一个模块，在 src/registry/modules.ts 里只需登记一次。删掉那一行，它就会消失。",
+    "empty": "没有安装任何模块",
+    "navItemsOne": "{count} 个导航项",
+    "navItemsMany": "{count} 个导航项",
+    "navItemsWithLabelsOne": "{count} 个导航项：{labels}",
+    "navItemsWithLabelsMany": "{count} 个导航项：{labels}",
+    "listSeparator": "、",
+    "widgetOne": "{count} 个首页小组件",
+    "widgetMany": "{count} 个首页小组件",
+    "addonOne": "{count} 个界面附加项",
+    "addonMany": "{count} 个界面附加项",
+    "owner": "负责人：{owner}"
+  },
+  "modulesMeta": {
+    "names": {
+      "onboarding": "入门引导与个人路径",
+      "courses": "课程目录与播放器",
+      "activities": "互动活动",
+      "self-learn": "学习任何内容",
+      "review": "错题本与间隔复习",
+      "leaderboard": "排行榜与课程竞赛",
+      "ai-tutor": "AI 导师",
+      "studio": "课程工作室",
+      "classes": "班级与参与度",
+      "scenarios": "场景练习",
+      "achievements": "徽章与成长",
+      "admin": "管理控制台"
+    },
+    "descriptions": {
+      "onboarding": "和 Pip 简短聊几句，生成学习者画像和推荐路径。",
+      "courses": "浏览迷你课程、报名，并一课一课地学习。",
+      "activities": "测验、分类游戏、步骤排序、浏览器内编程、讲解幻灯片和 AI 角色扮演。",
+      "self-learn": "学习者输入任何主题，就能得到一门由 AI 生成的专属迷你课程。",
+      "review": "收集学习者答错的测验题，并按间隔复习计划重新推送。",
+      "leaderboard": "每周与总经验值排名、班级榜单，以及公开透明的课程竞赛。",
+      "ai-tutor": "随时问 Pip，当前课程会自动作为上下文。",
+      "studio": "教师可以创建、用 AI 生成、编辑并发布迷你课程。",
+      "classes": "教师导入学生、分配课程并跟踪参与度。",
+      "scenarios": "长线练习：监督 AI 智能体、带一个小团队三周，或参加一场模拟面试。选择会延续下去。",
+      "achievements": "从事件日志推导出的徽章，再加上 Pip 的成长旅程：经验值进来，叶子长出来。数据不会重复存储。",
+      "admin": "用户与角色、课程审核队列、AI 用量和平台统计。"
+    }
+  },
+  "actions": {
+    "pickRole": "请选择学习者、教师或管理员。",
+    "cannotChangeOwnRole": "你不能修改自己的角色。请找其他管理员。",
+    "userGone": "这位用户已经不存在了。",
+    "roleChanged": "{name} 现在是{role}。",
+    "roleChangedAdmin": "{name} 现在是管理员。",
+    "roles": {
+      "learner": "学习者",
+      "instructor": "教师",
+      "admin": "管理员"
+    },
+    "thisUser": "这位用户",
+    "pickCourse": "请选择要审核的课程。",
+    "courseNotPending": "这门课程已经不在等待审核了。",
+    "thisCourse": "这门课程",
+    "approved": "{title} 已进入公开课程目录。",
+    "rejected": "{title} 已作为草稿退回给作者。"
+  }
+}

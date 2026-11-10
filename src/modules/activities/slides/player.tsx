@@ -6,18 +6,24 @@ import { ChevronLeft, ChevronRight, Pause, Play, Volume2 } from 'lucide-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { ActivityPlayerProps } from '@/core/activity-types';
 import { Button, cn, Pip } from '@/components/ui';
+import { useLocale, useT } from '@/i18n/client';
+import { fmt } from '@/i18n/format';
 import { ActivityFrame, ResultPanel } from '../components/activity-frame';
 import { useCompletion } from '../components/use-completion';
 import type { SlidesConfig } from './schema';
 
 const noopSubscribe = () => () => {};
 
-function pickVoice(): SpeechSynthesisVoice | undefined {
-  const voices = window.speechSynthesis.getVoices().filter((v) => v.lang.startsWith('en'));
-  return voices.find((v) => /natural|neural|samantha|aria|jenny|google us/i.test(v.name)) ?? voices[0];
+function pickVoice(locale: string): SpeechSynthesisVoice | undefined {
+  const prefix = locale === 'zh' ? 'zh' : 'en';
+  const voices = window.speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().startsWith(prefix));
+  const preferred = locale === 'zh' ? /natural|neural|ting|mei|xiaoxiao|google 普通话/i : /natural|neural|samantha|aria|jenny|google us/i;
+  return voices.find((v) => preferred.test(v.name)) ?? voices[0];
 }
 
 export function SlidesPlayer({ activity, config, onComplete, previousBest, preview }: ActivityPlayerProps<SlidesConfig>) {
+  const t = useT();
+  const locale = useLocale();
   const [index, setIndex] = useState(0);
   const [speaking, setSpeaking] = useState(false);
   const [autoplay, setAutoplay] = useState(false);
@@ -57,7 +63,8 @@ export function SlidesPlayer({ activity, config, onComplete, previousBest, previ
     const synth = window.speechSynthesis;
     synth.cancel();
     const u = new SpeechSynthesisUtterance(config.slides[i]!.narration);
-    const voice = pickVoice();
+    u.lang = locale === 'zh' ? 'zh-CN' : 'en-US';
+    const voice = pickVoice(locale);
     if (voice) u.voice = voice;
     u.rate = 1.02;
     u.pitch = 1.1;
@@ -97,7 +104,7 @@ export function SlidesPlayer({ activity, config, onComplete, previousBest, previ
   if (finished) {
     const score = Math.round((seen.size / config.slides.length) * 100);
     return (
-      <ActivityFrame kind="Narrated slides" title={activity.title} xpReward={activity.xpReward} previousBest={previousBest} preview={preview}>
+      <ActivityFrame kind={t.activities.frame.slides} title={activity.title} xpReward={activity.xpReward} previousBest={previousBest} preview={preview}>
         <ResultPanel
           score={score}
           outcome={outcome}
@@ -115,11 +122,11 @@ export function SlidesPlayer({ activity, config, onComplete, previousBest, previ
   }
 
   return (
-    <ActivityFrame kind="Narrated slides" title={activity.title} xpReward={activity.xpReward} previousBest={previousBest} preview={preview} tint="lilac">
+    <ActivityFrame kind={t.activities.frame.slides} title={activity.title} xpReward={activity.xpReward} previousBest={previousBest} preview={preview} tint="lilac">
       <div className="flex flex-col gap-4">
         <div className="relative min-h-64 rounded-blob border-2 border-line bg-paper p-6 shadow-sticker-sm sm:p-8">
           <div className="mb-1 text-xs font-bold text-ink-soft">
-            Slide {index + 1} of {config.slides.length}
+            {fmt(t.activities.slides.slideOf, { current: index + 1, total: config.slides.length })}
           </div>
           <h4 className="text-2xl font-bold sm:text-3xl">{slide.heading}</h4>
           {slide.bullets.length ? (
@@ -138,25 +145,25 @@ export function SlidesPlayer({ activity, config, onComplete, previousBest, previ
           <Pip mood={speaking ? 'cheer' : 'happy'} size={56} className={cn(speaking && 'animate-wiggle')} />
           <div className="flex-1 rounded-xl border-2 border-line bg-butter-soft px-3 py-2 text-sm" aria-live="polite">
             <span className="mb-0.5 flex items-center gap-1 text-xs font-bold text-ink-soft">
-              <Volume2 className="h-3 w-3" /> Captions
+              <Volume2 className="h-3 w-3" /> {t.activities.slides.captions}
             </span>
             {slide.narration}
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={() => go(index - 1)} disabled={index === 0} aria-label="Previous slide">
+          <Button variant="secondary" size="sm" onClick={() => go(index - 1)} disabled={index === 0} aria-label={t.activities.slides.previous}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           {canSpeak ? (
             <Button variant="mint" size="sm" onClick={togglePlay}>
               {speaking ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              {speaking ? 'Pause' : 'Play narration'}
+              {speaking ? t.activities.slides.pause : t.activities.slides.play}
             </Button>
           ) : (
-            <span className="text-sm text-ink-soft">Your browser cannot read aloud; captions are shown instead.</span>
+            <span className="text-sm text-ink-soft">{t.activities.slides.noSpeech}</span>
           )}
-          <Button variant="secondary" size="sm" onClick={() => go(index + 1)} disabled={last} aria-label="Next slide">
+          <Button variant="secondary" size="sm" onClick={() => go(index + 1)} disabled={last} aria-label={t.activities.slides.next}>
             <ChevronRight className="h-4 w-4" />
           </Button>
           <div className="mx-2 flex gap-1" aria-hidden>
@@ -166,7 +173,7 @@ export function SlidesPlayer({ activity, config, onComplete, previousBest, previ
           </div>
           {last ? (
             <Button className="ml-auto" size="sm" onClick={finish}>
-              Finish slides
+              {t.activities.slides.finish}
             </Button>
           ) : null}
         </div>

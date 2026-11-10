@@ -11,6 +11,8 @@ import {
 import { canViewCourse, getCourseBySlug, getCourseOutline, listVisibleCourses } from '@/core/content/queries';
 import { getCourseProgress } from '@/core/progress/service';
 import type { SessionUser } from '@/core/types';
+import { getLocale } from '@/i18n';
+import { localizeContent } from '@/i18n/content';
 
 export type CourseCardData = Course & {
   progress: { done: number; total: number; percent: number } | null;
@@ -18,6 +20,7 @@ export type CourseCardData = Course & {
 };
 
 export async function getCatalog(user: SessionUser) {
+  const locale = await getLocale();
   const db = await getDb();
   const all = await listVisibleCourses(user);
   const visible = all.filter((c) => c.status === 'published' || c.ownerId === user.id);
@@ -29,7 +32,7 @@ export async function getCatalog(user: SessionUser) {
   ]);
   const enrolled = new Set(enrolledRows.map((r) => r.courseId));
   const cards: CourseCardData[] = visible.map((c) => ({
-    ...c,
+    ...localizeContent(c, locale),
     progress: progress.get(c.id) ?? null,
     enrolled: enrolled.has(c.id),
   }));
@@ -37,10 +40,12 @@ export async function getCatalog(user: SessionUser) {
 }
 
 export async function getCoursePageData(user: SessionUser, slug: string) {
+  const locale = await getLocale();
   const course = await getCourseBySlug(slug);
   if (!course || !(await canViewCourse(user, course))) return null;
-  const outline = await getCourseOutline(course.id);
-  if (!outline) return null;
+  const rawOutline = await getCourseOutline(course.id);
+  if (!rawOutline) return null;
+  const outline = localizeContent(rawOutline, locale);
   const db = await getDb();
   const [done, attempts, [enrollment]] = await Promise.all([
     db
@@ -65,6 +70,7 @@ export async function getCoursePageData(user: SessionUser, slug: string) {
 
 /** Most recent unfinished enrolled course and the next lesson in it. */
 export async function getContinueTarget(userId: string) {
+  const locale = await getLocale();
   const db = await getDb();
   const rows = await db
     .select({ courseId: enrollments.courseId })
@@ -73,8 +79,9 @@ export async function getContinueTarget(userId: string) {
     .orderBy(desc(enrollments.enrolledAt))
     .limit(5);
   for (const { courseId } of rows) {
-    const outline = await getCourseOutline(courseId);
-    if (!outline || outline.lessons.length === 0) continue;
+    const rawOutline = await getCourseOutline(courseId);
+    if (!rawOutline || rawOutline.lessons.length === 0) continue;
+    const outline = localizeContent(rawOutline, locale);
     const done = await db
       .select({ lessonId: lessonCompletions.lessonId })
       .from(lessonCompletions)

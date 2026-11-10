@@ -1,0 +1,95 @@
+{
+  "title": "排行榜",
+  "subtitle": "所有人的进度，都公开在这里。经验值来自互动活动、完成的课节和完成的课程。",
+  "everyone": "所有人",
+  "scopesAria": "和谁比较",
+  "rankingsAria": "排名",
+  "views": {
+    "xp": "经验值排行",
+    "race": "课程竞赛"
+  },
+  "periods": {
+    "week": "本周",
+    "month": "本月",
+    "all": "全部时间"
+  },
+  "instructor": {
+    "setting": "教师设置：",
+    "visible": "「{scope}」的排行榜目前对学生可见。",
+    "hidden": "「{scope}」的排行榜目前对学生隐藏。",
+    "hide": "对学生隐藏",
+    "show": "对学生显示"
+  },
+  "pausedTitle": "老师暂停了这个排行榜",
+  "pausedBody": "你仍然可以查看「{everyone}」排行榜，自己的进度可以在首页看到。",
+  "emptyBoardTitle": "这个排行榜上还没有人",
+  "emptyBoardBody": "完成一个活动，就能让自己出现在这里。",
+  "hiddenNotice": "你现在对其他人是隐藏的，可以在下面修改。",
+  "live": "实时",
+  "liveUpdated": " · {time} 更新",
+  "movement": {
+    "noChange": "没有变化",
+    "up": "上升 {value}",
+    "down": "下降 {value}"
+  },
+  "podium": {
+    "topThree": "前三名"
+  },
+  "rows": {
+    "nameYou": "{name}（你）",
+    "streakTitle": "连续学习 {count} 天"
+  },
+  "chase": {
+    "periodLabel": "你的排名 · {period} · {scope}",
+    "withXp": "共 {xp} 经验值",
+    "xpChunk": "再得 {xp} 经验值",
+    "toPass": "，就能超过 ",
+    "aboutOne": "，大约再做 {count} 个活动。",
+    "aboutMany": "，大约再做 {count} 个活动。",
+    "inLead": "你现在排在最前面，Pip 很佩服。",
+    "tied": "{name} 和你并列。",
+    "behindXp": "{name} 落后你 {xp} 经验值。"
+  },
+  "highlights": {
+    "climb": "进步最大",
+    "streak": "连续学习最久",
+    "activities": "活动最多",
+    "days": "{count} 天",
+    "done": "完成 {count} 个"
+  },
+  "race": {
+    "pickCourseAria": "选一门课程",
+    "racing": "{count} 人在赛道上",
+    "lessons": "{done}/{total} 节课",
+    "emptyTitle": "还没有可以竞赛的课程",
+    "emptyBody": "等班级分配了课程，赛道就会从这里开始。",
+    "nobodyTitle": "还没有人开始这门课",
+    "nobodyBody": "来做第一个上赛道的人。"
+  },
+  "widget": {
+    "fullBoard": "完整榜单",
+    "xpToPass": "再得 {xp} 经验值就能超过",
+    "oneActivity": "，一次认真的活动就够了。",
+    "topOfBoard": "你本周排在榜首。🌳"
+  },
+  "privacy": {
+    "title": "你想怎么出现",
+    "subtitle": "怎么展示自己由你决定，这样比一比也更有意思。老师始终能看到真实姓名。",
+    "displayMode": "展示方式",
+    "nameLabel": "名字 + 姓氏首字母",
+    "nameNote": "例如「Mia W.」",
+    "nicknameLabel": "用昵称",
+    "nicknameNote": "只有你和老师知道这是你",
+    "hiddenLabel": "隐藏我",
+    "hiddenNote": "你仍然能看到自己的排名，别人看不到你",
+    "nicknameField": "昵称",
+    "nicknamePlaceholder": "例如 BugHunter"
+  },
+  "errors": {
+    "tooLong": "昵称请控制在 24 个字符以内。",
+    "chars": "只能使用字母、数字、空格和 - _ .",
+    "pickNickname": "请先填一个昵称。",
+    "generic": "请检查一下表单。"
+  },
+  "saved": "已保存。同学们马上就能看到变化。"
+}

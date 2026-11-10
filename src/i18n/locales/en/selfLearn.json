@@ -1,0 +1,37 @@
+{
+  "title": "Learn anything",
+  "subtitle": "Type a topic. Pip writes a short course just for you, with quick activities to check you got it.",
+  "curiousAbout": "What are you curious about, {name}?",
+  "anythingGoes": "Cooking chemistry, tax basics, a programming language. Anything goes.",
+  "yourOwnCourses": "Your own courses",
+  "nothingHereYet": "Nothing here yet",
+  "coursesShowHere": "Courses Pip makes for you show up here. Only you can see them.",
+  "lessonCountOne": "{count} lesson",
+  "lessonCountMany": "{count} lessons",
+  "form": {
+    "topicLabel": "What do you want to learn?",
+    "topicPlaceholder": "e.g. How the stock market works",
+    "exampleTopics": "Example topics",
+    "examples": [
+      "How the stock market works",
+      "Basics of photography",
+      "Git for beginners",
+      "Ancient Rome in 5 lessons",
+      "How vaccines train your immune system",
+      "Writing a clear cover letter"
+    ],
+    "whyLabel": "Why do you want to learn this?",
+    "whyHint": "Optional. Pip picks examples that fit.",
+    "whyPlaceholder": "e.g. I start an internship at a bank next month",
+    "levelLabel": "Your level",
+    "levelBeginner": "New to it",
+    "levelIntermediate": "Know the basics",
+    "levelAdvanced": "Fairly confident",
+    "writingTitle": "Pip is writing your course… ~30s",
+    "writingNote": "Short lessons plus a few activities. You will land on it when it is ready.",
+    "makeCourse": "Make my course",
+    "writingButton": "Writing your course…",
+    "remaining": "{remaining} of {limit} new courses left today.",
+    "limitReached": "That is {limit} courses today. Pip can make more tomorrow."
+  }
+}

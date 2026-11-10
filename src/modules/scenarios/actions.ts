@@ -8,6 +8,9 @@ import { getDb } from '@/core/db/client';
 import { recordEvent } from '@/core/events';
 import { newId } from '@/core/ids';
 import type { ActionResult } from '@/core/types';
+import { getT } from '@/i18n';
+import { byLocale } from '@/i18n/ai';
+import { localizeContent } from '@/i18n/content';
 import { INTERVIEW_TYPES, interviewType } from './content/interview';
 import {
   analyseAnswer,
@@ -97,10 +100,12 @@ async function awardIfFinished(userId: string, key: string, state: AnyState): Pr
     finished = state.view === 'ending';
     if (finished) score = sprintScore(state);
   } else if (state.interview) {
-    const type = interviewType(state.interview.typeId);
+    const { locale } = await getT();
+    const rawType = interviewType(state.interview.typeId);
+    const type = rawType ? localizeContent(rawType, locale) : null;
     if (type) {
       finished = state.interview.questionIndex >= pickQuestions(type).length;
-      if (finished) score = Math.round(buildInterviewReport(type, state.interview.answers).overall * 20);
+      if (finished) score = Math.round(buildInterviewReport(type, state.interview.answers, locale).overall * 20);
     }
   }
   if (!finished) return state;
@@ -267,9 +272,10 @@ export async function startInterviewRun(
   input: z.infer<typeof interviewStartSchema>,
 ): Promise<ActionResult> {
   const user = await requireUser();
+  const { locale } = await getT();
   const { typeId } = interviewStartSchema.parse(input);
   const type = INTERVIEW_TYPES.find((t) => t.id === typeId);
-  if (!type) return { ok: false, error: 'Unknown interview type.' };
+  if (!type) return { ok: false, error: byLocale(locale, 'Unknown interview type.', '未知的面试类型。') };
 
   const key = `interview:${typeId}`;
   await saveState(user.id, key, startInterview(typeId), { status: 'active' });
@@ -285,17 +291,23 @@ const answerSchema = z.object({
 
 export async function answerInterview(input: z.infer<typeof answerSchema>): Promise<ActionResult> {
   const user = await requireUser();
+  const { locale } = await getT();
   const data = answerSchema.parse(input);
-  const type = interviewType(data.typeId);
-  if (!type) return { ok: false, error: 'Unknown interview type.' };
+  const rawType = interviewType(data.typeId);
+  const type = rawType ? localizeContent(rawType, locale) : undefined;
+  if (!type) return { ok: false, error: byLocale(locale, 'Unknown interview type.', '未知的面试类型。') };
 
   const key = `interview:${data.typeId}`;
   const state = await loadState<InterviewRunState>(user.id, key);
-  if (!state?.interview) return { ok: false, error: 'Start the interview first.' };
+  if (!state?.interview) {
+    return { ok: false, error: byLocale(locale, 'Start the interview first.', '请先开始面试。') };
+  }
 
   const questions = pickQuestions(type);
   const question = questions[state.interview.questionIndex];
-  if (!question) return { ok: false, error: 'That was the last question.' };
+  if (!question) {
+    return { ok: false, error: byLocale(locale, 'That was the last question.', '刚才已经是最后一道题了。') };
+  }
 
   const signals = analyseAnswer(data.answer);
   const score = scoreAnswer(signals, data.hintsUsed);
@@ -303,7 +315,7 @@ export async function answerInterview(input: z.infer<typeof answerSchema>): Prom
   // One follow-up per question, then move on. Without this cap a learner who keeps
   // answering without an example stays on the same question indefinitely.
   const probes = state.interview.probes ?? 0;
-  const move = probes >= 1 ? { kind: 'advance' as const, label: '' } : nextMove(signals);
+  const move = probes >= 1 ? { kind: 'advance' as const, label: '' } : nextMove(signals, locale);
   const advanceNow = move.kind === 'advance';
 
   const next = {
@@ -335,17 +347,23 @@ const skipSchema = z.object({ typeId: z.string().min(1).max(64) });
 
 export async function skipInterviewQuestion(input: z.infer<typeof skipSchema>): Promise<ActionResult> {
   const user = await requireUser();
+  const { locale } = await getT();
   const { typeId } = skipSchema.parse(input);
-  const type = interviewType(typeId);
-  if (!type) return { ok: false, error: 'Unknown interview type.' };
+  const rawType = interviewType(typeId);
+  const type = rawType ? localizeContent(rawType, locale) : undefined;
+  if (!type) return { ok: false, error: byLocale(locale, 'Unknown interview type.', '未知的面试类型。') };
 
   const key = `interview:${typeId}`;
   const state = await loadState<InterviewRunState>(user.id, key);
-  if (!state?.interview) return { ok: false, error: 'Start the interview first.' };
+  if (!state?.interview) {
+    return { ok: false, error: byLocale(locale, 'Start the interview first.', '请先开始面试。') };
+  }
 
   const questions = pickQuestions(type);
   const question = questions[state.interview.questionIndex];
-  if (!question) return { ok: false, error: 'That was the last question.' };
+  if (!question) {
+    return { ok: false, error: byLocale(locale, 'That was the last question.', '刚才已经是最后一道题了。') };
+  }
 
   const next = {
     ...state,

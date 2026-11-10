@@ -6,10 +6,18 @@ import { courses, learnerProfiles } from '@/core/db/schema';
 import { getCourseProgress } from '@/core/progress/service';
 import type { HomeWidgetProps } from '@/core/types';
 import { asTint, Badge, buttonClasses, Card, cn, Pip, TINT_SOLID } from '@/components/ui';
-
-const TRACK_LABEL = { explorer: 'Explorer track · ideas first', builder: 'Builder track · hands-on first' } as const;
+import { getT } from '@/i18n';
+import { fmt } from '@/i18n/format';
+import { localizeContent } from '@/i18n/content';
 
 export async function OnboardingWidget({ user }: HomeWidgetProps) {
+  const { locale, t } = await getT();
+
+  const TRACK_LABEL = {
+    explorer: t.onboarding.widget.explorerTrack,
+    builder: t.onboarding.widget.builderTrack,
+  } as const;
+
   const db = await getDb();
   const [profile] = await db.select().from(learnerProfiles).where(eq(learnerProfiles.userId, user.id)).limit(1);
 
@@ -18,24 +26,26 @@ export async function OnboardingWidget({ user }: HomeWidgetProps) {
       <Card tint="mint" className="flex flex-col items-center gap-4 p-6 text-center sm:flex-row sm:text-left">
         <Pip mood="wow" size={88} float />
         <div className="flex-1">
-          <h2 className="text-2xl font-bold">Let Pip plan your path</h2>
-          <p className="mt-1 text-ink-soft">Five quick questions (about a minute) and you get courses that fit your background and goals.</p>
+          <h2 className="text-2xl font-bold">{t.onboarding.widget.letPipPlan}</h2>
+          <p className="mt-1 text-ink-soft">{t.onboarding.widget.fiveQuestions}</p>
         </div>
         <Link href="/onboarding" className={buttonClasses('primary', 'lg')}>
-          <Compass className="h-5 w-5" /> Start
+          <Compass className="h-5 w-5" /> {t.onboarding.widget.start}
         </Link>
       </Card>
     );
   }
 
   const ids = profile.recommendedCourseIds;
-  const rows = ids.length
+  const rawRows = ids.length
     ? await db
         .select({ id: courses.id, slug: courses.slug, title: courses.title, emoji: courses.emoji, color: courses.color })
         .from(courses)
         .where(inArray(courses.id, ids))
     : [];
+  const rows = localizeContent(rawRows, locale);
   const path = ids.map((id) => rows.find((r) => r.id === id)).filter((r): r is NonNullable<typeof r> => Boolean(r));
+  const welcomeNote = profile.welcomeNote ? localizeContent(profile.welcomeNote, locale) : null;
   const progress = await getCourseProgress(user.id, ids);
   const nextIndex = path.findIndex((c) => (progress.get(c.id)?.percent ?? 0) < 100);
 
@@ -43,16 +53,16 @@ export async function OnboardingWidget({ user }: HomeWidgetProps) {
     <Card className="p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold">Your path</h2>
+          <h2 className="text-xl font-bold">{t.onboarding.widget.yourPath}</h2>
           <Badge tint="mint" className="mt-1">
             {TRACK_LABEL[profile.track]}
           </Badge>
         </div>
         <Link href="/onboarding" className={buttonClasses('ghost', 'sm')}>
-          <RefreshCw className="h-4 w-4" /> Retake
+          <RefreshCw className="h-4 w-4" /> {t.onboarding.widget.retake}
         </Link>
       </div>
-      {profile.welcomeNote ? <p className="mt-3 max-w-3xl text-ink-soft">{profile.welcomeNote}</p> : null}
+      {welcomeNote ? <p className="mt-3 max-w-3xl text-ink-soft">{welcomeNote}</p> : null}
 
       <ol className="mt-5 flex flex-col gap-3 md:flex-row md:items-stretch">
         {path.map((c, i) => {
@@ -60,6 +70,10 @@ export async function OnboardingWidget({ user }: HomeWidgetProps) {
           const done = pct === 100;
           const isNext = i === nextIndex;
           const tint = asTint(c.color);
+          const status = isNext ? t.onboarding.widget.upNext : done ? t.onboarding.widget.done : null;
+          const stepLabel = status
+            ? `${fmt(t.onboarding.widget.step, { current: i + 1 })} · ${status}`
+            : fmt(t.onboarding.widget.step, { current: i + 1 });
           return (
             <li key={c.id} className="flex flex-1 items-center gap-3 md:flex-col md:items-stretch">
               <Link
@@ -73,7 +87,7 @@ export async function OnboardingWidget({ user }: HomeWidgetProps) {
                   {done ? <Check className="h-6 w-6" /> : c.emoji}
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-xs font-bold text-ink-soft">Step {i + 1}{isNext ? ' · up next' : done ? ' · done' : ''}</span>
+                  <span className="block text-xs font-bold text-ink-soft">{stepLabel}</span>
                   <span className="block font-display leading-tight font-semibold">{c.title}</span>
                   <span className="text-xs text-ink-soft">{pct}%</span>
                 </span>

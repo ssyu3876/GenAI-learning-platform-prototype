@@ -1,0 +1,37 @@
+{
+  "title": "学习任何内容",
+  "subtitle": "输入一个主题，Pip 会为你写一门短课程，还有小活动帮你确认自己真的学会了。",
+  "curiousAbout": "{name}，你对什么感到好奇？",
+  "anythingGoes": "烹饪里的化学、报税基础、一门编程语言，什么都可以。",
+  "yourOwnCourses": "你自己的课程",
+  "nothingHereYet": "这里还没有内容",
+  "coursesShowHere": "Pip 为你做的课程会出现在这里，只有你能看到。",
+  "lessonCountOne": "{count} 节课",
+  "lessonCountMany": "{count} 节课",
+  "form": {
+    "topicLabel": "你想学什么？",
+    "topicPlaceholder": "例如：股票市场是怎么运作的",
+    "exampleTopics": "示例主题",
+    "examples": [
+      "股票市场是怎么运作的",
+      "摄影入门",
+      "Git 入门",
+      "五节课了解古罗马",
+      "疫苗如何训练你的免疫系统",
+      "写一封清楚的求职信"
+    ],
+    "whyLabel": "你为什么想学这个？",
+    "whyHint": "选填。Pip 会挑选合适的例子。",
+    "whyPlaceholder": "例如：我下个月要去银行实习",
+    "levelLabel": "你的水平",
+    "levelBeginner": "完全新手",
+    "levelIntermediate": "懂一些基础",
+    "levelAdvanced": "比较有把握",
+    "writingTitle": "Pip 正在为你写课程…约 30 秒",
+    "writingNote": "几节短课加上几个活动。写好后会自动带你过去。",
+    "makeCourse": "为我做课程",
+    "writingButton": "正在写你的课程…",
+    "remaining": "今天还能生成 {remaining} 门新课程（共 {limit} 门）。",
+    "limitReached": "今天已经做了 {limit} 门课程，Pip 明天还能继续。"
+  }
+}

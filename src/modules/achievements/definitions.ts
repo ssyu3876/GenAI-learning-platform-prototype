@@ -1,5 +1,7 @@
 // Badge catalogue. Nothing is stored: a badge is a predicate over one snapshot of the
 // learner's numbers, so it can never drift out of sync with the events table.
+// Display copy (names, descriptions, group labels) lives in the i18n dictionaries and is
+// looked up by `id` at render time; only ids and logic stay here.
 import {
   Award,
   BookOpen,
@@ -20,8 +22,12 @@ import {
 } from 'lucide-react';
 import type { IconComponent } from '@/core/types';
 import type { Tint } from '@/components/ui';
+import type { Translations } from '@/i18n';
 
 export type BadgeGroup = 'learning' | 'practice' | 'consistency';
+
+/** Every badge needs a key in the `achievements.badges` dictionary. */
+export type BadgeId = keyof Translations['achievements']['badges'];
 
 export interface BadgeSnapshot {
   totalXp: number;
@@ -39,9 +45,7 @@ export interface BadgeSnapshot {
 }
 
 export interface BadgeDef {
-  id: string;
-  name: string;
-  description: string;
+  id: BadgeId;
   group: BadgeGroup;
   icon: IconComponent;
   tint: Tint;
@@ -54,8 +58,6 @@ export const BADGES: BadgeDef[] = [
   // ---- learning ----
   {
     id: 'first-activity',
-    name: 'First answer',
-    description: 'Finish one activity in any lesson.',
     group: 'learning',
     icon: Star,
     tint: 'mint',
@@ -64,8 +66,6 @@ export const BADGES: BadgeDef[] = [
   },
   {
     id: 'ten-activities',
-    name: 'Getting warm',
-    description: 'Finish ten activities.',
     group: 'learning',
     icon: Target,
     tint: 'mint',
@@ -74,8 +74,6 @@ export const BADGES: BadgeDef[] = [
   },
   {
     id: 'twenty-five-activities',
-    name: 'Steady',
-    description: 'Finish twenty-five activities.',
     group: 'learning',
     icon: CheckCheck,
     tint: 'sky',
@@ -84,8 +82,6 @@ export const BADGES: BadgeDef[] = [
   },
   {
     id: 'perfect-one',
-    name: 'Perfect run',
-    description: 'Score 100 on any activity.',
     group: 'learning',
     icon: Sparkles,
     tint: 'butter',
@@ -94,8 +90,6 @@ export const BADGES: BadgeDef[] = [
   },
   {
     id: 'perfect-five',
-    name: 'Five clean',
-    description: 'Score 100 on five different activities.',
     group: 'learning',
     icon: Medal,
     tint: 'butter',
@@ -104,8 +98,6 @@ export const BADGES: BadgeDef[] = [
   },
   {
     id: 'first-lesson',
-    name: 'First lesson',
-    description: 'Complete a lesson.',
     group: 'learning',
     icon: BookOpen,
     tint: 'mint',
@@ -114,8 +106,6 @@ export const BADGES: BadgeDef[] = [
   },
   {
     id: 'ten-lessons',
-    name: 'Ten lessons',
-    description: 'Complete ten lessons.',
     group: 'learning',
     icon: BookOpen,
     tint: 'sky',
@@ -124,8 +114,6 @@ export const BADGES: BadgeDef[] = [
   },
   {
     id: 'first-course',
-    name: 'One course down',
-    description: 'Finish a whole course.',
     group: 'learning',
     icon: Trophy,
     tint: 'coral',
@@ -134,8 +122,6 @@ export const BADGES: BadgeDef[] = [
   },
   {
     id: 'three-courses',
-    name: 'Three courses',
-    description: 'Finish three courses.',
     group: 'learning',
     icon: Trophy,
     tint: 'coral',
@@ -146,8 +132,6 @@ export const BADGES: BadgeDef[] = [
   // ---- practice ----
   {
     id: 'first-scenario',
-    name: 'Played through',
-    description: 'Finish any scenario.',
     group: 'practice',
     icon: Compass,
     tint: 'lilac',
@@ -156,8 +140,6 @@ export const BADGES: BadgeDef[] = [
   },
   {
     id: 'both-long',
-    name: 'Both long ones',
-    description: 'Finish Ship It and Sprint Zero.',
     group: 'practice',
     icon: Award,
     tint: 'lilac',
@@ -166,8 +148,6 @@ export const BADGES: BadgeDef[] = [
   },
   {
     id: 'clean-release',
-    name: 'Clean release',
-    description: 'Score 80 or more in Ship It.',
     group: 'practice',
     icon: Ship,
     tint: 'coral',
@@ -176,8 +156,6 @@ export const BADGES: BadgeDef[] = [
   },
   {
     id: 'still-standing',
-    name: 'Still standing',
-    description: 'Score 80 or more in Sprint Zero.',
     group: 'practice',
     icon: Users,
     tint: 'sky',
@@ -186,8 +164,6 @@ export const BADGES: BadgeDef[] = [
   },
   {
     id: 'interviewed',
-    name: 'In the chair',
-    description: 'Finish one practice interview.',
     group: 'practice',
     icon: MessageSquare,
     tint: 'lilac',
@@ -196,8 +172,6 @@ export const BADGES: BadgeDef[] = [
   },
   {
     id: 'all-formats',
-    name: 'Every format',
-    description: 'Finish all seven interview types.',
     group: 'practice',
     icon: Brain,
     tint: 'lilac',
@@ -208,8 +182,6 @@ export const BADGES: BadgeDef[] = [
   // ---- consistency ----
   {
     id: 'streak-3',
-    name: 'Three days',
-    description: 'Learn three days in a row.',
     group: 'consistency',
     icon: Flame,
     tint: 'coral',
@@ -218,8 +190,6 @@ export const BADGES: BadgeDef[] = [
   },
   {
     id: 'streak-7',
-    name: 'A full week',
-    description: 'Learn seven days in a row.',
     group: 'consistency',
     icon: Flame,
     tint: 'coral',
@@ -228,8 +198,6 @@ export const BADGES: BadgeDef[] = [
   },
   {
     id: 'stage-3',
-    name: 'Young tree',
-    description: 'Grow Pip to stage 3.',
     group: 'consistency',
     icon: Leaf,
     tint: 'mint',
@@ -238,8 +206,6 @@ export const BADGES: BadgeDef[] = [
   },
   {
     id: 'stage-4',
-    name: 'Grove',
-    description: 'Grow Pip to the last stage.',
     group: 'consistency',
     icon: Timer,
     tint: 'mint',
@@ -247,11 +213,5 @@ export const BADGES: BadgeDef[] = [
     earned: (s) => s.totalXp >= 2100,
   },
 ];
-
-export const GROUP_LABEL: Record<BadgeGroup, string> = {
-  learning: 'Learning',
-  practice: 'Practice',
-  consistency: 'Showing up',
-};
 
 export const GROUP_ORDER: BadgeGroup[] = ['learning', 'practice', 'consistency'];

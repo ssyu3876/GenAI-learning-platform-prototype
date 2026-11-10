@@ -2,47 +2,54 @@
 import Link from 'next/link';
 import { ArrowRight, BookOpen, Bot, Boxes, Users } from 'lucide-react';
 import { Card, CardBody, CardHeader, PageHeader, Stat } from '@/components/ui';
+import { fmt, getT } from '@/i18n';
 import { AdminNav } from '../components/admin-nav';
 import { getAdminOverview } from '../queries';
 
-const STATUS_LABEL = { draft: 'Draft', pending_review: 'Waiting review', published: 'Published', archived: 'Archived' } as const;
+const STATUSES = ['draft', 'pending_review', 'published', 'archived'] as const;
 
 export async function AdminOverviewPage() {
+  const { t } = await getT();
   const o = await getAdminOverview();
   const links = [
-    { href: '/admin/users', icon: Users, title: 'Users and roles', body: 'Search people and change who is a learner, instructor or admin.' },
+    {
+      href: '/admin/users',
+      icon: Users,
+      title: t.admin.overview.card.usersTitle,
+      body: t.admin.overview.card.usersBody,
+    },
     {
       href: '/admin/courses',
       icon: BookOpen,
-      title: 'Course review',
+      title: t.admin.overview.card.coursesTitle,
       body: o.coursesByStatus.pending_review
-        ? `${o.coursesByStatus.pending_review} waiting for review. Approve or send back.`
-        : 'Nothing waiting. Browse every course with filters.',
+        ? fmt(t.admin.overview.card.coursesPending, { count: o.coursesByStatus.pending_review })
+        : t.admin.overview.card.coursesClear,
     },
-    { href: '/admin/ai-usage', icon: Bot, title: 'AI usage', body: 'Calls per feature, real vs demo mode, tokens and speed.' },
-    { href: '/admin/modules', icon: Boxes, title: 'Modules', body: 'Feature modules installed in this build.' },
+    { href: '/admin/ai-usage', icon: Bot, title: t.admin.overview.card.aiTitle, body: t.admin.overview.card.aiBody },
+    { href: '/admin/modules', icon: Boxes, title: t.admin.overview.card.modulesTitle, body: t.admin.overview.card.modulesBody },
   ];
 
   return (
     <div>
-      <PageHeader title="Admin console" subtitle="Keep an eye on people, courses and AI calls." />
+      <PageHeader title={t.admin.overview.title} subtitle={t.admin.overview.subtitle} />
       <AdminNav current="/admin" />
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader title="People" />
+          <CardHeader title={t.admin.overview.people} />
           <CardBody className="grid grid-cols-3 gap-2">
-            <Stat label="Learners" value={o.usersByRole.learner} tint="mint" />
-            <Stat label="Instructors" value={o.usersByRole.instructor} tint="sky" />
-            <Stat label="Admins" value={o.usersByRole.admin} tint="lilac" />
+            <Stat label={t.admin.overview.learners} value={o.usersByRole.learner} tint="mint" />
+            <Stat label={t.admin.overview.instructors} value={o.usersByRole.instructor} tint="sky" />
+            <Stat label={t.admin.overview.admins} value={o.usersByRole.admin} tint="lilac" />
           </CardBody>
         </Card>
         <Card>
-          <CardHeader title="Courses" />
+          <CardHeader title={t.admin.overview.courses} />
           <CardBody className="grid grid-cols-2 gap-2">
-            {(Object.keys(STATUS_LABEL) as (keyof typeof STATUS_LABEL)[]).map((s) => (
+            {STATUSES.map((s) => (
               <Stat
                 key={s}
-                label={STATUS_LABEL[s]}
+                label={t.admin.status[s]}
                 value={o.coursesByStatus[s]}
                 tint={s === 'pending_review' && o.coursesByStatus[s] > 0 ? 'butter' : 'paper'}
               />
@@ -50,22 +57,22 @@ export async function AdminOverviewPage() {
           </CardBody>
         </Card>
         <Card>
-          <CardHeader title="Last 7 days" />
+          <CardHeader title={t.admin.overview.last7Days} />
           <CardBody className="grid grid-cols-2 gap-2">
-            <Stat label="Learning events" value={o.eventsLast7Days} tint="mint" />
-            <Stat label="Active people" value={o.activeLearners7Days} />
+            <Stat label={t.admin.overview.learningEvents} value={o.eventsLast7Days} tint="mint" />
+            <Stat label={t.admin.overview.activePeople} value={o.activeLearners7Days} />
           </CardBody>
         </Card>
         <Card>
-          <CardHeader title="AI calls today" subtitle="Since midnight UTC" />
+          <CardHeader title={t.admin.overview.aiCallsToday} subtitle={t.admin.overview.sinceMidnightUtc} />
           <CardBody className="grid grid-cols-2 gap-2">
-            <Stat label="Real AI" value={o.aiToday.real} tint="lilac" />
-            <Stat label="Demo mode" value={o.aiToday.mock} tint="butter" />
+            <Stat label={t.admin.overview.realAi} value={o.aiToday.real} tint="lilac" />
+            <Stat label={t.admin.overview.demoMode} value={o.aiToday.mock} tint="butter" />
           </CardBody>
         </Card>
       </div>
 
-      <h2 className="mt-8 mb-3 text-xl font-bold">Go to</h2>
+      <h2 className="mt-8 mb-3 text-xl font-bold">{t.admin.overview.goTo}</h2>
       <ul className="grid gap-4 sm:grid-cols-2">
         {links.map(({ href, icon: Icon, title, body }) => (
           <li key={href}>

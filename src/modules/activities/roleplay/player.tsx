@@ -6,6 +6,8 @@ import { MessagesSquare, Send, Square, Target } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ActivityPlayerProps } from '@/core/activity-types';
 import { Avatar, Badge, Button, cn, Notice, Pip, ProgressBar, Textarea } from '@/components/ui';
+import { useT } from '@/i18n/client';
+import { fmt } from '@/i18n/format';
 import { ActivityFrame, ResultPanel } from '../components/activity-frame';
 import { useCompletion } from '../components/use-completion';
 import { scoreRoleplay } from './actions';
@@ -14,6 +16,7 @@ import type { RoleplayConfig, RoleplayFeedback, RoleplayMessage } from './schema
 type Stage = 'intro' | 'chat' | 'scoring' | 'done';
 
 export function RoleplayPlayer({ activity, config, onComplete, previousBest, preview }: ActivityPlayerProps<RoleplayConfig>) {
+  const t = useT();
   const [stage, setStage] = useState<Stage>('intro');
   const [messages, setMessages] = useState<RoleplayMessage[]>([]);
   const [draft, setDraft] = useState('');
@@ -68,7 +71,7 @@ export function RoleplayPlayer({ activity, config, onComplete, previousBest, pre
       if (!reply.trim()) setMessages([...next, { role: 'persona', content: '…' }]);
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
-        setChatError(`${config.persona} did not answer. Try sending again.`);
+        setChatError(fmt(t.activities.roleplay.noAnswer, { persona: config.persona }));
         setMessages(next);
       }
     } finally {
@@ -85,7 +88,7 @@ export function RoleplayPlayer({ activity, config, onComplete, previousBest, pre
       setStage('done');
       void submit({ score: fb.overall, detail: { feedback: fb, turns: learnerTurns } });
     } catch {
-      setChatError('Scoring failed. You can try ending the conversation again.');
+      setChatError(t.activities.roleplay.scoringFailed);
       setStage('chat');
     }
   }
@@ -98,13 +101,13 @@ export function RoleplayPlayer({ activity, config, onComplete, previousBest, pre
   }
 
   return (
-    <ActivityFrame kind="Role-play" title={activity.title} xpReward={activity.xpReward} previousBest={previousBest} preview={preview} tint="lilac">
+    <ActivityFrame kind={t.activities.frame.roleplay} title={activity.title} xpReward={activity.xpReward} previousBest={previousBest} preview={preview} tint="lilac">
       {stage === 'intro' ? (
         <div className="flex flex-col gap-4">
           <p className="text-lg">{config.scenario}</p>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border-2 border-line bg-paper p-3">
-              <div className="text-xs font-bold text-ink-soft uppercase">You are talking to</div>
+              <div className="text-xs font-bold text-ink-soft uppercase">{t.activities.roleplay.talkingTo}</div>
               <div className="mt-1 flex items-center gap-2">
                 <Avatar seed={config.persona} name={config.persona} size={36} />
                 <div>
@@ -114,14 +117,14 @@ export function RoleplayPlayer({ activity, config, onComplete, previousBest, pre
               </div>
             </div>
             <div className="rounded-xl border-2 border-line bg-paper p-3">
-              <div className="text-xs font-bold text-ink-soft uppercase">You play</div>
+              <div className="text-xs font-bold text-ink-soft uppercase">{t.activities.roleplay.youPlay}</div>
               <div className="mt-1 font-display font-bold">{config.learnerRole}</div>
-              <div className="text-sm text-ink-soft">Up to {config.maxTurns} messages</div>
+              <div className="text-sm text-ink-soft">{fmt(t.activities.roleplay.upToMessages, { count: config.maxTurns })}</div>
             </div>
           </div>
           <div className="rounded-xl border-2 border-line bg-butter-soft p-3">
             <div className="mb-1 flex items-center gap-1.5 font-display font-bold">
-              <Target className="h-4 w-4" /> Your goals
+              <Target className="h-4 w-4" /> {t.activities.roleplay.goals}
             </div>
             <ul className="list-disc pl-5">
               {config.goals.map((g) => (
@@ -129,12 +132,12 @@ export function RoleplayPlayer({ activity, config, onComplete, previousBest, pre
               ))}
             </ul>
             <p className="mt-2 text-sm text-ink-soft">
-              You will be scored on: {config.rubric.map((r) => r.criterion).join(', ')}.
+              {fmt(t.activities.roleplay.scoredOn, { criteria: config.rubric.map((r) => r.criterion).join('、') })}
             </p>
           </div>
           <div>
             <Button onClick={start}>
-              <MessagesSquare className="h-4 w-4" /> Start the conversation
+              <MessagesSquare className="h-4 w-4" /> {t.activities.roleplay.start}
             </Button>
           </div>
         </div>
@@ -144,9 +147,9 @@ export function RoleplayPlayer({ activity, config, onComplete, previousBest, pre
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3 text-sm">
             <span className="font-semibold text-ink-soft">
-              {learnerTurns}/{config.maxTurns} messages
+              {fmt(t.activities.roleplay.messagesCount, { used: learnerTurns, max: config.maxTurns })}
             </span>
-            <ProgressBar value={(learnerTurns / config.maxTurns) * 100} label="Conversation length" size="sm" tint="lilac" className="flex-1" />
+            <ProgressBar value={(learnerTurns / config.maxTurns) * 100} label={t.activities.roleplay.conversationLength} size="sm" tint="lilac" className="flex-1" />
           </div>
           <div ref={listRef} className="flex max-h-[26rem] min-h-56 flex-col gap-3 overflow-y-auto rounded-xl border-2 border-line bg-paper p-3" aria-live="polite">
             {messages.map((m, i) => (
@@ -158,8 +161,8 @@ export function RoleplayPlayer({ activity, config, onComplete, previousBest, pre
                     m.role === 'persona' ? 'rounded-bl-sm bg-lilac-soft' : 'rounded-br-sm bg-butter-soft',
                   )}
                 >
-                  <div className="text-xs font-bold text-ink-soft">{m.role === 'persona' ? config.persona : 'You'}</div>
-                  {m.content || <span className="animate-pulse">typing…</span>}
+                  <div className="text-xs font-bold text-ink-soft">{m.role === 'persona' ? config.persona : t.activities.roleplay.you}</div>
+                  {m.content || <span className="animate-pulse">{t.activities.roleplay.typing}</span>}
                 </div>
               </div>
             ))}
@@ -168,7 +171,7 @@ export function RoleplayPlayer({ activity, config, onComplete, previousBest, pre
           {stage === 'scoring' ? (
             <div className="flex items-center gap-3">
               <Pip mood="think" size={48} className="animate-wiggle" />
-              <span className="font-semibold">Pip is reviewing your conversation…</span>
+              <span className="font-semibold">{t.activities.roleplay.reviewing}</span>
             </div>
           ) : (
             <form
@@ -179,7 +182,7 @@ export function RoleplayPlayer({ activity, config, onComplete, previousBest, pre
               className="flex flex-col gap-2 sm:flex-row sm:items-end"
             >
               <label htmlFor={`rp-${activity.id}`} className="sr-only">
-                Your message
+                {t.activities.roleplay.yourMessage}
               </label>
               <Textarea
                 id={`rp-${activity.id}`}
@@ -191,17 +194,17 @@ export function RoleplayPlayer({ activity, config, onComplete, previousBest, pre
                     void send();
                   }
                 }}
-                placeholder={outOfTurns ? 'That is all your messages. End the conversation to get feedback.' : `Reply to ${config.persona}…`}
+                placeholder={outOfTurns ? t.activities.roleplay.outOfTurns : fmt(t.activities.roleplay.replyTo, { persona: config.persona })}
                 disabled={outOfTurns || streaming}
                 className="min-h-14 flex-1"
                 rows={2}
               />
               <div className="flex gap-2">
                 <Button type="submit" variant="mint" disabled={!draft.trim() || streaming || outOfTurns}>
-                  <Send className="h-4 w-4" /> Send
+                  <Send className="h-4 w-4" /> {t.activities.roleplay.send}
                 </Button>
                 <Button variant={outOfTurns ? 'primary' : 'secondary'} onClick={finish} disabled={learnerTurns === 0 || streaming}>
-                  <Square className="h-4 w-4" /> End & get feedback
+                  <Square className="h-4 w-4" /> {t.activities.roleplay.endAndFeedback}
                 </Button>
               </div>
             </form>
@@ -225,16 +228,16 @@ export function RoleplayPlayer({ activity, config, onComplete, previousBest, pre
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border-2 border-line bg-mint-soft p-3">
-              <div className="font-display font-bold">What went well</div>
+              <div className="font-display font-bold">{t.activities.roleplay.whatWentWell}</div>
               <ul className="mt-1 list-disc pl-5 text-sm">{feedback.strengths.map((s) => <li key={s}>{s}</li>)}</ul>
             </div>
             <div className="rounded-xl border-2 border-line bg-coral-soft p-3">
-              <div className="font-display font-bold">Try next time</div>
+              <div className="font-display font-bold">{t.activities.roleplay.tryNextTime}</div>
               <ul className="mt-1 list-disc pl-5 text-sm">{feedback.improve.map((s) => <li key={s}>{s}</li>)}</ul>
             </div>
           </div>
           <p className="rounded-xl border-2 border-dashed border-line/50 p-3 text-sm">
-            <strong>Pip&apos;s tip:</strong> {feedback.tip}
+            <strong>{t.activities.roleplay.pipTip}</strong> {feedback.tip}
           </p>
         </ResultPanel>
       ) : null}

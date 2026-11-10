@@ -7,6 +7,7 @@ import { getDb } from '@/core/db/client';
 import { learnerProfiles, users } from '@/core/db/schema';
 import { newId, randomString } from '@/core/ids';
 import type { ActionResult } from '@/core/types';
+import { getT } from '@/i18n';
 import { hashPassword, verifyPassword } from './password';
 import { createSession, destroySession } from './session';
 
@@ -16,12 +17,13 @@ const loginSchema = z.object({
 });
 
 export async function login(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const { t } = await getT();
   const parsed = loginSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, error: 'Enter your email and password.' };
+  if (!parsed.success) return { ok: false, error: t.chrome.auth.loginMissing };
   const db = await getDb();
   const [user] = await db.select().from(users).where(eq(users.email, parsed.data.email)).limit(1);
   if (!user || !(await verifyPassword(parsed.data.password, user.passwordHash))) {
-    return { ok: false, error: 'That email and password do not match.' };
+    return { ok: false, error: t.chrome.auth.invalidCredentials };
   }
   await db.update(users).set({ lastActiveAt: new Date() }).where(eq(users.id, user.id));
   await createSession(user.id);
@@ -37,15 +39,24 @@ const signupSchema = z.object({
 });
 
 export async function signup(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const { t } = await getT();
+  const fieldMessage: Record<string, string> = {
+    name: t.chrome.auth.nameRequired,
+    email: t.chrome.auth.emailInvalid,
+    password: t.chrome.auth.passwordShort,
+  };
   const parsed = signupSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     const fieldErrors: Record<string, string> = {};
-    for (const issue of parsed.error.issues) fieldErrors[String(issue.path[0])] ??= issue.message;
-    return { ok: false, error: 'Please fix the highlighted fields.', fieldErrors };
+    for (const issue of parsed.error.issues) {
+      const field = String(issue.path[0]);
+      fieldErrors[field] ??= fieldMessage[field] ?? t.chrome.auth.fixFields;
+    }
+    return { ok: false, error: t.chrome.auth.fixFields, fieldErrors };
   }
   const db = await getDb();
   const [taken] = await db.select({ id: users.id }).from(users).where(eq(users.email, parsed.data.email)).limit(1);
-  if (taken) return { ok: false, error: 'An account with that email already exists.', fieldErrors: { email: 'Already registered' } };
+  if (taken) return { ok: false, error: t.chrome.auth.emailTaken, fieldErrors: { email: t.chrome.auth.emailRegistered } };
   const id = newId('user');
   await db.insert(users).values({
     id,

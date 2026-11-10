@@ -1,0 +1,78 @@
+{
+  "title": "课程",
+  "subtitle": "简短的迷你课程。每节课大约 10 分钟，结尾都有一个可以马上动手的练习。",
+  "learnSomethingElse": "学点别的",
+  "pickedForYou": "为你挑选",
+  "startHere": "从这里开始",
+  "recommended": "推荐",
+  "madeByYou": "你创建的",
+  "allCourses": "所有课程",
+  "all": "全部",
+  "filterBySubject": "按主题筛选",
+  "noCourses": "这里还没有课程",
+  "noCoursesHint": "换个主题看看，或者让 Pip 为你做一门。",
+  "card": {
+    "beginner": "入门",
+    "intermediate": "进阶",
+    "advanced": "高级",
+    "forEveryone": "适合所有人",
+    "noCodingNeeded": "无需编程",
+    "forCS": "适合计算机专业",
+    "completed": "已完成",
+    "inProgress": "进行中",
+    "progressLabel": "{title} 的进度"
+  },
+  "page": {
+    "allCourses": "所有课程",
+    "lessons": "节课",
+    "lessonsTitle": "课程内容",
+    "upNext": "接下来",
+    "about": "约",
+    "min": "分钟",
+    "complete": "已完成",
+    "continue": "继续学习",
+    "startCourse": "开始课程",
+    "review": "复习",
+    "opening": "正在打开…",
+    "courseProgress": "课程进度",
+    "status": {
+      "draft": "草稿",
+      "pending_review": "待审核",
+      "published": "已发布",
+      "archived": "已归档"
+    },
+    "done": "完成"
+  },
+  "lesson": {
+    "lessonOf": "第 {current} 课，共 {total} 课",
+    "courseProgress": "课程进度",
+    "minutes": "{minutes} 分钟",
+    "done": "已完成",
+    "yourTurn": "轮到你了",
+    "activities": "互动活动",
+    "readThis": "我已读完（+10 经验值）",
+    "saving": "保存中…",
+    "previous": "上一课",
+    "nextLesson": "下一课",
+    "doneCourse": "完成课程",
+    "navigation": "课程导航"
+  },
+  "continue": {
+    "title": "继续学习",
+    "nothingInProgress": "没有进行中的课程",
+    "pickCourse": "挑一门课程",
+    "hint": "开始任何课程后，它都会出现在这里。",
+    "lessonOf": "第 {current} 课，共 {total} 课",
+    "button": "继续",
+    "progressLabel": "课程进度"
+  },
+  "adapt": {
+    "prompt": "还是没看懂？让 Pip 来",
+    "simpler": "讲得更简单些",
+    "example": "讲个真实的故事",
+    "technical": "讲得更技术一些",
+    "rewriting": "正在为你改写这一课…",
+    "error": "Pip 现在没法改写这一课，请稍后再试。",
+    "close": "关闭改写版本"
+  }
+}

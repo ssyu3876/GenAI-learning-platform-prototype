@@ -5,17 +5,21 @@ import { useActionState, useRef } from 'react';
 import { login } from '@/core/auth/actions';
 import { Card, Field, Input, Notice } from '@/components/ui';
 import { SubmitButton } from '@/components/ui/submit-button';
+import { useT } from '@/i18n/client';
+import { fmt } from '@/i18n/format';
 
-// Prototype only: shared demo accounts created by `npm run db:seed`.
-const DEMO_ACCOUNTS = [
-  { label: 'Learner (Mia)', email: 'learner@demo.dev' },
-  { label: 'New learner (Alex)', email: 'new@demo.dev' },
-  { label: 'Instructor (Dr. Chan)', email: 'instructor@demo.dev' },
-  { label: 'Admin', email: 'admin@demo.dev' },
-];
 const DEMO_PASSWORD = 'sprout123';
 
 export function LoginForm() {
+  const t = useT();
+
+  // Prototype only: shared demo accounts created by `npm run db:seed`.
+  const DEMO_ACCOUNTS = [
+    { label: t.chrome.auth.demoLearner, email: 'learner@demo.dev' },
+    { label: t.chrome.auth.demoNewLearner, email: 'new@demo.dev' },
+    { label: t.chrome.auth.demoInstructor, email: 'instructor@demo.dev' },
+    { label: t.chrome.auth.demoAdmin, email: 'admin@demo.dev' },
+  ];
   const [state, action] = useActionState(login, null);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -29,23 +33,23 @@ export function LoginForm() {
 
   return (
     <Card className="p-6">
-      <h1 className="text-2xl font-bold">Welcome back</h1>
-      <p className="mt-1 text-ink-soft">Pip kept your seat warm.</p>
+      <h1 className="text-2xl font-bold">{t.chrome.auth.welcomeBack}</h1>
+      <p className="mt-1 text-ink-soft">{t.chrome.auth.pipKeptSeat}</p>
       <form ref={formRef} action={action} className="mt-5 flex flex-col gap-4">
         {state && !state.ok ? <Notice tone="error">{state.error}</Notice> : null}
-        <Field label="Email" htmlFor="email">
+        <Field label={t.chrome.auth.email} htmlFor="email">
           <Input id="email" name="email" type="email" autoComplete="email" required />
         </Field>
-        <Field label="Password" htmlFor="password">
+        <Field label={t.chrome.auth.password} htmlFor="password">
           <Input id="password" name="password" type="password" autoComplete="current-password" required />
         </Field>
-        <SubmitButton pendingText="Logging in…" className="mt-1">
-          Log in
+        <SubmitButton pendingText={t.chrome.auth.loggingIn} className="mt-1">
+          {t.chrome.landing.login}
         </SubmitButton>
       </form>
 
       <div className="mt-6 rounded-xl border-2 border-dashed border-line/40 p-3">
-        <p className="text-sm font-semibold">Demo accounts (password {DEMO_PASSWORD})</p>
+        <p className="text-sm font-semibold">{fmt(t.chrome.auth.demoAccounts, { password: DEMO_PASSWORD })}</p>
         <div className="mt-2 flex flex-wrap gap-2">
           {DEMO_ACCOUNTS.map((a) => (
             <button
@@ -61,9 +65,9 @@ export function LoginForm() {
       </div>
 
       <p className="mt-5 text-center text-sm text-ink-soft">
-        New here?{' '}
+        {t.chrome.auth.newHere}{' '}
         <Link href="/signup" className="font-semibold text-coral-deep underline underline-offset-2">
-          Create an account
+          {t.chrome.auth.createAccount}
         </Link>
       </p>
     </Card>

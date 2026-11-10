@@ -1,0 +1,133 @@
+{
+  "types": {
+    "slides": "Narrated slides",
+    "sequence": "Put in order",
+    "sort": "Sorting game",
+    "quiz": "Quiz",
+    "roleplay": "AI role-play",
+    "coding": "Coding challenge",
+    "codingExercise": "Coding exercise",
+    "reading": "Reading material"
+  },
+  "descriptions": {
+    "slides": "A short slide deck that Pip reads aloud, with captions.",
+    "sequence": "Learners reorder shuffled steps (e.g. the phases of a sprint).",
+    "sort": "Learners drop cards into the right group (e.g. \"give to AI\" vs \"do it yourself\").",
+    "quiz": "Multiple-choice questions with an explanation after each answer.",
+    "roleplay": "Chat with an AI character (client, interviewer, teammate) and get scored on a rubric.",
+    "coding": "Write or fix a small JavaScript function; tests run in the browser.",
+    "codingExercise": "Write or fix a small JavaScript function; tests run in the browser.",
+    "reading": "Read the lesson, then mark it as done."
+  },
+  "frame": {
+    "preview": "Preview",
+    "best": "Best",
+    "xp": "{xp} XP",
+    "quiz": "Quiz",
+    "sort": "Sorting game",
+    "sequence": "Put in order",
+    "slides": "Narrated slides",
+    "roleplay": "Role-play",
+    "coding": "Coding",
+    "unknownType": "Unknown activity type “{type}”. Is its module registered?",
+    "invalidSetup": "This {type} has an invalid setup. An instructor needs to fix it in the studio."
+  },
+  "result": {
+    "perfect": "Perfect. Pip is doing a little dance.",
+    "solid": "Really solid work.",
+    "mainIdea": "Nice, you got the main idea.",
+    "gettingThere": "Getting there. One more go?",
+    "tryAgain": "Tricky one. Have another look and try again.",
+    "saving": "Saving your result…",
+    "preview": "Preview mode: nothing is saved.",
+    "noNewXp": "No new XP (beat your best to earn more)",
+    "levelUp": "Level up! You are now a {levelName}",
+    "lessonComplete": "Lesson complete",
+    "courseComplete": "Course complete 🎉",
+    "tryAgainButton": "Try again",
+    "saveFailed": "Could not save your result. Check your connection and try again."
+  },
+  "quiz": {
+    "questionOf": "Question {current} / {total}",
+    "progress": "Quiz progress",
+    "answerOptions": "Answer options",
+    "correct": "Correct!",
+    "notQuite": "Not quite.",
+    "nextQuestion": "Next question",
+    "seeResult": "See my result",
+    "checkAnswer": "Check answer",
+    "scoreLine": "{correct} of {total} correct."
+  },
+  "sort": {
+    "pickCard": "Pick a card, then press the group it belongs to.",
+    "allPlaced": "All cards placed. Check when you are ready.",
+    "placeHere": "Place here",
+    "placeIn": "Place selected card in {bucket}",
+    "check": "Check my sorting",
+    "scoreLine": "{correct} of {total} cards in the right place.",
+    "correct": "correct",
+    "wrong": "wrong, belongs in {bucket}",
+    "takeBack": "{text}, press to take back"
+  },
+  "sequence": {
+    "steps": "Steps",
+    "correctPosition": "Correct position",
+    "shouldBe": "should be #{position}",
+    "moveUp": "Move “{text}” up",
+    "moveDown": "Move “{text}” down",
+    "check": "Check my order",
+    "scoreLine": "{correct} of {total} steps in the right spot."
+  },
+  "slides": {
+    "slideOf": "Slide {current} of {total}",
+    "captions": "Captions",
+    "previous": "Previous slide",
+    "next": "Next slide",
+    "pause": "Pause",
+    "play": "Play narration",
+    "noSpeech": "Your browser cannot read aloud; captions are shown instead.",
+    "finish": "Finish slides",
+    "narration": "Narration"
+  },
+  "roleplay": {
+    "talkingTo": "You are talking to",
+    "youPlay": "You play",
+    "upToMessages": "Up to {count} messages",
+    "goals": "Your goals",
+    "scoredOn": "You will be scored on: {criteria}.",
+    "start": "Start the conversation",
+    "messagesCount": "{used}/{max} messages",
+    "conversationLength": "Conversation length",
+    "you": "You",
+    "typing": "typing…",
+    "reviewing": "Pip is reviewing your conversation…",
+    "yourMessage": "Your message",
+    "outOfTurns": "That is all your messages. End the conversation to get feedback.",
+    "replyTo": "Reply to {persona}…",
+    "send": "Send",
+    "endAndFeedback": "End & get feedback",
+    "noAnswer": "{persona} did not answer. Try sending again.",
+    "scoringFailed": "Scoring failed. You can try ending the conversation again.",
+    "whatWentWell": "What went well",
+    "tryNextTime": "Try next time",
+    "pipTip": "Pip's tip:"
+  },
+  "coding": {
+    "reset": "Reset code",
+    "editorLabel": "Code editor",
+    "runTests": "Run tests",
+    "running": "Running…",
+    "askHint": "Ask Pip for a hint",
+    "pipThinking": "Pip is thinking…",
+    "submit": "Submit ({passed}/{total})",
+    "testResults": "Test results",
+    "passed": "passed",
+    "failed": "failed",
+    "expected": "expected {expected}, got {actual}",
+    "error": "error: {error}",
+    "scoreLine": "{passed} of {total} tests passing."
+  },
+  "completion": {
+    "saveFailed": "Could not save your result. Check your connection and try again."
+  }
+}

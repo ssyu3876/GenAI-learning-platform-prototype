@@ -1,0 +1,110 @@
+{
+  "title": "Plan my path",
+  "widget": {
+    "letPipPlan": "Let Pip plan your path",
+    "fiveQuestions": "Five quick questions (about a minute) and you get courses that fit your background and goals.",
+    "start": "Start",
+    "yourPath": "Your path",
+    "retake": "Retake",
+    "explorerTrack": "Explorer track · ideas first",
+    "builderTrack": "Builder track · hands-on first",
+    "step": "Step {current}",
+    "upNext": "up next",
+    "done": "done"
+  },
+  "flow": {
+    "questionProgress": "Question {current} of {total}",
+    "planting": "Pip is planting your path…",
+    "skipForNow": "Skip for now",
+    "saveError": "Something went wrong saving your answers. Try once more?",
+    "questions": {
+      "background": {
+        "greeting": "Hi {name}! I am Pip. First things first: what are you studying, or what did you study?",
+        "options": {
+          "outsideComputing": {
+            "label": "Something outside computing",
+            "note": "Business, design, arts, science…"
+          },
+          "csStudent": {
+            "label": "Computer science (still studying)",
+            "note": "Or a related degree"
+          },
+          "csGraduate": {
+            "label": "Computer science (graduated)",
+            "note": "Getting ready for a tech job"
+          },
+          "somethingElse": {
+            "label": "Something else",
+            "note": "Working, switching careers, curious"
+          }
+        }
+      },
+      "codingLevel": {
+        "question": "How much have you coded before? No wrong answers here.",
+        "options": {
+          "never": {
+            "label": "Never",
+            "note": "Code looks like magic spells"
+          },
+          "aLittle": {
+            "label": "A little",
+            "note": "A tutorial or a class or two"
+          },
+          "someProjects": {
+            "label": "Some projects",
+            "note": "I can build small things"
+          },
+          "regularly": {
+            "label": "Regularly",
+            "note": "I code most weeks"
+          }
+        }
+      },
+      "goal": {
+        "question": "What would make Sprout worth your time?",
+        "options": {
+          "understand": {
+            "label": "Understand how software is made",
+            "note": "So I can work with tech teams"
+          },
+          "career": {
+            "label": "Get ready for a tech job",
+            "note": "Interviews, teamwork, real workflows"
+          },
+          "build": {
+            "label": "Build my own idea",
+            "note": "From idea to something that works"
+          },
+          "aiSkills": {
+            "label": "Work better with AI coding tools",
+            "note": "Without letting them drive"
+          }
+        }
+      },
+      "interests": {
+        "question": "Anything that sounds fun? Pick up to three.",
+        "options": {
+          "ai-agents": "AI coding agents",
+          "teamwork": "Teamwork & communication",
+          "interview": "Job interviews",
+          "requirements": "Working out what to build",
+          "testing": "Testing & quality",
+          "product": "Product thinking"
+        }
+      },
+      "style": {
+        "question": "Last one. How do you like to learn?",
+        "options": {
+          "concepts": {
+            "label": "Big picture first",
+            "note": "Explain the idea, then let me try"
+          },
+          "handsOn": {
+            "label": "Let me poke at it",
+            "note": "Give me something to do straight away"
+          }
+        }
+      }
+    }
+  }
+}

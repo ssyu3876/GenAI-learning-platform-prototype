@@ -2,25 +2,30 @@ import Link from 'next/link';
 import { ArrowRight, Leaf } from 'lucide-react';
 import type { HomeWidgetProps } from '@/core/types';
 import { Badge, buttonClasses, Card, CardBody, CardHeader, Pip, ProgressBar } from '@/components/ui';
+import { getT } from '@/i18n';
+import { fmt } from '@/i18n/format';
 import { getBadgeHighlights, growthProgress } from '../queries';
 
-const STAGE_NAME = ['Seed', 'Sprout', 'Seedling', 'Young tree', 'Grove'];
+const STAGE_LEVELS = ['Seed', 'Sprout', 'Seedling', 'Young Tree', 'Grove'] as const;
 
 /** Home widget: how Pip is doing, plus the two badges within reach. */
 export async function GrowthWidget({ user }: HomeWidgetProps) {
+  const { t } = await getT();
+
   const { next, earnedCount, total, snapshot } = await getBadgeHighlights(user.id);
   const growth = growthProgress(snapshot);
-  const nextName = STAGE_NAME[growth.stage + 1];
+  const nextLevel = STAGE_LEVELS[growth.stage + 1];
+  const nextName = nextLevel ? t.chrome.levels[nextLevel] : undefined;
   const remaining = growth.to ? Math.max(0, growth.to - snapshot.totalXp) : 0;
 
   return (
     <Card tint="mint" className="h-full">
       <CardHeader
-        title="Your sprout"
-        subtitle={`${snapshot.totalXp} XP · ${earnedCount} of ${total} badges`}
+        title={t.achievements.widget.title}
+        subtitle={fmt(t.achievements.widget.subtitle, { xp: snapshot.totalXp, earned: earnedCount, total })}
         action={
           <Link href="/badges" className={buttonClasses('ghost', 'sm')}>
-            Badges <ArrowRight className="h-4 w-4" aria-hidden />
+            {t.achievements.widget.badgesLink} <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
         }
       />
@@ -31,21 +36,23 @@ export async function GrowthWidget({ user }: HomeWidgetProps) {
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="font-display text-lg font-bold">{STAGE_NAME[growth.stage]}</span>
+              <span className="font-display text-lg font-bold">{t.chrome.levels[STAGE_LEVELS[growth.stage]]}</span>
               {nextName ? (
-                <span className="text-xs font-semibold text-ink-soft">{remaining} XP to {nextName}</span>
+                <span className="text-xs font-semibold text-ink-soft">
+                  {fmt(t.achievements.remainingToNext, { xp: remaining, next: nextName })}
+                </span>
               ) : (
-                <span className="text-xs font-semibold text-ink-soft">fully grown</span>
+                <span className="text-xs font-semibold text-ink-soft">{t.achievements.widget.fullyGrown}</span>
               )}
             </div>
             <div className="mt-1.5">
-              <ProgressBar value={growth.percent} label="Growth progress" size="sm" />
+              <ProgressBar value={growth.percent} label={t.achievements.widget.growthProgress} size="sm" />
             </div>
             <p className="mt-1.5 text-xs text-ink-soft">
               <Leaf className="mr-1 inline h-3 w-3" aria-hidden />
               {nextName
-                ? `A new leaf appears at ${growth.to} XP.`
-                : 'Every leaf is out. Nicely done.'}
+                ? fmt(t.achievements.widget.newLeaf, { xp: growth.to ?? 0 })
+                : t.achievements.widget.allLeaves}
             </p>
           </div>
         </div>
@@ -53,11 +60,12 @@ export async function GrowthWidget({ user }: HomeWidgetProps) {
         {next.length > 0 ? (
           <div>
             <div className="mb-2 text-xs font-semibold tracking-wide text-ink-soft uppercase">
-              Within reach
+              {t.achievements.widget.withinReach}
             </div>
             <ul className="flex flex-col gap-2">
               {next.map((b) => {
                 const Icon = b.def.icon;
+                const name = t.achievements.badges[b.def.id].name;
                 return (
                   <li
                     key={b.def.id}
@@ -65,9 +73,9 @@ export async function GrowthWidget({ user }: HomeWidgetProps) {
                   >
                     <Icon className="h-4 w-4 shrink-0" aria-hidden />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold">{b.def.name}</span>
+                      <span className="block truncate text-sm font-semibold">{name}</span>
                       <span className="mt-1 block">
-                        <ProgressBar value={b.percent} label={`${b.def.name} progress`} size="sm" tint="butter" />
+                        <ProgressBar value={b.percent} label={fmt(t.achievements.badgeProgress, { name })} size="sm" tint="butter" />
                       </span>
                     </span>
                     <Badge tint="butter" className="shrink-0">

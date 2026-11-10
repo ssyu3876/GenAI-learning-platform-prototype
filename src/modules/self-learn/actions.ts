@@ -9,6 +9,8 @@ import { generateCourseDraft, saveCourseDraft } from '@/core/content/draft';
 import { EVENT_TYPES, recordEvent } from '@/core/events';
 import { enrollInCourse } from '@/core/progress/service';
 import type { ActionResult } from '@/core/types';
+import { getT } from '@/i18n';
+import { byLocale } from '@/i18n/ai';
 import { ACTIVITY_TYPES, activitySpecs } from '@/registry/activities';
 import { buildAudienceNote, lessonCountFromTopic, pickLearnerTypes } from './audience';
 import { countCoursesGeneratedToday, DAILY_COURSE_LIMIT, getAudienceProfile } from './queries';
@@ -30,13 +32,27 @@ const schema = z.object({
 
 export async function generateLearnerCourse(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await requireUser(['learner']);
+  const { locale } = await getT();
   const parsed = schema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? 'Tell Pip a topic.' };
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: byLocale(
+        locale,
+        parsed.error.issues[0]?.message ?? 'Tell Pip a topic.',
+        '请告诉 Pip 你想学什么（至少 3 个字符，最多 200 个字符）。',
+      ),
+    };
+  }
 
   if ((await countCoursesGeneratedToday(user.id)) >= DAILY_COURSE_LIMIT) {
     return {
       ok: false,
-      error: `Pip has made ${DAILY_COURSE_LIMIT} courses for you today and needs a rest. Try again tomorrow, or finish one of your courses below.`,
+      error: byLocale(
+        locale,
+        `Pip has made ${DAILY_COURSE_LIMIT} courses for you today and needs a rest. Try again tomorrow, or finish one of your courses below.`,
+        `Pip 今天已经为你做了 ${DAILY_COURSE_LIMIT} 门课程，需要休息一下。明天再来，或者先把下面已有的课程学完吧。`,
+      ),
     };
   }
 
@@ -50,6 +66,7 @@ export async function generateLearnerCourse(_prev: ActionResult | null, formData
     specs: activitySpecs(types),
     feature: 'self_learn.generate_course',
     userId: user.id,
+    locale,
   });
   const saved = await saveCourseDraft(draft, {
     ownerId: user.id,

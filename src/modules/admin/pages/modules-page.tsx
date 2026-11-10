@@ -2,6 +2,8 @@
 // module never imports the registry.
 import { Boxes } from 'lucide-react';
 import { Badge, Card, EmptyState, PageHeader } from '@/components/ui';
+import { fmt, getT, plural } from '@/i18n';
+import { navLabelForText } from '@/i18n/nav';
 import { AdminNav } from '../components/admin-nav';
 
 export interface ModuleInfo {
@@ -14,19 +16,22 @@ export interface ModuleInfo {
   addonCount: number;
 }
 
-export function AdminModulesPage({ modules }: { modules: ModuleInfo[] }) {
+export async function AdminModulesPage({ modules }: { modules: ModuleInfo[] }) {
+  const { t } = await getT();
   return (
     <div>
-      <PageHeader
-        title="Modules"
-        subtitle="Each feature is a module listed once in src/registry/modules.ts. Remove the line and it disappears."
-      />
+      <PageHeader title={t.admin.modules.title} subtitle={t.admin.modules.subtitle} />
       <AdminNav current="/admin/modules" />
       {modules.length === 0 ? (
-        <EmptyState title="No modules installed" />
+        <EmptyState title={t.admin.modules.empty} />
       ) : (
         <ul className="grid gap-4 md:grid-cols-2">
-          {modules.map((m) => (
+          {modules.map((m) => {
+            const name = t.admin.modulesMeta.names[m.id as keyof typeof t.admin.modulesMeta.names] ?? m.name;
+            const description =
+              t.admin.modulesMeta.descriptions[m.id as keyof typeof t.admin.modulesMeta.descriptions] ?? m.description;
+            const labels = m.navLabels.map((label) => navLabelForText(label, t)).join(t.admin.modules.listSeparator);
+            return (
             <li key={m.id}>
               <Card className="h-full p-5">
                 <div className="flex items-start gap-3">
@@ -34,29 +39,36 @@ export function AdminModulesPage({ modules }: { modules: ModuleInfo[] }) {
                     <Boxes className="h-5 w-5" aria-hidden />
                   </span>
                   <div className="min-w-0">
-                    <h2 className="text-lg font-bold">{m.name}</h2>
+                    <h2 className="text-lg font-bold">{name}</h2>
                     <code className="text-xs text-ink-soft">{m.id}</code>
                   </div>
                 </div>
-                <p className="mt-3 text-sm">{m.description}</p>
+                <p className="mt-3 text-sm">{description}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Badge tint="butter">
-                    {m.navLabels.length} nav item{m.navLabels.length === 1 ? '' : 's'}
-                    {m.navLabels.length ? `: ${m.navLabels.join(', ')}` : ''}
+                    {m.navLabels.length
+                      ? fmt(
+                          plural(m.navLabels.length, t.admin.modules.navItemsWithLabelsOne, t.admin.modules.navItemsWithLabelsMany),
+                          { count: m.navLabels.length, labels },
+                        )
+                      : fmt(plural(m.navLabels.length, t.admin.modules.navItemsOne, t.admin.modules.navItemsMany), {
+                          count: m.navLabels.length,
+                        })}
                   </Badge>
                   <Badge tint="mint">
-                    {m.widgetCount} home widget{m.widgetCount === 1 ? '' : 's'}
+                    {fmt(plural(m.widgetCount, t.admin.modules.widgetOne, t.admin.modules.widgetMany), { count: m.widgetCount })}
                   </Badge>
                   {m.addonCount ? (
                     <Badge tint="lilac">
-                      {m.addonCount} shell add-on{m.addonCount === 1 ? '' : 's'}
+                      {fmt(plural(m.addonCount, t.admin.modules.addonOne, t.admin.modules.addonMany), { count: m.addonCount })}
                     </Badge>
                   ) : null}
-                  {m.owner ? <Badge tint="paper">Owner: {m.owner}</Badge> : null}
+                  {m.owner ? <Badge tint="paper">{fmt(t.admin.modules.owner, { owner: m.owner })}</Badge> : null}
                 </div>
               </Card>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </div>

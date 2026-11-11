@@ -398,11 +398,47 @@ export async function syncPresetCourses(): Promise<void> {
   for (const preset of PRESET_COURSES) await syncPresetCourse(preset.slug, preset.draft);
 }
 
+/**
+ * Keeps existing learner paths consistent with the two AI agents editions. A profile created
+ * before the editions existed may still point at the professional row while its background is
+ * a student (or the reverse). Replace only that one course id, preserving the rest of the path.
+ */
+export async function syncProfileEditions(): Promise<void> {
+  const db = await getDb();
+  const rows = await db
+    .select({ id: courses.id, slug: courses.slug })
+    .from(courses)
+    .where(inArray(courses.slug, ['working-with-ai-coding-agents', 'working-with-ai-coding-agents-student']));
+  const professional = rows.find((row) => row.slug === 'working-with-ai-coding-agents')?.id;
+  const student = rows.find((row) => row.slug === 'working-with-ai-coding-agents-student')?.id;
+  if (!professional || !student) return;
+
+  const profiles = await db
+    .select({
+      userId: learnerProfiles.userId,
+      background: learnerProfiles.background,
+      recommendedCourseIds: learnerProfiles.recommendedCourseIds,
+    })
+    .from(learnerProfiles);
+
+  for (const profile of profiles) {
+    const wanted = profile.background === 'cs_student' || profile.background === 'non_cs' ? student : professional;
+    const unwanted = wanted === student ? professional : student;
+    if (!profile.recommendedCourseIds.includes(unwanted)) continue;
+    const next = [...new Set(profile.recommendedCourseIds.map((id) => (id === unwanted ? wanted : id)))];
+    await db
+      .update(learnerProfiles)
+      .set({ recommendedCourseIds: next, updatedAt: new Date() })
+      .where(eq(learnerProfiles.userId, profile.userId));
+  }
+}
+
 export async function runSeed() {
   const db = await getDb();
   const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, 'admin@demo.dev')).limit(1);
   if (existing) {
     await syncPresetCourses();
+    await syncProfileEditions();
     console.info('Demo data already present: refreshed the preset courses; accounts and history left intact.');
     return;
   }
@@ -519,6 +555,8 @@ export async function runSeed() {
     createdAt: at(Math.floor(between(0, 14))),
   }));
   await insertChunks(usage, (c) => db.insert(aiUsage).values(c));
+
+  await syncProfileEditions();
 
   console.info(
     'Seeded: 3 staff/demo accounts + %d classmates, 6 courses, 1 class (invite code SPROUT), %d learning events. Password for every demo account: %s',

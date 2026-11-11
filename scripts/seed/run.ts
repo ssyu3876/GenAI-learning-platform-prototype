@@ -1,22 +1,25 @@
 // Demo data: accounts, 3 built-in courses (+3 small extras), a class, and ~3 weeks of
 // simulated learning history so the leaderboard, dashboards and admin pages have content.
 // Deterministic (seeded PRNG) so every teammate gets the same demo.
-import { eq } from 'drizzle-orm';
+import { asc, eq, inArray } from 'drizzle-orm';
 import type { z } from 'zod';
 import { hashPassword } from '@/core/auth/password';
 import { saveCourseDraft, type CourseDraft } from '@/core/content/draft';
 import { getCourseOutline, type CourseOutline } from '@/core/content/queries';
 import { getDb } from '@/core/db/client';
 import {
+  activities,
   activityAttempts,
   aiUsage,
   classCourses,
   classes,
   classMembers,
+  courses,
   enrollments,
   learnerProfiles,
   learningEvents,
   lessonCompletions,
+  lessons,
   users,
   type Activity,
   type LearnerBackground,
@@ -236,11 +239,133 @@ async function insertChunks<T>(rows: T[], insert: (chunk: T[]) => Promise<unknow
   for (let i = 0; i < rows.length; i += 200) await insert(rows.slice(i, i + 200));
 }
 
+/**
+ * Keeps the three built-in courses in sync with the seed files, even when the demo data
+ * already exists. Every deploy builds and seeds, so this is how richer course content reaches
+ * the live demo database without wiping user accounts or progress.
+ *
+ * Course and lesson IDs stay stable by matching positions, so enrolments, class assignments
+ * and existing attempts keep pointing at the same rows. Removed activities are deleted;
+ * removed lessons are left alone (there are none today) because deleting them would cascade
+ * into learner progress.
+ */
+const PRESET_COURSES = [
+  { slug: 'how-software-gets-built', draft: basicsCourse },
+  { slug: 'working-with-ai-coding-agents', draft: agentsCourse },
+  { slug: 'people-skills-for-tech-teams', draft: peopleCourse },
+] as const;
+
+const PRESET_SEED_OPTS = { ownerId: null, source: 'seed' as const, status: 'published' as const, visibility: 'public' as const };
+
+async function syncPresetCourse(slug: string, draft: CourseDraft): Promise<void> {
+  const db = await getDb();
+  const clean = validated(draft);
+  const [existing] = await db.select().from(courses).where(eq(courses.slug, slug)).limit(1);
+  if (!existing) {
+    await saveCourseDraft(clean, { ...PRESET_SEED_OPTS, slug });
+    return;
+  }
+
+  const estimatedMinutes = clean.lessons.reduce((total, lesson) => total + (lesson.estimatedMinutes ?? 10), 0);
+  await db
+    .update(courses)
+    .set({
+      title: clean.title,
+      summary: clean.summary,
+      subject: clean.subject,
+      level: clean.level,
+      audience: clean.audience,
+      tags: clean.tags,
+      emoji: clean.emoji,
+      color: clean.color,
+      estimatedMinutes,
+      updatedAt: new Date(),
+    })
+    .where(eq(courses.id, existing.id));
+
+  const existingLessons = await db
+    .select()
+    .from(lessons)
+    .where(eq(lessons.courseId, existing.id))
+    .orderBy(asc(lessons.position));
+
+  for (const [position, lesson] of clean.lessons.entries()) {
+    const currentLesson = existingLessons.find((row) => row.position === position) ?? existingLessons[position];
+    let lessonId = currentLesson?.id;
+    if (currentLesson) {
+      await db
+        .update(lessons)
+        .set({
+          title: lesson.title,
+          content: lesson.content,
+          estimatedMinutes: lesson.estimatedMinutes ?? 10,
+          updatedAt: new Date(),
+        })
+        .where(eq(lessons.id, currentLesson.id));
+    } else {
+      lessonId = newId('lesson');
+      await db.insert(lessons).values({
+        id: lessonId,
+        courseId: existing.id,
+        position,
+        title: lesson.title,
+        content: lesson.content,
+        estimatedMinutes: lesson.estimatedMinutes ?? 10,
+      });
+    }
+    if (!lessonId) continue;
+
+    const currentActivities = await db
+      .select()
+      .from(activities)
+      .where(eq(activities.lessonId, lessonId))
+      .orderBy(asc(activities.position));
+
+    for (const [activityPosition, activity] of lesson.activities.entries()) {
+      const currentActivity =
+        currentActivities.find((row) => row.position === activityPosition) ?? currentActivities[activityPosition];
+      if (currentActivity) {
+        await db
+          .update(activities)
+          .set({
+            type: activity.type,
+            title: activity.title,
+            config: activity.config,
+            xpReward: activity.xpReward ?? 20,
+            updatedAt: new Date(),
+          })
+          .where(eq(activities.id, currentActivity.id));
+      } else {
+        await db.insert(activities).values({
+          id: newId('activity'),
+          lessonId,
+          position: activityPosition,
+          type: activity.type,
+          title: activity.title,
+          config: activity.config,
+          xpReward: activity.xpReward ?? 20,
+        });
+      }
+    }
+
+    const extraActivities = currentActivities.slice(lesson.activities.length);
+    if (extraActivities.length) {
+      await db.delete(activities).where(inArray(activities.id, extraActivities.map((row) => row.id)));
+    }
+  }
+}
+
+/** Runs on every seed, including deploys where the demo accounts already exist. */
+export async function syncPresetCourses(): Promise<void> {
+  for (const preset of PRESET_COURSES) await syncPresetCourse(preset.slug, preset.draft);
+}
+
 export async function runSeed() {
   const db = await getDb();
   const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, 'admin@demo.dev')).limit(1);
   if (existing) {
-    console.info('Seed skipped: demo data already present (run `npm run db:reset` to start over).');
+    await syncPresetCourses();
+    console.info('Demo data already present: refreshed the three preset courses; accounts and history left intact.');
     return;
   }
 

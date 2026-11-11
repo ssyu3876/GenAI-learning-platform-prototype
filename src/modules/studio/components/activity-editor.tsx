@@ -31,6 +31,7 @@ const ACTIVITY_LABEL_KEY: Record<string, keyof Translations['activities']['types
   roleplay: 'roleplay',
   coding: 'coding',
   codingExercise: 'codingExercise',
+  'release-run': 'releaseRun',
   reading: 'reading',
 };
 

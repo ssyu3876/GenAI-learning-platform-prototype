@@ -37,6 +37,39 @@ This talk walks through the same problem from a practitioner's side:
 > If they ask a follow-up question, that is a good sign. If they nod politely and change the subject, you lost them.`,
       activities: [
         {
+          type: 'slides',
+          title: 'The 12-second checkout',
+          xpReward: 15,
+          config: {
+            slides: [
+              {
+                heading: 'A client, a slow page',
+                bullets: ['Checkout took 12 seconds', 'She does not care why'],
+                narration:
+                  'Meet Dana. She runs online orders for the café. Yesterday, checkout took twelve seconds instead of two. She does not want the cause first. She wants to know what happened, and whether it will happen again.',
+              },
+              {
+                heading: 'Lead with the impact',
+                bullets: ['What they felt', 'Then the cause'],
+                narration:
+                  'Start with what she experienced: between nine and ten, checkout took twelve seconds. The retry storm and the queue can come second. Impact first buys you attention for the cause.',
+              },
+              {
+                heading: 'One analogy, one decision',
+                bullets: ['Their world, not yours', 'End with a choice'],
+                narration:
+                  'Say the queue is like a till that keeps re-scanning the same item. Then end with a decision: a workaround today, or a proper fix by Friday. A choice turns a status update into a plan.',
+              },
+              {
+                heading: 'Your turn',
+                bullets: ['Spot the impact-first message', 'Then name the analogy'],
+                narration:
+                  'Now try the next two activities. Pick the messages Dana would understand, and the ones that bury the point under jargon.',
+              },
+            ],
+          },
+        },
+        {
           type: 'sort',
           title: 'Clear or confusing?',
           xpReward: 20,
@@ -378,6 +411,39 @@ If the conversation matters, write it down afterwards: what was agreed, who does
 
 Want to practise? [Sprint Zero](/scenarios/sprint-zero) is three weeks of these trade-offs.`,
       activities: [
+        {
+          type: 'slides',
+          title: 'The no that kept the client',
+          xpReward: 15,
+          config: {
+            slides: [
+              {
+                heading: 'The ask that does not fit',
+                bullets: ['Launch is Friday', 'The request arrives Wednesday'],
+                narration:
+                  'It is Wednesday. The launch is Friday. A client asks for one more feature, and the honest answer is no. The question is not whether to say it. It is what comes after the no.',
+              },
+              {
+                heading: 'Say what you can do',
+                bullets: ['"Not this week" is not a plan', 'Offer the next real date'],
+                narration:
+                  'A bare no leaves the client with nothing. I cannot add it before Friday, but I can ship it on Tuesday gives them a date they can plan around.',
+              },
+              {
+                heading: 'Trade, do not refuse',
+                bullets: ['Name the constraint once', 'Offer two options'],
+                narration:
+                  'Name the constraint once: the launch is Friday and testing takes a day. Then offer the trade: the new feature, or the export fix. Now the client is choosing, not arguing.',
+              },
+              {
+                heading: 'Your turn',
+                bullets: ['Sort the replies that keep trust', 'Then pick the best no'],
+                narration:
+                  'Try the sort and the quiz next. Every option turns something down. Only some of them keep the relationship.',
+              },
+            ],
+          },
+        },
         {
           type: 'sort',
           title: 'Keeps trust or burns it?',

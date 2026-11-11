@@ -1,4 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap');
 @import 'tailwindcss';
+
+:root {
+  --font-fredoka: 'Fredoka';
+  --font-nunito: 'Nunito';
+}
 
 /*
   Sprout design tokens. Use these through Tailwind classes (bg-coral, text-ink, shadow-sticker...)

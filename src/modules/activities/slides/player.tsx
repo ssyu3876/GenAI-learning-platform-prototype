@@ -95,6 +95,7 @@ export function SlidesPlayer({ activity, config, onComplete, previousBest, previ
   const [sentenceIndex, setSentenceIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [played, setPlayed] = useState<Set<number>>(() => new Set());
+  const [closedChecks, setClosedChecks] = useState<Set<number>>(() => new Set());
   const [showCaptions, setShowCaptions] = useState(false);
   const [autoplay, setAutoplay] = useState(false);
   const [seen, setSeen] = useState<Set<number>>(() => new Set([0]));
@@ -123,6 +124,17 @@ export function SlidesPlayer({ activity, config, onComplete, previousBest, previ
   // The check is a follow-up, not part of the slide: it appears once the narration has
   // finished, or immediately when the browser cannot speak.
   const checkUnlocked = played.has(index) || !canSpeak;
+
+  // The check is a modal: never let the narration talk over someone reading it.
+  useEffect(() => {
+    if (!checkUnlocked || !slide.check) return;
+    const timer = window.setTimeout(() => {
+      runRef.current += 1;
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      setSpeaking(false);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [checkUnlocked, slide.check]);
 
   useEffect(() => {
     return () => {
@@ -307,49 +319,60 @@ export function SlidesPlayer({ activity, config, onComplete, previousBest, previ
               </div>
             </div>
           </div>
-        </div>
 
-        {checkUnlocked && slide.check ? (
-          <div className="rounded-blob border-2 border-dashed border-line/60 bg-cream px-4 py-3">
-            <div className="text-xs font-semibold tracking-wide text-ink-soft uppercase">
-              {t.activities.slides.quickCheck}
-            </div>
-            <p className="mt-1 font-semibold">{slide.check.question}</p>
-            <div className="mt-2 flex flex-col gap-2">
-              {slide.check.options.map((option, i) => {
-                const chosen = answers[index];
-                const answered = chosen !== undefined;
-                const correct = i === slide.check!.answerIndex;
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    disabled={answered}
-                    onClick={() => setAnswers((prev) => ({ ...prev, [index]: i }))}
-                    className={cn(
-                      'flex items-center justify-between gap-2 rounded-xl border-2 px-3 py-2 text-left text-sm transition-colors',
-                      answered && correct
-                        ? 'border-mint-deep bg-mint-soft'
-                        : answered && chosen === i
-                          ? 'border-coral-deep bg-coral-soft'
-                          : 'border-line/30 bg-paper hover:border-line disabled:hover:border-line/30',
-                    )}
+          {checkUnlocked && slide.check && !closedChecks.has(index) ? (
+            <div className="absolute inset-0 z-10 grid place-items-center rounded-blob bg-ink/30 p-4 backdrop-blur-sm">
+              <div className="w-full max-w-md rounded-blob border-2 border-line bg-paper p-4 shadow-sticker">
+                <div className="text-xs font-semibold tracking-wide text-ink-soft uppercase">
+                  {t.activities.slides.quickCheck}
+                </div>
+                <p className="mt-1 font-semibold">{slide.check.question}</p>
+                <div className="mt-2 flex flex-col gap-2">
+                  {slide.check.options.map((option, i) => {
+                    const chosen = answers[index];
+                    const answered = chosen !== undefined;
+                    const correct = i === slide.check!.answerIndex;
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        disabled={answered}
+                        onClick={() => setAnswers((prev) => ({ ...prev, [index]: i }))}
+                        className={cn(
+                          'flex items-center justify-between gap-2 rounded-xl border-2 px-3 py-2 text-left text-sm transition-colors',
+                          answered && correct
+                            ? 'border-mint-deep bg-mint-soft'
+                            : answered && chosen === i
+                              ? 'border-coral-deep bg-coral-soft'
+                              : 'border-line/30 bg-paper hover:border-line disabled:hover:border-line/30',
+                        )}
+                      >
+                        <span>{option}</span>
+                        {answered && correct ? (
+                          <Check className="h-4 w-4 shrink-0 text-mint-deep" aria-hidden />
+                        ) : answered && chosen === i ? (
+                          <X className="h-4 w-4 shrink-0 text-coral-deep" aria-hidden />
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+                {answers[index] !== undefined ? (
+                  <p className="mt-2 text-xs text-ink-soft">{slide.check.explanation}</p>
+                ) : null}
+                <div className="mt-3 flex justify-end">
+                  <Button
+                    variant="mint"
+                    size="sm"
+                    onClick={() => setClosedChecks((prev) => new Set(prev).add(index))}
                   >
-                    <span>{option}</span>
-                    {answered && correct ? (
-                      <Check className="h-4 w-4 shrink-0 text-mint-deep" aria-hidden />
-                    ) : answered && chosen === i ? (
-                      <X className="h-4 w-4 shrink-0 text-coral-deep" aria-hidden />
-                    ) : null}
-                  </button>
-                );
-              })}
+                    {t.activities.slides.continue}
+                  </Button>
+                </div>
+              </div>
             </div>
-            {answers[index] !== undefined ? (
-              <p className="mt-2 text-xs text-ink-soft">{slide.check.explanation}</p>
-            ) : null}
-          </div>
-        ) : null}
+          ) : null}
+        </div>
 
         <div className="flex items-start gap-3">
           <Pip mood={speaking ? 'cheer' : 'happy'} size={56} className={cn(speaking && 'animate-wiggle')} />

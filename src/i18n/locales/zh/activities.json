@@ -82,6 +82,7 @@
     "slideOf": "第 {current} 张，共 {total} 张",
     "captions": "字幕",
     "quickCheck": "小检查",
+    "continue": "继续",
     "previous": "上一张",
     "next": "下一张",
     "pause": "暂停",

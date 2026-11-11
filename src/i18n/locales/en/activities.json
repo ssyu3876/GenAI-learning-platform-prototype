@@ -82,6 +82,7 @@
     "slideOf": "Slide {current} of {total}",
     "captions": "Captions",
     "quickCheck": "Quick check",
+    "continue": "Continue",
     "previous": "Previous slide",
     "next": "Next slide",
     "pause": "Pause",

@@ -27,9 +27,11 @@ import {
 } from '../engine';
 import { SHIP_IT } from '../content/ship-it';
 import { SPRINT_ZERO } from '../content/sprint-zero';
+import { FARM_LAB } from '../content/farm-lab';
 import { StartPanel } from './start-panel';
 import { ShipRunner } from './ship-runner';
 import { SprintRunner } from './sprint-runner';
+import { FarmLab } from './farm-lab';
 
 function Intro({
   title,
@@ -66,11 +68,12 @@ function Intro({
 }
 
 export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; scenarioKey: string }) {
-  if (scenarioKey !== SHIP_IT.key && scenarioKey !== SPRINT_ZERO.key) notFound();
+  if (scenarioKey !== SHIP_IT.key && scenarioKey !== SPRINT_ZERO.key && scenarioKey !== FARM_LAB.key) notFound();
 
   const { locale, t } = await getT();
   const shipCopy = localizeContent(SHIP_IT, locale);
   const sprintCopy = localizeContent(SPRINT_ZERO, locale);
+  const farmCopy = localizeContent(FARM_LAB, locale);
   const statLabels: Record<string, string> = {
     budget: t.scenarios.stats.budget,
     morale: t.scenarios.stats.morale,
@@ -86,11 +89,21 @@ export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; s
   const isShip = scenarioKey === SHIP_IT.key;
   const header = (
     <PageHeader
-      eyebrow={isShip ? shipCopy.meta : sprintCopy.meta}
-      title={isShip ? shipCopy.title : sprintCopy.title}
-      subtitle={isShip ? shipCopy.tagline : sprintCopy.tagline}
+      eyebrow={scenarioKey === FARM_LAB.key ? farmCopy.meta : isShip ? shipCopy.meta : sprintCopy.meta}
+      title={scenarioKey === FARM_LAB.key ? farmCopy.title : isShip ? shipCopy.title : sprintCopy.title}
+      subtitle={scenarioKey === FARM_LAB.key ? farmCopy.tagline : isShip ? shipCopy.tagline : sprintCopy.tagline}
     />
   );
+
+  // ---- Farm Lab ----
+  if (scenarioKey === FARM_LAB.key) {
+    return (
+      <div className="flex flex-col gap-6">
+        {header}
+        <FarmLab copy={farmCopy} />
+      </div>
+    );
+  }
 
   // ---- Ship It ----
   if (scenarioKey === SHIP_IT.key) {

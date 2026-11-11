@@ -1,4 +1,4 @@
-# Videos in lessons, and the richer "How Software Gets Built" course
+# Videos in lessons, narrated diagrams, and the richer "How Software Gets Built" course
 
 Lessons can now show a real video where the author puts it, and the first course uses this
 together with new activities and a fifth lesson. No new dependency, table or migration.
@@ -41,7 +41,7 @@ plain links, so a link the AI writes never turns into a player. Raw HTML is stil
 
 ## The "How Software Gets Built" course
 
-Five lessons instead of four, about 100 minutes. English in `scripts/seed/course-basics.ts`,
+Five lessons instead of four, about 115 minutes. English in `scripts/seed/course-basics.ts`,
 Chinese in `src/i18n/content/zh/course-basics.ts` (same structure, line for line).
 
 | Lesson | Video | New |
@@ -72,6 +72,61 @@ Applies to every narrated-slides activity in every course (`src/modules/activiti
   in Chrome the new narration was sometimes dropped, so *Play* then did nothing. Each narration now
   has a number and events from stopped narrations are ignored; a new narration starts about 60 ms
   after the old one is cancelled.
+
+## Narrated decks with diagrams that follow Pip
+
+Every lesson of "How Software Gets Built" now opens with a short narrated deck (lessons 2–5 are
+new; lesson 1 got a diagram). Ten new word-free diagrams live in
+`src/modules/activities/slides/visuals.tsx`, next to the three from the People course.
+
+| Lesson | Deck | Diagrams |
+|---|---|---|
+| 1 | *Pip explains the software loop* (existing) | `software-loop` |
+| 2 | *Pip explains user stories* (4 slides) | `user-story`, `vague-to-testable` |
+| 3 | *Pip's tips for a first client meeting* (4 slides) | `why-ladder`, `open-closed` |
+| 4 | *Pip walks through one sprint* (4 slides) | `sprint-cycle`, `task-board` |
+| 5 | *Pip on testing and release* (5 slides) | `done-checklist`, `test-pyramid`, `ci-pipeline`, `safe-release` |
+
+- **The diagram follows the narration.** The player now passes the bullet being read to the
+  diagram (`active`). The matching part lights up and the rest fades; the Definition of Done
+  ticks its boxes one by one. With nothing playing, the whole diagram is shown.
+- **Numbers line up.** Step diagrams number their parts, and on those slides the bullets show
+  the same numbers instead of dots (`isNumberedVisual`). The People course diagrams are unchanged.
+- **Writing narration for a step diagram:** one sentence per bullet, or one opening sentence
+  plus one per bullet. The player spreads sentences over bullets evenly, so either shape keeps
+  the highlight on the right part. Avoid a full stop inside a sentence (`Mrs.`, `e.g.`), because
+  it ends the sentence early.
+- Diagrams use theme tokens only, scale to phone width, and respect reduced motion.
+
+## Mrs. Lau answers what you asked (offline)
+
+Without an AI key (or when the daily AI limit is reached, or the provider fails), a role-play
+character used to read its canned replies in order, whatever the learner said: asking "nice to
+meet you" could reveal the budget. Role-plays can now carry `mockRules`:
+
+```ts
+mockRules: [
+  { keywords: ['budget', 'cost', 'how much', '预算', '多少钱'], reply: 'Maybe thirty thousand dollars.' },
+],
+```
+
+- The first rule whose keywords appear in the learner's latest message answers it, and a reply
+  is not repeated (`src/modules/activities/roleplay/mock-reply.ts`, with tests). When nothing
+  matches, the character stays vague with the plain `mockReplies`.
+- Keywords list both languages and are never translated (`keywords` is an identifier key in
+  `src/i18n/content/index.ts`). English keywords match the start of a word ("cost" matches
+  "costs", "api" does not match "rapid").
+- Mrs. Lau has seven rules: jargon confuses her, a summary gets "yes, that is it", and "why",
+  customers, budget, deadline and feature questions each reveal one detail. With an AI key the
+  real model is used as before. Other role-plays keep working unchanged (`mockRules` defaults to `[]`).
+
+## Preset sync keeps attempts with the right activity
+
+`syncPresetCourses()` (in `scripts/seed/run.ts`) matched activity rows by position only. Adding
+a deck at the start of a lesson would have turned the existing sort row into the deck, and the
+quiz row into the sort, so learners' attempts and Review cards would have pointed at the wrong
+activity. `matchActivityRows()` now pairs activities by type and title first, then by position
+when only the title changed, and updates each row's position. New activities get new rows.
 
 ## Getting the new course onto the live site
 

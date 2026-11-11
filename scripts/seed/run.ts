@@ -31,6 +31,7 @@ import { roleplayConfigSchema } from '@/modules/activities/roleplay/schema';
 import { sequenceConfigSchema } from '@/modules/activities/sequence/schema';
 import { slidesConfigSchema } from '@/modules/activities/slides/schema';
 import { sortConfigSchema } from '@/modules/activities/sort/schema';
+import { releaseRunSchema } from '@/modules/scenarios/activities/release-run/schema';
 import { leaderboardPrefs } from '@/modules/leaderboard/schema';
 import { agentsCourse } from './course-agents';
 import { basicsCourse } from './course-basics';
@@ -48,6 +49,7 @@ const SCHEMAS: Record<string, z.ZodType<unknown>> = {
   coding: codingConfigSchema,
   slides: slidesConfigSchema,
   roleplay: roleplayConfigSchema,
+  'release-run': releaseRunSchema,
 };
 
 function validated(draft: CourseDraft): CourseDraft {

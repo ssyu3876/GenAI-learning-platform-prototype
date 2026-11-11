@@ -390,3 +390,47 @@ export const RELEASE_WEEK: SprintScenario = {
     return advice.calm;
   },
 };
+
+/** The six decisions the course game uses: two per week, from the same bank. */
+const RELEASE_GAME_STEPS: string[][] = [
+  ['big-pr', 'small-thing'],
+  ['dependency', 'logout-bug'],
+  ['exhausted', 'launch-day'],
+];
+
+/**
+ * Builds the config for the `release-run` activity inside the People course. The course
+ * player gets the text as config, so the lesson page's normal content localisation applies.
+ */
+export function releaseGameConfig(copy: ReleaseCopy = RELEASE_COPY) {
+  const rounds = copy.weeks.map((week, i) => {
+    const ids = RELEASE_GAME_STEPS[i] ?? [];
+    return {
+      title: week.title,
+      tagline: week.tagline,
+      steps: ids.map((id) => {
+        const step = week.bank.find((s) => s.id === id);
+        if (!step) throw new Error(`Release game decision missing: ${id}`);
+        return {
+          title: step.title,
+          body: step.body,
+          choices: step.choices.map((c) => ({
+            id: c.id,
+            label: c.label,
+            cost: c.cost,
+            effects: c.effects,
+            outcome: c.outcome,
+          })),
+        };
+      }),
+    };
+  });
+
+  return {
+    intro: copy.summary,
+    stats: copy.stats,
+    start: { budget: 80, morale: 65, users: 30, quality: 75 },
+    rounds,
+    endings: copy.endings,
+  };
+}

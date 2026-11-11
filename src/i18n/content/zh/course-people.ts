@@ -1,4 +1,6 @@
 import type { CourseDraft } from '@/core/content/draft';
+import { releaseGameConfig } from '@/modules/scenarios/content/release-week';
+import { RELEASE_COPY_ZH } from './release-week';
 
 export const peopleCourseZh: CourseDraft = {
   title: '技术团队里的软技能',
@@ -382,6 +384,12 @@ export const peopleCourseZh: CourseDraft = {
               '行。开完会你把两个选项写给我，我们站会上定。',
             ],
           },
+        },
+        {
+          type: 'release-run',
+          title: '发布周：小游戏版',
+          xpReward: 30,
+          config: releaseGameConfig(RELEASE_COPY_ZH),
         },
       ],
     },

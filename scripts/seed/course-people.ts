@@ -1,4 +1,5 @@
 import type { CourseDraft } from '@/core/content/draft';
+import { releaseGameConfig } from '@/modules/scenarios/content/release-week';
 
 export const peopleCourse: CourseDraft = {
   title: 'People Skills for Tech Teams',
@@ -387,6 +388,12 @@ Want a full run? The [practice interviews](/scenarios/interview) ask five questi
               'Alright. Send me the two options in writing after this, and we decide at standup.',
             ],
           },
+        },
+        {
+          type: 'release-run',
+          title: 'Release Week: the small version',
+          xpReward: 30,
+          config: releaseGameConfig(),
         },
       ],
     },

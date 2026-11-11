@@ -13,6 +13,22 @@ import { Badge, Button, cn } from '@/components/ui';
 import type { Difficulty, DungeonContent } from '../content/dungeon';
 import type { DungeonMap, Room } from '../content/dungeon-engine';
 import {
+  ACHIEVEMENTS,
+  CHARACTERS,
+  MODIFIERS,
+  TALENTS,
+  TIER_PRESSURE,
+  dailySeed,
+  defaultMeta,
+  loadMeta,
+  runScore,
+  saveMeta,
+  seededShuffle,
+  studyPoints,
+  weeklySeed,
+  type DungeonMeta,
+} from '../content/dungeon-meta';
+import {
   DUNGEON_CONFIG,
   bossAt,
   canMove,
@@ -20,6 +36,7 @@ import {
   generateMapPool,
   monsterGold,
   pickMonster,
+  presetMap,
 } from '../content/dungeon-engine';
 
 type Phase = 'menu' | 'map' | 'battle' | 'chest' | 'shop' | 'buff' | 'gameover' | 'victory';
@@ -48,7 +65,11 @@ const DIFFS: Array<{ id: Difficulty; labelKey: string }> = [
 ];
 
 /** A tiny Web Audio blip; no assets, no dependency. */
+let soundEnabled = true;
+let soundVolume = 0.5;
+
 function blip(frequency: number, duration = 120, type: OscillatorType = 'square') {
+  if (!soundEnabled) return;
   try {
     const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!Ctor) return;
@@ -57,7 +78,7 @@ function blip(frequency: number, duration = 120, type: OscillatorType = 'square'
     const gain = ctx.createGain();
     osc.type = type;
     osc.frequency.value = frequency;
-    gain.gain.setValueAtTime(0.06, ctx.currentTime);
+    gain.gain.setValueAtTime(0.06 * soundVolume, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration / 1000);
     osc.connect(gain).connect(ctx.destination);
     osc.start();
@@ -102,6 +123,63 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
   const [reviveUsed, setReviveUsed] = useState(false);
   const [revive2Used, setRevive2Used] = useState(false);
 
+  const [meta, setMeta] = useState<DungeonMeta>(defaultMeta);
+  const [mode, setMode] = useState<'free' | 'daily' | 'weekly'>('free');
+  const [tier, setTier] = useState(1);
+  const [modifier, setModifier] = useState<(typeof MODIFIERS)[number] | null>(null);
+  const [streak, setStreak] = useState(0);
+  const [maxStreak, setMaxStreak] = useState(0);
+  const [flawlessLayers, setFlawlessLayers] = useState(0);
+  const [damageThisLayer, setDamageThisLayer] = useState(false);
+  const [breakFx, setBreakFx] = useState(false);
+  const [soundOn, setSoundOn] = useState(true);
+  const [volume, setVolume] = useState(0.5);
+  const [questionBank, setQuestionBank] = useState<Copy['questions']>(copy.questions);
+  const [awarded, setAwarded] = useState(false);
+  const [result, setResult] = useState<{ score: number; points: number; unlocked: string[] } | null>(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setMeta(loadMeta()), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    soundEnabled = soundOn;
+    soundVolume = volume;
+  }, [soundOn, volume]);
+
+  useEffect(() => {
+    if ((phase !== 'victory' && phase !== 'gameover') || awarded) return;
+    const score = runScore({
+      layers: stats.layers,
+      correct: stats.correct,
+      wrong: stats.wrong,
+      gold: stats.gold,
+      tier,
+      victory: phase === 'victory',
+      flawlessLayers,
+    });
+    const points = studyPoints(score, phase === 'victory', tier);
+    const unlocked: string[] = [];
+    if (flawlessLayers > 0) unlocked.push('flawless');
+    if (maxStreak >= 10) unlocked.push('streak10');
+    if (phase === 'victory' && items.length <= 1) unlocked.push('minimalist');
+    const next: DungeonMeta = {
+      ...meta,
+      points: meta.points + points,
+      runs: meta.runs + 1,
+      achievements: Array.from(new Set([...meta.achievements, ...unlocked])),
+      bestTier: phase === 'victory' && tier === meta.bestTier && meta.bestTier < 5 ? meta.bestTier + 1 : meta.bestTier,
+    };
+    const timer = window.setTimeout(() => {
+      setMeta(next);
+      saveMeta(next);
+      setResult({ score, points, unlocked });
+      setAwarded(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [phase, awarded, stats, tier, flawlessLayers, maxStreak, items.length, meta]);
+
   const map = maps[layer];
   const currentRoom: Room | undefined = map?.rooms.find((r) => r.id === roomId);
   const bossCopy = map ? bossAt(copy.bosses as never[], layer + 1) : null;
@@ -129,21 +207,53 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, phase, feedback]);
 
-  function resetRun(nextDifficulty: Difficulty) {
-    const nextMaps = generateMapPool(3);
+  function resetRun(nextDifficulty: Difficulty, options?: { mode?: 'free' | 'daily' | 'weekly'; tier?: number }) {
+    const nextMode = options?.mode ?? mode;
+    const nextTier = options?.tier ?? tier;
+    const seed = nextMode === 'daily' ? dailySeed() : nextMode === 'weekly' ? weeklySeed() : 0;
+    const nextMaps =
+      nextMode === 'free'
+        ? generateMapPool(3)
+        : [presetMap(), presetMap(), presetMap()];
+    const bank = nextMode === 'free' ? copy.questions : seededShuffle(copy.questions, seed);
+    setQuestionBank(bank);
     setDifficulty(nextDifficulty);
+    setMode(nextMode);
+    setTier(nextTier);
     setMaps(nextMaps);
     setLayer(0);
-    const hpStart = DUNGEON_CONFIG.hp[nextDifficulty];
+    const character = CHARACTERS.find((c) => c.id === meta.character) ?? CHARACTERS[0]!;
+    const talents = meta.talents;
+    const hpStart = Math.max(
+      20,
+      DUNGEON_CONFIG.hp[nextDifficulty] +
+        character.hp +
+        (talents.includes('hp20') ? 20 : 0) -
+        (nextTier - 1) * 10,
+    );
     setHp(hpStart);
     setMaxHp(hpStart);
-    setGold(DUNGEON_CONFIG.gold[nextDifficulty]);
+    setGold(
+      Math.max(0, DUNGEON_CONFIG.gold[nextDifficulty] + character.gold + (talents.includes('gold25') ? 25 : 0) - (nextTier - 1) * 5),
+    );
+    const startItems: string[] = [];
+    if (character.items) startItems.push('heal');
+    if (talents.includes('heal')) startItems.push('heal');
+    if (talents.includes('scan')) startItems.push('eliminate');
+    if (talents.includes('items2')) startItems.push('triple', 'shield');
+    setItems(startItems);
     setBuffs(new Set());
-    setItems([]);
     setUsed(new Set());
     setStats({ correct: 0, wrong: 0, gold: 0, kills: 0, layers: 0 });
     setShielded(false);
     setReviveUsed(false);
+    setRevive2Used(false);
+    setStreak(0);
+    setMaxStreak(0);
+    setFlawlessLayers(0);
+    setDamageThisLayer(false);
+    setModifier(MODIFIERS[Math.floor(Math.random() * MODIFIERS.length)] ?? null);
+    setAwarded(false);
     const start = nextMaps[0]!.rooms.find((r) => r.id === nextMaps[0]!.startRoomId)!;
     setRoomId(start.id);
     setVisited(new Set([start.id]));
@@ -211,7 +321,13 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     const idx = layer;
     if (room.type === 'boss') {
       const boss = bossCopy!;
-      const seconds = boss.seconds + (buffs.has('time') ? 10 : 0) + (buffs.has('time2') ? 15 : 0);
+      const seconds =
+        boss.seconds +
+        (buffs.has('time') ? 10 : 0) +
+        (buffs.has('time2') ? 15 : 0) +
+        (meta.talents.includes('time10') ? 10 : 0) -
+        (modifier?.id === 'tight' ? 5 : 0) -
+        (tier - 1) * 2;
       setBattle({
         kind: 'boss',
         name: boss.name,
@@ -247,7 +363,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     }
     setFeedback(null);
     setChoice(null);
-    const draw = drawQuestion(copy.questions, difficulty, used);
+    const draw = drawQuestion(questionBank, difficulty, used);
     if (draw) {
       setQuestion(draw.question);
       setUsed(draw.used);
@@ -265,12 +381,22 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     setFeedback({ correct, explain: question.explain });
     if (correct) {
       setStats((s) => ({ ...s, correct: s.correct + 1 }));
+      setStreak((value) => {
+        const nextValue = value + 1;
+        setMaxStreak((best) => Math.max(best, nextValue));
+        return nextValue;
+      });
       if (buffs.has('leech2')) setHp((v) => Math.min(maxHp, v + 10));
       else if (buffs.has('leech')) setHp((v) => Math.min(maxHp, v + 5));
       const next = { ...battle };
       if (!next.broken && next.confidence > 0) {
         next.confidence -= 1;
-        if (next.confidence === 0) next.broken = true;
+        if (next.confidence === 0) {
+          next.broken = true;
+          setBreakFx(true);
+          blip(880, 260, 'sine');
+          window.setTimeout(() => setBreakFx(false), 1400);
+        }
       } else {
         let damage = triple ? 3 : 1;
         if (buffs.has('precision') && (next.kind === 'boss' || next.elite)) damage += 1;
@@ -286,7 +412,11 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
       window.setTimeout(() => setEnemyHit(false), 360);
     } else {
       setStats((s) => ({ ...s, wrong: s.wrong + 1 }));
+      setStreak(0);
+      setDamageThisLayer(true);
       let damage: number = battle.kind === 'boss' ? DUNGEON_CONFIG.bossDamage[difficulty] : battle.elite ? DUNGEON_CONFIG.eliteDamage[difficulty] : DUNGEON_CONFIG.monsterDamage[difficulty];
+      if (modifier?.id === 'heavy') damage *= 2;
+      if (tier >= 4) damage += (tier - 3) * 2;
       if (buffs.has('armor2')) damage = Math.floor(damage * 0.25);
       else if (buffs.has('armor')) damage = Math.floor(damage / 2);
       if (shielded) {
@@ -335,7 +465,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
       winBattle();
       return;
     }
-    const draw = drawQuestion(copy.questions, difficulty, used);
+    const draw = drawQuestion(questionBank, difficulty, used);
     if (draw) {
       setQuestion(draw.question);
       setUsed(draw.used);
@@ -357,6 +487,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     setGold((g) => g + earned);
     setStats((s) => ({ ...s, gold: s.gold + earned, kills: s.kills + 1 }));
     setCleared((prev) => new Set(prev).add(battleRoomId));
+    if (!damageThisLayer) setFlawlessLayers((n) => n + 1);
     if (battle.elite) {
       const drop = copy.items[Math.floor(Math.random() * copy.items.length)]!;
       if (items.length < DUNGEON_CONFIG.maxItems) setItems((prev) => [...prev, drop.id]);
@@ -387,6 +518,9 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     setBattle(null);
     setQuestion(null);
     setFeedback(null);
+    setModifier(MODIFIERS[Math.floor(Math.random() * MODIFIERS.length)] ?? null);
+    setDamageThisLayer(false);
+    setBreakFx(false);
     setPhase('map');
   }
 
@@ -437,7 +571,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
       setStats((s) => ({ ...s, gold: s.gold + 60 }));
     }
     if (id === 'reroll') {
-      const draw = drawQuestion(copy.questions, difficulty, used);
+      const draw = drawQuestion(questionBank, difficulty, used);
       if (draw) {
         setQuestion(draw.question);
         setUsed(draw.used);
@@ -476,6 +610,53 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
   // Everything else is a position, not a type.
   const revealed = new Set<string>([roomId, ...(currentRoom?.connections ?? []), ...visited]);
 
+  function chooseCharacter(id: string) {
+    setMeta((prev) => {
+      if (prev.unlockedChars.includes(id)) {
+        const next = { ...prev, character: id };
+        saveMeta(next);
+        return next;
+      }
+      const character = CHARACTERS.find((c) => c.id === id);
+      if (!character || prev.points < character.cost) return prev;
+      const next = {
+        ...prev,
+        points: prev.points - character.cost,
+        unlockedChars: [...prev.unlockedChars, id],
+        character: id,
+      };
+      saveMeta(next);
+      return next;
+    });
+  }
+
+  function toggleTalent(id: string) {
+    setMeta((prev) => {
+      const unlocked = prev.unlockedTalents.includes(id);
+      const talent = TALENTS.find((t) => t.id === id);
+      if (!talent) return prev;
+      if (!unlocked) {
+        if (prev.points < talent.cost) return prev;
+        const next = {
+          ...prev,
+          points: prev.points - talent.cost,
+          unlockedTalents: [...prev.unlockedTalents, id],
+          talents: prev.talents.length < 2 ? [...prev.talents, id] : prev.talents,
+        };
+        saveMeta(next);
+        return next;
+      }
+      const selected = prev.talents.includes(id);
+      if (!selected && prev.talents.length >= 2) return prev;
+      const next = {
+        ...prev,
+        talents: selected ? prev.talents.filter((t) => t !== id) : [...prev.talents, id],
+      };
+      saveMeta(next);
+      return next;
+    });
+  }
+
   if (phase === 'menu') {
     return (
       <div className="mx-auto flex max-w-2xl flex-col gap-4">
@@ -485,12 +666,121 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
           <p className="mt-2 text-sm text-cream/80">{L.summary}</p>
           <p className="mt-3 text-xs text-cream/60">{L.difficulty}: 3 layers · 3 bosses</p>
         </div>
+
+        <div className="rounded-blob border-2 border-line bg-paper p-3 shadow-sticker-sm">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold">Study points</p>
+            <span className="rounded-pill border-2 border-line bg-butter-soft px-2 py-0.5 text-sm font-bold">
+              {meta.points} 学点
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-ink-soft">Characters</p>
+          <div className="mt-1 grid grid-cols-5 gap-1">
+            {CHARACTERS.map((character) => {
+              const unlocked = meta.unlockedChars.includes(character.id);
+              const selected = meta.character === character.id;
+              return (
+                <button
+                  key={character.id}
+                  type="button"
+                  onClick={() => chooseCharacter(character.id)}
+                  title={character.description}
+                  className={cn(
+                    'rounded-lg border-2 border-line px-1 py-1.5 text-center text-xs',
+                    selected ? 'bg-butter' : 'bg-cream',
+                    !unlocked && 'opacity-70',
+                  )}
+                >
+                  <span className="block text-lg">{character.icon}</span>
+                  <span className="block truncate">{character.name}</span>
+                  {!unlocked ? <span className="block text-[0.6rem] text-ink-soft">{character.cost} 学点</span> : null}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-xs text-ink-soft">Talents (max 2)</p>
+          <div className="mt-1 grid grid-cols-2 gap-1 sm:grid-cols-5">
+            {TALENTS.map((talent) => {
+              const unlocked = meta.unlockedTalents.includes(talent.id);
+              const selected = meta.talents.includes(talent.id);
+              return (
+                <button
+                  key={talent.id}
+                  type="button"
+                  onClick={() => toggleTalent(talent.id)}
+                  title={talent.description}
+                  className={cn(
+                    'rounded-lg border-2 border-line px-1 py-1 text-left text-[0.65rem] leading-tight',
+                    selected ? 'bg-mint-soft' : 'bg-cream',
+                    !unlocked && 'opacity-70',
+                  )}
+                >
+                  <span className="block text-base">{talent.icon}</span>
+                  {talent.name}
+                  {!unlocked ? <span className="block text-ink-soft">{talent.cost} 学点</span> : null}
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-ink-soft uppercase">Tier</span>
+            {[1, 2, 3, 4, 5].map((value) => (
+              <button
+                key={value}
+                type="button"
+                disabled={value > meta.bestTier}
+                onClick={() => setTier(value)}
+                className={cn(
+                  'h-7 w-7 rounded-full border-2 border-line text-xs font-bold disabled:opacity-30',
+                  tier === value ? 'bg-butter' : 'bg-paper text-ink-soft',
+                )}
+              >
+                {value}
+              </button>
+            ))}
+            <span className="text-[0.65rem] text-ink-soft">{TIER_PRESSURE[tier - 1]}</span>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-ink-soft uppercase">Mode</span>
+            {(['free', 'daily', 'weekly'] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setMode(value)}
+                className={cn(
+                  'rounded-pill border-2 border-line px-2 py-0.5 text-xs font-semibold',
+                  mode === value ? 'bg-butter' : 'bg-paper text-ink-soft',
+                )}
+              >
+                {value}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setSoundOn((on) => !on)}
+              className="ml-auto rounded-pill border-2 border-line bg-paper px-2 py-0.5 text-xs"
+            >
+              {soundOn ? '🔊' : '🔇'}
+            </button>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.1}
+              value={volume}
+              aria-label="Volume"
+              onChange={(event) => setVolume(Number(event.target.value))}
+              className="w-20"
+            />
+          </div>
+        </div>
+
         <div className="grid gap-2">
           {DIFFS.map((d) => (
             <button
               key={d.id}
               type="button"
-              onClick={() => resetRun(d.id)}
+              onClick={() => resetRun(d.id, { mode, tier })}
               className="flex items-center justify-between rounded-blob border-2 border-line bg-paper px-4 py-3 text-left shadow-sticker-sm transition-transform hover:-translate-y-0.5"
             >
               <span>
@@ -529,6 +819,21 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
             <li>{L.buffs}: {buffs.size}</li>
             <li>{L.kills}: {stats.kills}</li>
           </ul>
+          {result ? (
+            <div className="mt-3 rounded-lg border-2 border-line/30 bg-cream p-2 text-sm">
+              <p className="font-bold">
+                Score {result.score} · +{result.points} 学点
+              </p>
+              <p className="text-ink-soft">
+                Streak best {maxStreak} · Flawless layers {flawlessLayers} · Tier {tier}
+              </p>
+              {result.unlocked.length ? (
+                <p className="mt-1 text-ink-soft">
+                  Achievement: {result.unlocked.map((id) => ACHIEVEMENTS.find((a) => a.id === id)?.name ?? id).join(', ')}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </div>
         <div className="flex gap-2">
           <Button onClick={() => setPhase('menu')}>{L.menu}</Button>
@@ -544,6 +849,23 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     const enemyHp = Math.max(0, battle.hp);
     return (
       <div className="mx-auto flex max-w-3xl flex-col gap-3">
+        {breakFx ? (
+          <div className="pointer-events-none fixed inset-0 z-50 grid place-items-center bg-ink/50">
+            <div className="relative h-64 w-64">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <span
+                  key={i}
+                  className="absolute top-1/2 left-1/2 h-40 w-0.5 origin-top bg-coral"
+                  style={{ transform: `rotate(${i * 45}deg)` }}
+                  aria-hidden
+                />
+              ))}
+              <p className="absolute inset-0 grid place-items-center font-display text-4xl font-bold text-cream">
+                BREAK!
+              </p>
+            </div>
+          </div>
+        ) : null}
         {damageFlash ? (
           <div
             className="animate-damage pointer-events-none fixed inset-0 z-50"
@@ -556,7 +878,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
             {L.layer} {layer + 1}/3 · {L.boss}: {bossCopy?.name ?? ''}
           </span>
           <span className="text-sm">
-            {L.hp} {hp}/{maxHp} · {L.gold} {gold}
+            {L.hp} {hp}/{maxHp} · {L.gold} {gold} · 🔥 {streak}
           </span>
         </div>
 
@@ -727,7 +1049,12 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
   }
 
   if (phase === 'shop') {
-    const price = Math.round(DUNGEON_CONFIG.buffPrice[difficulty] * (buffs.has('discount') ? 0.7 : 1));
+    const price = Math.round(
+      DUNGEON_CONFIG.buffPrice[difficulty] *
+        (buffs.has('discount') ? 0.7 : 1) *
+        (meta.talents.includes('discount') ? 0.8 : 1) *
+        (modifier?.id === 'pricey' ? 1.3 : 1),
+    );
     return (
       <div className="mx-auto flex max-w-xl flex-col gap-3">
         <div className="flex items-center justify-between rounded-blob border-2 border-line bg-ink px-4 py-2 text-cream shadow-sticker-sm">
@@ -832,15 +1159,23 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2 rounded-blob border-2 border-line bg-ink px-3 py-2 text-cream shadow-sticker-sm">
           <MapIcon className="h-4 w-4" aria-hidden />
-          <span className="text-xs font-bold">
-            {L.layer} {layer + 1}/3 · {L.boss}: {bossCopy?.name}
+          <span className="text-sm font-bold">
+            {L.layer} {layer + 1}/3 · Tier {tier} · {L.boss}: {bossCopy?.name}
           </span>
-          <span className="ml-auto flex items-center gap-3 text-xs">
+          {modifier ? (
+            <span
+              title={modifier.description}
+              className="rounded-pill border-2 border-cream/30 px-2 py-0.5 text-xs font-semibold"
+            >
+              {modifier.icon} {modifier.name}
+            </span>
+          ) : null}
+          <span className="ml-auto flex items-center gap-3 text-sm">
             <span className="flex items-center gap-1">
-              <Heart className="h-3 w-3" /> {hp}/{maxHp}
+              <Heart className="h-4 w-4" /> {hp}/{maxHp}
             </span>
             <span className="flex items-center gap-1">
-              <Coins className="h-3 w-3" /> {gold}
+              <Coins className="h-4 w-4" /> {gold}
             </span>
           </span>
         </div>
@@ -855,7 +1190,6 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
               const here = room.id === roomId;
               const reachable = availableRooms.has(room.id);
               const isCleared = cleared.has(room.id);
-              const wasVisited = visited.has(room.id);
               const known = revealed.has(room.id);
               return (
                 <button

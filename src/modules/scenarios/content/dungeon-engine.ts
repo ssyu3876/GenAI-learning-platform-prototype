@@ -230,6 +230,11 @@ export function generateMapPool(count: number): DungeonMap[] {
   return Array.from({ length: count }, (_, i) => generateMap(`map-${i}-${randInt(10000)}`));
 }
 
+/** The hand-built map, exposed for the daily challenge where everyone should see the same layout. */
+export function presetMap(): DungeonMap {
+  return templateMap(0);
+}
+
 export function roomAt(map: DungeonMap, x: number, y: number): Room | undefined {
   return map.rooms.find((r) => r.pos[0] === x && r.pos[1] === y);
 }

@@ -9,6 +9,8 @@ import {
   ArrowRight,
   Check,
   Clock,
+  Code,
+  HelpCircle,
   Link2,
   MapPin,
   Megaphone,
@@ -21,7 +23,16 @@ import {
 } from 'lucide-react';
 import { cn } from '@/components/ui';
 
-export const SLIDE_VISUALS = ['impact-first', 'three-moves', 'trade-off', 'tone-meter', 'star-stack'] as const;
+export const SLIDE_VISUALS = [
+  'impact-first',
+  'three-moves',
+  'trade-off',
+  'tone-meter',
+  'star-stack',
+  'dialogue-review',
+  'dialogue-interview',
+  'dialogue-client',
+] as const;
 export type SlideVisualName = (typeof SLIDE_VISUALS)[number];
 
 export function isSlideVisual(name: string): name is SlideVisualName {
@@ -181,12 +192,116 @@ function StarStack() {
   );
 }
 
+/** A small friendly face, used in the dialogue scenes. No words, so it works in both locales. */
+function Face({
+  tone,
+  mood,
+  flip,
+}: {
+  tone: string;
+  mood: 'happy' | 'think' | 'worried';
+  flip?: boolean;
+}) {
+  const mouth =
+    mood === 'happy' ? 'M24 40 Q32 47 40 40' : mood === 'think' ? 'M25 41 H39' : 'M24 44 Q32 38 40 44';
+  return (
+    <svg viewBox="0 0 64 64" className={cn('h-20 w-20 shrink-0', flip && '-scale-x-100')} aria-hidden>
+      <circle cx="32" cy="34" r="23" strokeWidth={3} className={cn('stroke-line', tone)} />
+      <path d="M13 27 Q18 9 32 9 Q46 9 51 27" fill="none" strokeWidth={3} strokeLinecap="round" className="stroke-line" />
+      <circle cx="24" cy="31" r="2.5" className="fill-ink" />
+      <circle cx="40" cy="31" r="2.5" className="fill-ink" />
+      <path d={mouth} fill="none" strokeWidth={2.5} strokeLinecap="round" className="stroke-line" />
+    </svg>
+  );
+}
+
+function Bubble({ tone, children }: { tone: string; children: ReactNode }) {
+  return (
+    <div className={cn('rounded-blob border-2 border-line px-3 py-2 shadow-sticker-sm', tone)}>
+      {children}
+    </div>
+  );
+}
+
+/** Reviewer points at the line; the author listens. */
+function DialogueReview() {
+  return (
+    <div className="flex items-end justify-between gap-3">
+      <Face tone="fill-butter-soft" mood="worried" />
+      <div className="flex flex-col items-end gap-1">
+        <Bubble tone="bg-mint-soft">
+          <div className="flex items-center gap-2">
+            <Code className="h-4 w-4 text-ink-soft" aria-hidden />
+            <span className="h-2 w-16 rounded-pill bg-ink/25" aria-hidden />
+            <Check className="h-4 w-4 text-mint-deep" aria-hidden />
+          </div>
+        </Bubble>
+        <Face tone="fill-mint-soft" mood="happy" flip />
+      </div>
+    </div>
+  );
+}
+
+/** The candidate answers with the four STAR beats; the interviewer asks for more. */
+function DialogueInterview() {
+  return (
+    <div className="flex items-end justify-between gap-3">
+      <div className="flex flex-col items-start gap-1">
+        <Bubble tone="bg-paper">
+          <div className="flex items-center gap-1" aria-hidden>
+            {['S', 'T', 'A', 'R'].map((letter) => (
+              <span
+                key={letter}
+                className="grid h-6 w-6 place-items-center rounded-md border-2 border-line bg-butter-soft font-display text-[0.65rem] font-bold"
+              >
+                {letter}
+              </span>
+            ))}
+          </div>
+        </Bubble>
+        <Face tone="fill-coral-soft" mood="happy" />
+      </div>
+      <div className="flex flex-col items-end gap-1">
+        <Bubble tone="bg-sky-soft">
+          <HelpCircle className="h-4 w-4 text-ink-soft" aria-hidden />
+        </Bubble>
+        <Face tone="fill-sky-soft" mood="think" flip />
+      </div>
+    </div>
+  );
+}
+
+/** The client is confused; the engineer answers with what changed. */
+function DialogueClient() {
+  return (
+    <div className="flex items-end justify-between gap-3">
+      <div className="flex flex-col items-start gap-1">
+        <Bubble tone="bg-cream">
+          <HelpCircle className="h-4 w-4 text-ink-soft" aria-hidden />
+        </Bubble>
+        <Face tone="fill-lilac-soft" mood="worried" />
+      </div>
+      <div className="flex flex-col items-end gap-1">
+        <Bubble tone="bg-mint-soft">
+          <div className="flex items-center gap-1 font-display text-sm font-bold">
+            12s <ArrowRight className="h-3 w-3 text-ink-soft" aria-hidden /> 2s
+          </div>
+        </Bubble>
+        <Face tone="fill-mint-soft" mood="happy" flip />
+      </div>
+    </div>
+  );
+}
+
 const VISUALS: Record<SlideVisualName, () => ReactNode> = {
   'impact-first': ImpactFirst,
   'three-moves': ThreeMoves,
   'trade-off': TradeOff,
   'tone-meter': ToneMeter,
   'star-stack': StarStack,
+  'dialogue-review': DialogueReview,
+  'dialogue-interview': DialogueInterview,
+  'dialogue-client': DialogueClient,
 };
 
 export function SlideVisual({ name }: { name: SlideVisualName }) {

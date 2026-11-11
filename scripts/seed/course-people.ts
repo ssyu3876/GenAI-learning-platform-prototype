@@ -35,7 +35,40 @@ This talk walks through the same problem from a practitioner's side:
 | "There's a race condition" | "Two things happen at the same moment and sometimes trip over each other" |
 | "It's deployed to staging" | "It's on our test version of the site, not live yet" |
 
-> If they ask a follow-up question, that is a good sign. If they nod politely and change the subject, you lost them.`,
+> If they ask a follow-up question, that is a good sign. If they nod politely and change the subject, you lost them.
+
+### A worked example
+
+The checkout page slowed down for an hour. Here is the same update twice.
+
+**What not to send**
+
+> "We saw elevated p99 latency on the checkout endpoint. The retry queue saturated the connection pool. A fix is deployed."
+
+**What to send**
+
+> "Between 9 and 10, checkout took up to 12 seconds instead of 2. It is fixed now, and orders are going through. We do not yet know why it started; I will tell you by 4pm. Do you need to tell your staff anything today?"
+
+Why the second one works: it names the impact, the current state, the gap and the next checkpoint. The cause is optional. The decision you need from them is explicit.
+
+### What to leave out
+
+- Internal names nobody outside the team uses: service names, queue names, ticket ids.
+- A list of everything you tried. Keep the one detail that changes their decision.
+- Blame. "The vendor" and "the previous team" are not information they can act on.
+- False certainty. "It will not happen again" is a promise you cannot keep after an hour of debugging.
+
+### Turn a status update into a decision
+
+If the message ends with "let me know if you have questions", it is a status update. If it ends with two options and a date, it is a decision. Aim for the second.
+
+### A 60-second checklist
+
+- [ ] The first sentence says what happened to them.
+- [ ] The second says whether it is still happening.
+- [ ] The gap is named, with a time you will come back.
+- [ ] There is one clear next step or decision.
+- [ ] No internal names, no blame, no invented certainty.`,
       activities: [
         {
           type: 'slides',
@@ -48,6 +81,7 @@ This talk walks through the same problem from a practitioner's side:
                 bullets: ['Checkout took 12 seconds', 'She does not care why'],
                 narration:
                   'Meet Dana. She runs online orders for the café. Yesterday, checkout took twelve seconds instead of two. She does not want the cause first. She wants to know what happened, and whether it will happen again.',
+                visual: 'dialogue-client',
               },
               {
                 heading: 'Lead with the impact',
@@ -55,6 +89,16 @@ This talk walks through the same problem from a practitioner's side:
                 narration:
                   'Start with what she experienced: between nine and ten, checkout took twelve seconds. The retry storm and the queue can come second. Impact first buys you attention for the cause.',
                 visual: 'impact-first',
+                check: {
+                  question: 'Which opening would Dana act on?',
+                  options: [
+                    'Between 9 and 10, checkout took 12 seconds instead of 2. It is fixed.',
+                    'The webhook retry queue saturated the connection pool.',
+                    'We observed elevated p99 latency on the checkout endpoint.',
+                  ],
+                  answerIndex: 0,
+                  explanation: 'Impact first; the cause is the second sentence, not the first.',
+                },
               },
               {
                 heading: 'One analogy, one decision',
@@ -62,6 +106,29 @@ This talk walks through the same problem from a practitioner's side:
                 narration:
                   'Say the queue is like a till that keeps re-scanning the same item. Then end with a decision: a workaround today, or a proper fix by Friday. A choice turns a status update into a plan.',
                 visual: 'three-moves',
+              },
+              {
+                heading: 'What she actually needs',
+                bullets: ['What happened', 'Whether it will happen again', 'What you need from her'],
+                narration:
+                  'Dana needs three things: what happened, whether it will happen again, and whether she has to tell her staff. None of them is the retry queue. Answer her three questions before you explain yours.',
+                visual: 'dialogue-client',
+              },
+              {
+                heading: 'Say what you do not know',
+                bullets: ['Name the gap', 'Give the next checkpoint'],
+                narration:
+                  'You will not always know the cause. Saying so is better than inventing one: it is fixed, we do not know why yet, we will tell you by four.',
+                check: {
+                  question: 'You do not know the root cause yet. What do you say?',
+                  options: [
+                    'It is fixed. I do not know why yet, and I will tell you by four.',
+                    'It was probably the database.',
+                    'Nothing until we know for certain.',
+                  ],
+                  answerIndex: 0,
+                  explanation: 'Naming the gap and a checkpoint is more trustworthy than a guess.',
+                },
               },
               {
                 heading: 'Your turn',
@@ -148,7 +215,53 @@ This talk walks through the same problem from a practitioner's side:
 
 ### Receiving feedback
 
-Assume good intent, ask questions when unclear, and remember: comments on your code are not comments on you. On an AI-assisted team, many comments will be about code an agent wrote. Reviewing it together is the point.`,
+Assume good intent, ask questions when unclear, and remember: comments on your code are not comments on you. On an AI-assisted team, many comments will be about code an agent wrote. Reviewing it together is the point.
+
+### What a good comment contains
+
+1. **The location.** A line or a function, not "somewhere in this file".
+2. **The failure.** What breaks, for whom, under which input.
+3. **The reason.** Why it matters, in one sentence.
+4. **A direction.** A fix, a question, or a smaller alternative.
+
+Example: "Line 12 divides by zero when the cart is empty. Empty carts are a real path for new users. Could we return 0 before the max?"
+
+### Comment templates you can copy
+
+| Situation | Template |
+|---|---|
+| Real bug | "When <input>, <line> does <wrong thing>. Could we <fix>?" |
+| Unclear code | "I could not tell whether <name> is <unit A> or <unit B>. Could we rename it?" |
+| Small improvement | "nit: <suggestion>. Not blocking." |
+| Praise | "<specific thing> made this easier to review. Nice." |
+| Question | "What happens if <edge case>? I might be missing context." |
+
+### Must-fix or nice-to-have?
+
+| Must-fix | Nice-to-have |
+|---|---|
+| Security, data loss, crashes | Naming, formatting, style |
+| Broken tests or missing test for the changed path | Extra test for an unlikely edge |
+| Behaviour that contradicts the requirement | A cleaner abstraction |
+| Something that will page someone at 3am | Something that will annoy someone at 3pm |
+
+If everything is must-fix, nothing is. Prefix small things with "nit:" so the author knows what actually blocks the merge.
+
+### Common mistakes
+
+- Reviewing the person instead of the diff: "why would you…" instead of "line 12 will…".
+- Dumping twenty comments with no priority.
+- Rewriting the code in a comment instead of describing the change.
+- Approving because the tests are green, without reading what the tests cover.
+- Saving the one real concern for a private message after approving.
+
+### Before you press submit
+
+- [ ] Every blocking comment says what breaks and where.
+- [ ] Nits are labelled.
+- [ ] At least one thing that is good is named, specifically.
+- [ ] The author can tell what to do next without asking you.
+- [ ] You would be glad to receive this review yourself.`,
       activities: [
         {
           type: 'slides',
@@ -168,12 +281,55 @@ Assume good intent, ask questions when unclear, and remember: comments on your c
                 bullets: ['Specific beats clever', 'Say what could go wrong'],
                 narration:
                   'Point at the line and describe the failure. If the cart is empty, line 12 divides by zero. The author can act on that without guessing.',
+                check: {
+                  question: 'Which comment can the author act on?',
+                  options: [
+                    'Line 12 divides by zero when the cart is empty. Return 0 early?',
+                    'This is wrong.',
+                    'Why would anyone write it like this?',
+                  ],
+                  answerIndex: 0,
+                  explanation: 'A line, a failure and a suggestion. The other two are moods, not reviews.',
+                },
               },
               {
                 heading: 'Separate must-fix from nit',
                 bullets: ['One blocks the merge', 'One can wait'],
                 narration:
                   'Say which comments block the merge and which are nits. A review where everything is urgent is a review with no priorities.',
+                check: {
+                  question: 'Which comment actually blocks the merge?',
+                  options: [
+                    'Line 8 writes the password into the log.',
+                    'This helper could be named totalCents.',
+                    'Nit: extra blank line at the end.',
+                  ],
+                  answerIndex: 0,
+                  explanation: 'A leaked credential blocks the merge; the others can wait.',
+                },
+              },
+              {
+                heading: 'Say why, not just what',
+                bullets: ['The reason is the lesson', 'One sentence is enough'],
+                narration:
+                  'Naming the unit is clearer than quoting a rule: I could not tell whether totalCents was dollars. The reason lets the author apply the fix to the next line too.',
+                visual: 'dialogue-review',
+              },
+              {
+                heading: 'Review the reviewer',
+                bullets: ['Would you be glad to receive it?', 'Read it as the author'],
+                narration:
+                  'Before you send, read the comment as the author. If you would feel attacked, cut the sentence that caused it, not the point you were making.',
+                check: {
+                  question: 'A review comment feels harsh. What should you change?',
+                  options: [
+                    'Cut the personal sentence and keep the specific point.',
+                    'Delete the whole comment.',
+                    'Add an apology at the start.',
+                  ],
+                  answerIndex: 0,
+                  explanation: 'Keep the information; remove the part aimed at the person.',
+                },
               },
               {
                 heading: 'Your turn',
@@ -261,7 +417,44 @@ Assume good intent, ask questions when unclear, and remember: comments on your c
 - Have 3–4 stories ready (a conflict, a mistake, a success, a time you learned fast) and adapt them.
 - It is fine to talk about AI tools. Explain how *you* directed and checked them.
 
-Want a full run? The [practice interviews](/scenarios/interview) ask five questions and end with a debrief on structure, specifics and how you check AI output.`,
+Want a full run? The [practice interviews](/scenarios/interview) ask five questions and end with a debrief on structure, specifics and how you check AI output.
+
+### A full answer, in order
+
+> **Situation:** "Last semester, our four-person team had four weeks to build a learning app, and in week three we were two weeks behind."
+>
+> **Task:** "I owned the leaderboard and the shared coding rules, so I had to get the team back on track without asking people to work weekends."
+>
+> **Action:** "I split the remaining work into small tasks with one owner each, set a ten-minute check-in every morning, and wrote a one-page rules file so every agent produced compatible code."
+>
+> **Result:** "We delivered on time, the final demo got the top grade, and nobody worked past seven in the last week."
+
+Notice the details that make it believable: a number in the situation, a boundary in the task ("without weekends"), concrete steps in the action, and a checkable result.
+
+### Handling follow-ups
+
+| They ask | You answer |
+|---|---|
+| "What did *you* do?" | Pick one action you owned, not the team's collective effort. |
+| "What was the result?" | A number, a date, a ranking, or a concrete change. |
+| "What would you do differently?" | One real lesson, not "nothing". |
+| "How do you use AI?" | What you delegated, what you checked, one mistake you caught. |
+
+### Common pitfalls
+
+- **Too much situation.** Thirty seconds of context and no action is a summary, not a story.
+- **"We" all the way through.** The interviewer cannot tell what you did.
+- **No result.** "It went well" is not evidence.
+- **Memorised script.** It sounds like a script and falls apart on the first follow-up.
+- **Hiding the AI.** If the team used agents, saying so and explaining your checks is stronger than pretending you typed every line.
+
+### A practice plan that works
+
+1. Write three stories: a conflict, a mistake, a success.
+2. Put each one into the four STAR boxes, one or two sentences per box.
+3. Say it out loud, timed. Aim for 90–120 seconds.
+4. Record one, listen back, and cut every sentence that does not add a fact.
+5. Have someone ask one follow-up per story. If you cannot answer it, the story is not ready.`,
       activities: [
         {
           type: 'slides',
@@ -277,16 +470,59 @@ Want a full run? The [practice interviews](/scenarios/interview) ask five questi
                 visual: 'star-stack',
               },
               {
+                heading: 'Situation in one sentence',
+                bullets: ['One sentence of context', 'No life story'],
+                narration:
+                  'Give enough context to understand the stakes, then move on. Last semester, our four-person team was two weeks behind is enough. The interviewer does not need the history of the project.',
+                check: {
+                  question: 'Which situation sentence is the right length?',
+                  options: [
+                    'Last semester, our four-person team was two weeks behind.',
+                    'It all started when I first became interested in computers.',
+                    'We had a project and many things happened.',
+                  ],
+                  answerIndex: 0,
+                  explanation: 'One sentence with stakes; the rest is the story.',
+                },
+              },
+              {
                 heading: 'What you did',
                 bullets: ['Say I, not we', 'Concrete steps'],
                 narration:
                   'The action is the part interviewers score. Say what you did, in order, without hiding behind the team.',
+                visual: 'dialogue-interview',
+                check: {
+                  question: 'Which sentence shows your action?',
+                  options: [
+                    'I split the work into small tasks and set a daily check-in.',
+                    'We did our best under difficult circumstances.',
+                    'The team was great to work with.',
+                  ],
+                  answerIndex: 0,
+                  explanation: 'A concrete step you took; the others describe the weather.',
+                },
               },
               {
                 heading: 'The result needs evidence',
-                bullets: ['Outcome', 'A number if you have one'],
+                bullets: ['What changed', 'A number if you have one'],
                 narration:
                   'End with what changed: shipped on time, cut the queue in half, top grade in the class. A result without evidence sounds like a hope.',
+                check: {
+                  question: 'Which result is evidence?',
+                  options: [
+                    'We delivered on time and the demo got the top grade.',
+                    'It went really well overall.',
+                    'Everyone was happy with the outcome.',
+                  ],
+                  answerIndex: 0,
+                  explanation: 'A date and a ranking can be checked; "well" cannot.',
+                },
+              },
+              {
+                heading: 'Talk about AI honestly',
+                bullets: ['What you handed over', 'How you checked it'],
+                narration:
+                  'AI is part of the story now. Say what you handed over and how you checked it. That is a skill, not a confession.',
               },
               {
                 heading: 'Your turn',
@@ -390,8 +626,116 @@ Want a full run? The [practice interviews](/scenarios/interview) ask five questi
 - **Review each other's AI output.** A second pair of eyes catches what your agent and you both missed.
 - **Own the result.** "The AI did it" is never an answer in a retro.
 
-> Ask yourself after each task: which of the 4Ds did I use? Which did I skip?`,
+> Ask yourself after each task: which of the 4Ds did I use? Which did I skip?
+
+### What goes in the shared rules file
+
+A short file is enough. Keep it boring and specific:
+
+- **Stack and versions.** Framework, language, package manager, test runner.
+- **Structure.** Where pages, components, tests and shared helpers live.
+- **Naming.** Files, components, database columns, event names.
+- **Commands.** Install, run, test, lint, migrate.
+- **Review rules.** What counts as must-fix, who reviews, how big a PR should be.
+- **AI rules.** What an agent may change without asking, and what it must never touch.
+
+Every agent gets the same file. When a rule changes, change it once and tell the team.
+
+### A pull request that explains its AI use
+
+> **What the agent wrote:** the settings form and its validation.
+> **What I changed:** moved the permission check into the API route, added a test for the empty state.
+> **What I checked:** ran the suite, clicked through as a learner, read the diff for anything touching auth.
+> **What I did not verify:** the email preview in a real inbox.
+
+Four lines. The reviewer knows where to look and what is still uncertain.
+
+### What to check in AI output
+
+- [ ] **Intent:** does it do the thing the task asked for, not a nearby thing?
+- [ ] **Tests:** do they assert behaviour, or just run the code?
+- [ ] **Edges:** empty, missing, duplicated, unauthorised.
+- [ ] **Security:** secrets, logs, permissions, raw input.
+- [ ] **Size:** is this one reviewable change or three changes in a trench coat?
+
+### Retro language
+
+| Instead of | Say |
+|---|---|
+| "The AI did it." | "I merged it without testing the edge case." |
+| "Nobody told me to test." | "I will add the missing test before the next release." |
+| "It worked on my machine." | "The staging data differs; here is how I will make them match." |
+
+Ownership is a change you can make, not a place to point.
+
+### Team checklist
+
+- [ ] Everyone has the same rules file.
+- [ ] Every AI-assisted PR says what the agent wrote and what was checked.
+- [ ] A second person reviews changes to shared or auth code.
+- [ ] Good prompts are shared, not kept private.
+- [ ] The retro talks about the process, not the tool.`,
       activities: [
+        {
+          type: 'slides',
+          title: 'Three people, one release',
+          xpReward: 15,
+          config: {
+            slides: [
+              {
+                heading: 'Three agents, three styles',
+                bullets: ['Shared rules once', 'One file every agent reads'],
+                narration:
+                  'Three people with three agents produce three styles in an afternoon. Agree the stack, the naming and the structure once, and give every agent the same rules file.',
+              },
+              {
+                heading: 'Say what the AI wrote',
+                bullets: ['In the pull request', 'What you checked'],
+                narration:
+                  'Write down what the agent wrote and what you checked. It makes the review faster and tells the team where to look first.',
+                visual: 'dialogue-review',
+              },
+              {
+                heading: 'Review the output together',
+                bullets: ['A second pair of eyes', 'Catch what you both missed'],
+                narration:
+                  'The author and the agent share the same blind spot. A reviewer who did not write the prompt is the cheapest way to find it.',
+                check: {
+                  question: 'Why review AI-written code with a teammate?',
+                  options: [
+                    'A fresh reader catches what the author and the agent both missed.',
+                    'The agent learns from the review.',
+                    'It makes the pull request shorter.',
+                  ],
+                  answerIndex: 0,
+                  explanation: 'Different context, different blind spots.',
+                },
+              },
+              {
+                heading: 'Own the result',
+                bullets: ['"The AI did it" is not an answer', 'Fix the process, not the blame'],
+                narration:
+                  'In a retro, the useful sentence is what you will change next time: a test first, a smaller slice, a second reader. The agent cannot attend the retro, so the ownership stays with you.',
+                check: {
+                  question: 'An AI-written feature broke production. What belongs in the retro?',
+                  options: [
+                    'What I will change in the process next time.',
+                    'That the AI wrote it.',
+                    'That nobody told me to test it.',
+                  ],
+                  answerIndex: 0,
+                  explanation: 'Ownership is a change you can make, not a place to point.',
+                },
+              },
+              {
+                heading: 'Your turn',
+                bullets: ['Check your team habits', 'Then run the release week'],
+                narration:
+                  'Try the habits quiz, then play the short release game. Every decision there is a team decision, made under a date.',
+              },
+            ],
+          },
+        },
         {
           type: 'quiz',
           title: 'Team habits check',
@@ -486,7 +830,49 @@ If the conversation matters, write it down afterwards: what was agreed, who does
 
 > A no without an alternative is a closed door. A no with one is a plan.
 
-Want to practise? [Sprint Zero](/scenarios/sprint-zero) is three weeks of these trade-offs.`,
+Want to practise? [Sprint Zero](/scenarios/sprint-zero) is three weeks of these trade-offs.
+
+### A script you can say out loud
+
+> "I cannot add it before Friday. Testing the release takes a full day, and Friday is fixed. I can either ship this on Tuesday, or swap it for the export fix and keep Friday. Which matters more to you?"
+
+Four sentences: what you cannot do, why, two options, and a question that hands the decision back. No apology paragraph, no maybe.
+
+The written version is three lines: the constraint, the two options, the date you will check again.
+
+### Choosing the trade
+
+| Request | Real cost | A trade you can offer |
+|---|---|---|
+| "One small feature" | A permission model + testing | Ship it Tuesday, or drop another item |
+| "Can you join this meeting?" | Half a day of build time | Send notes, or attend the first ten minutes |
+| "Skip the tests once" | A bug in production | A smaller test subset, run together |
+| "Can you own this too?" | Your current deadline | Hand over one of your existing items |
+
+The trade is not a trick to avoid the work. It makes the cost visible to the person choosing it.
+
+### When they push back
+
+- **"It is urgent."** Ask what happens if it ships Tuesday. Urgency without a consequence is a preference.
+- **"Everyone else does it."** Point at the date and the testing time, not at other teams.
+- **"Just try."** Offer a smaller version you can actually finish, with a date.
+- **Silence.** Follow up in writing. An unanswered request is not an agreement.
+
+### Common mistakes
+
+- Saying yes and hoping. The date breaks later, louder.
+- A no with no alternative. It closes the conversation and the relationship.
+- Over-explaining. Three reasons sound like excuses; one constraint sounds like a fact.
+- Refusing the person instead of the request.
+- Promising a date you have not checked with the team.
+
+### Before you send the no
+
+- [ ] The constraint is one sentence and it is true.
+- [ ] There are two real options, not one option and a threat.
+- [ ] The next date is one the team can actually hit.
+- [ ] It is in writing if the decision matters.
+- [ ] You said no to the request, not to the person.`,
       activities: [
         {
           type: 'slides',
@@ -499,6 +885,7 @@ Want to practise? [Sprint Zero](/scenarios/sprint-zero) is three weeks of these 
                 bullets: ['Launch is Friday', 'The request arrives Wednesday'],
                 narration:
                   'It is Wednesday. The launch is Friday. A client asks for one more feature, and the honest answer is no. The question is not whether to say it. It is what comes after the no.',
+                visual: 'dialogue-client',
               },
               {
                 heading: 'Say what you can do',
@@ -512,6 +899,38 @@ Want to practise? [Sprint Zero](/scenarios/sprint-zero) is three weeks of these 
                 narration:
                   'Name the constraint once: the launch is Friday and testing takes a day. Then offer the trade: the new feature, or the export fix. Now the client is choosing, not arguing.',
                 visual: 'trade-off',
+                check: {
+                  question: 'What makes this a trade rather than a refusal?',
+                  options: [
+                    'The client gets two real options and picks one.',
+                    'You apologise several times.',
+                    'You promise to try harder.',
+                  ],
+                  answerIndex: 0,
+                  explanation: 'A choice moves the decision back to the client without reopening the date.',
+                },
+              },
+              {
+                heading: 'Write it down',
+                bullets: ['What was agreed', 'When you check again'],
+                narration:
+                  'After the call, send three lines: what was agreed, who does what, and when you check again. Memory is not a project plan, and a written trade is harder to reopen by accident.',
+                check: {
+                  question: 'What belongs in the follow-up message?',
+                  options: [
+                    'The agreement, the owner and the next checkpoint.',
+                    'A long explanation of why the request was hard.',
+                    'Nothing; the call was enough.',
+                  ],
+                  answerIndex: 0,
+                  explanation: 'Three facts the other person can act on.',
+                },
+              },
+              {
+                heading: 'Protect the relationship',
+                bullets: ['No to the request, yes to the person', 'No silent yes'],
+                narration:
+                  'You are refusing a request, not a person. Keep the relationship by being early, specific and consistent. The silent yes is the one that costs the relationship later.',
               },
               {
                 heading: 'Your turn',

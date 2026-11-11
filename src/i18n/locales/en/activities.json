@@ -81,6 +81,7 @@
   "slides": {
     "slideOf": "Slide {current} of {total}",
     "captions": "Captions",
+    "quickCheck": "Quick check",
     "previous": "Previous slide",
     "next": "Next slide",
     "pause": "Pause",

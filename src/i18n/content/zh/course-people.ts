@@ -53,12 +53,14 @@ export const peopleCourseZh: CourseDraft = {
                 bullets: ['她感受到了什么', '然后再讲原因'],
                 narration:
                   '先说她经历的事：九点到十点之间，结账要 12 秒。重试风暴和队列可以放在后面。先讲影响，才换得来她听原因的时间。',
+                visual: 'impact-first',
               },
               {
                 heading: '一个比喻，一个决定',
                 bullets: ['用她的世界', '最后给选择'],
                 narration:
                   '把队列比作收银台反复扫同一件商品。最后给一个决定：今天先上临时方案，还是周五前彻底修好。有了选择，进度汇报就变成了计划。',
+                visual: 'three-moves',
               },
               {
                 heading: '轮到你了',
@@ -429,6 +431,7 @@ export const peopleCourseZh: CourseDraft = {
                 bullets: ['限制只说一次', '给两个选项'],
                 narration:
                   '限制只说一次：发布在周五，测试要一天。然后给交换：要新功能，还是要导出修复。这时候客户在做选择，不是在争论。',
+                visual: 'trade-off',
               },
               {
                 heading: '轮到你了',

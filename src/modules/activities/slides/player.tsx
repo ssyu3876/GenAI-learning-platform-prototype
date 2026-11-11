@@ -11,6 +11,7 @@ import { fmt } from '@/i18n/format';
 import { ActivityFrame, ResultPanel } from '../components/activity-frame';
 import { useCompletion } from '../components/use-completion';
 import type { SlidesConfig } from './schema';
+import { isSlideVisual, SlideVisual } from './visuals';
 
 const noopSubscribe = () => () => {};
 
@@ -202,6 +203,11 @@ export function SlidesPlayer({ activity, config, onComplete, previousBest, previ
             {fmt(t.activities.slides.slideOf, { current: index + 1, total: config.slides.length })}
           </div>
           <h4 className="text-2xl font-bold sm:text-3xl">{slide.heading}</h4>
+          {slide.visual && isSlideVisual(slide.visual) ? (
+            <div className="mt-4">
+              <SlideVisual name={slide.visual} />
+            </div>
+          ) : null}
           {slide.bullets.length ? (
             <ul className="mt-4 flex flex-col gap-2">
               {slide.bullets.map((b, i) => (

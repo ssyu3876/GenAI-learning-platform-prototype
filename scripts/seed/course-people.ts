@@ -53,12 +53,14 @@ This talk walks through the same problem from a practitioner's side:
                 bullets: ['What they felt', 'Then the cause'],
                 narration:
                   'Start with what she experienced: between nine and ten, checkout took twelve seconds. The retry storm and the queue can come second. Impact first buys you attention for the cause.',
+                visual: 'impact-first',
               },
               {
                 heading: 'One analogy, one decision',
                 bullets: ['Their world, not yours', 'End with a choice'],
                 narration:
                   'Say the queue is like a till that keeps re-scanning the same item. Then end with a decision: a workaround today, or a proper fix by Friday. A choice turns a status update into a plan.',
+                visual: 'three-moves',
               },
               {
                 heading: 'Your turn',
@@ -434,6 +436,7 @@ Want to practise? [Sprint Zero](/scenarios/sprint-zero) is three weeks of these 
                 bullets: ['Name the constraint once', 'Offer two options'],
                 narration:
                   'Name the constraint once: the launch is Friday and testing takes a day. Then offer the trade: the new feature, or the export fix. Now the client is choosing, not arguing.',
+                visual: 'trade-off',
               },
               {
                 heading: 'Your turn',

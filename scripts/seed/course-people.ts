@@ -80,15 +80,15 @@ If the message ends with "let me know if you have questions", it is a status upd
                 heading: 'A client, a slow page',
                 bullets: ['Checkout took 12 seconds', 'She does not care why'],
                 narration:
-                  'Meet Dana. She runs online orders for the café. Yesterday, checkout took twelve seconds instead of two. She does not want the cause first. She wants to know what happened, and whether it will happen again.',
+                  'Meet Dana. She runs online orders for the café. Yesterday, checkout took twelve seconds instead of two, and her staff took the calls. She does not want the cause first. She wants to know what happened, whether it will happen again, and whether she has to tell anyone.',
                 visual: 'dialogue-client',
               },
               {
-                heading: 'Lead with the impact',
-                bullets: ['What they felt', 'Then the cause'],
+                heading: 'Impact, analogy, decision',
+                bullets: ['What they felt', 'Their world, not yours', 'End with a choice'],
                 narration:
-                  'Start with what she experienced: between nine and ten, checkout took twelve seconds. The retry storm and the queue can come second. Impact first buys you attention for the cause.',
-                visual: 'impact-first',
+                  'Start with what she experienced: between nine and ten, checkout took twelve seconds. The queue is like a till that keeps re-scanning the same item, which gives her a picture without the jargon. Then end with a decision: a workaround today, or a proper fix by Friday. A choice turns a status update into a plan. Keep the cause for the second sentence.',
+                visual: 'three-moves',
                 check: {
                   question: 'Which opening would Dana act on?',
                   options: [
@@ -101,24 +101,10 @@ If the message ends with "let me know if you have questions", it is a status upd
                 },
               },
               {
-                heading: 'One analogy, one decision',
-                bullets: ['Their world, not yours', 'End with a choice'],
-                narration:
-                  'Say the queue is like a till that keeps re-scanning the same item. Then end with a decision: a workaround today, or a proper fix by Friday. A choice turns a status update into a plan.',
-                visual: 'three-moves',
-              },
-              {
-                heading: 'What she actually needs',
-                bullets: ['What happened', 'Whether it will happen again', 'What you need from her'],
-                narration:
-                  'Dana needs three things: what happened, whether it will happen again, and whether she has to tell her staff. None of them is the retry queue. Answer her three questions before you explain yours.',
-                visual: 'dialogue-client',
-              },
-              {
                 heading: 'Say what you do not know',
                 bullets: ['Name the gap', 'Give the next checkpoint'],
                 narration:
-                  'You will not always know the cause. Saying so is better than inventing one: it is fixed, we do not know why yet, we will tell you by four.',
+                  'You will not always know the cause, and inventing one costs more trust than admitting the gap. Say what you know: it is fixed, orders are going through, we do not know why yet. Then give a time: I will tell you by four. A checkpoint is a promise you can keep; it will not happen again is not.',
                 check: {
                   question: 'You do not know the root cause yet. What do you say?',
                   options: [
@@ -132,9 +118,9 @@ If the message ends with "let me know if you have questions", it is a status upd
               },
               {
                 heading: 'Your turn',
-                bullets: ['Spot the impact-first message', 'Then name the analogy'],
+                bullets: ['Pick the impact-first message', 'Then choose the analogy'],
                 narration:
-                  'Now try the next two activities. Pick the messages Dana would understand, and the ones that bury the point under jargon.',
+                  'Now try the next two activities. Pick the messages Dana would understand, and the ones that bury the point under jargon. Then choose the opening you would actually send. Notice how often the shortest version is also the clearest.',
               },
             ],
           },

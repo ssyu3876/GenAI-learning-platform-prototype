@@ -252,15 +252,16 @@ export function SlidesPlayer({ activity, config, onComplete, previousBest, previ
     <ActivityFrame kind={t.activities.frame.slides} title={activity.title} xpReward={activity.xpReward} previousBest={previousBest} preview={preview} tint="lilac">
       <div className="flex flex-col gap-4">
         <div className="relative min-h-64 rounded-blob border-2 border-line bg-paper p-6 shadow-sticker-sm sm:p-8">
-          <div className="mb-1 text-xs font-bold text-ink-soft">
-            {fmt(t.activities.slides.slideOf, { current: index + 1, total: config.slides.length })}
-          </div>
-          <h4 className="text-2xl font-bold sm:text-3xl">{slide.heading}</h4>
-          {slide.visual && isSlideVisual(slide.visual) ? (
-            <div className="mt-4">
-              <SlideVisual name={slide.visual} />
+          <div key={index} className="animate-pop">
+            <div className="mb-1 text-xs font-bold text-ink-soft">
+              {fmt(t.activities.slides.slideOf, { current: index + 1, total: config.slides.length })}
             </div>
-          ) : null}
+            <h4 className="text-2xl font-bold sm:text-3xl">{slide.heading}</h4>
+            {slide.visual && isSlideVisual(slide.visual) ? (
+              <div className="mt-4 animate-pop">
+                <SlideVisual name={slide.visual} />
+              </div>
+            ) : null}
           {slide.bullets.length ? (
             <ul className="mt-4 flex flex-col gap-2">
               {slide.bullets.map((b, i) => (
@@ -325,6 +326,7 @@ export function SlidesPlayer({ activity, config, onComplete, previousBest, previ
               ) : null}
             </div>
           ) : null}
+          </div>
         </div>
 
         <div className="flex items-start gap-3">

@@ -47,6 +47,27 @@ const DIFFS: Array<{ id: Difficulty; labelKey: string }> = [
   { id: 'hard', labelKey: 'hard' },
 ];
 
+/** A tiny Web Audio blip; no assets, no dependency. */
+function blip(frequency: number, duration = 120, type: OscillatorType = 'square') {
+  try {
+    const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return;
+    const ctx = new Ctor();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = frequency;
+    gain.gain.setValueAtTime(0.06, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration / 1000);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + duration / 1000);
+    window.setTimeout(() => void ctx.close(), duration + 120);
+  } catch {
+    // Audio is a bonus; never break the game for it.
+  }
+}
+
 export function AgentDungeon({ copy }: { copy: Copy }) {
   const L = copy.labels as unknown as Record<string, string>;
   const [phase, setPhase] = useState<Phase>('menu');
@@ -75,6 +96,10 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
   const [shopStock, setShopStock] = useState<{ buff: Copy['buffs'][number] | null; items: Copy['items'][number][] }>({ buff: null, items: [] });
   const [buffChoices, setBuffChoices] = useState<Copy['buffs']>([]);
   const [stats, setStats] = useState({ correct: 0, wrong: 0, gold: 0, kills: 0, layers: 0 });
+  const [enemyHit, setEnemyHit] = useState(false);
+  const [damageFlash, setDamageFlash] = useState(false);
+  const [shielded, setShielded] = useState(false);
+  const [reviveUsed, setReviveUsed] = useState(false);
 
   const map = maps[layer];
   const currentRoom: Room | undefined = map?.rooms.find((r) => r.id === roomId);
@@ -116,6 +141,8 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     setItems([]);
     setUsed(new Set());
     setStats({ correct: 0, wrong: 0, gold: 0, kills: 0, layers: 0 });
+    setShielded(false);
+    setReviveUsed(false);
     const start = nextMaps[0]!.rooms.find((r) => r.id === nextMaps[0]!.startRoomId)!;
     setRoomId(start.id);
     setVisited(new Set([start.id]));
@@ -183,6 +210,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     const idx = layer;
     if (room.type === 'boss') {
       const boss = bossCopy!;
+      const seconds = boss.seconds + (buffs.has('time') ? 10 : 0);
       setBattle({
         kind: 'boss',
         name: boss.name,
@@ -193,11 +221,11 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
         maxConfidence: boss.confidence,
         broken: false,
         elite: false,
-        seconds: boss.seconds,
+        seconds,
         lines: boss.lines,
         gold: DUNGEON_CONFIG.bossGold[difficulty],
       });
-      setTimeLeft(boss.seconds);
+      setTimeLeft(seconds);
     } else {
       const monster = pickMonster(copy.monsters, idx + 1);
       const elite = Math.random() < DUNGEON_CONFIG.eliteChance[idx]!;
@@ -244,16 +272,34 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
       } else {
         let damage = triple ? 3 : 1;
         if (buffs.has('precision') && (next.kind === 'boss' || next.elite)) damage += 1;
+        if (buffs.has('crit') && (next.kind === 'boss' || next.elite)) damage += 1;
         next.hp = Math.max(0, next.hp - damage);
       }
       setBattle(next);
+      setEnemyHit(true);
+      blip(660, 90, 'square');
+      window.setTimeout(() => setEnemyHit(false), 360);
     } else {
       setStats((s) => ({ ...s, wrong: s.wrong + 1 }));
       let damage: number = battle.kind === 'boss' ? DUNGEON_CONFIG.bossDamage[difficulty] : battle.elite ? DUNGEON_CONFIG.eliteDamage[difficulty] : DUNGEON_CONFIG.monsterDamage[difficulty];
       if (buffs.has('armor')) damage = Math.floor(damage / 2);
+      if (shielded) {
+        damage = 0;
+        setShielded(false);
+      }
       const nextHp = Math.max(0, hp - damage);
       setHp(nextHp);
+      blip(160, 220, 'sawtooth');
+      setDamageFlash(true);
+      window.setTimeout(() => setDamageFlash(false), 460);
       if (nextHp <= 0) {
+        if (buffs.has('revive') && !reviveUsed) {
+          setReviveUsed(true);
+          setHp(30);
+          setBattle({ ...battle, confidence: battle.maxConfidence, broken: battle.kind === 'monster' ? battle.broken : false });
+          setTriple(false);
+          return;
+        }
         setPhase('gameover');
         return;
       }
@@ -356,6 +402,10 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
       setEliminated(wrongs);
     }
     if (id === 'triple') setTriple(true);
+    if (id === 'shield') setShielded(true);
+    if (id === 'hourglass' && battle?.kind === 'boss') {
+      setTimeLeft((t) => (t ?? 0) + 15);
+    }
     setItems((prev) => {
       const index = prev.indexOf(id);
       return index === -1 ? prev : prev.filter((_, i) => i !== index);
@@ -368,6 +418,10 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     const room = map.rooms.find((r) => r.id === roomId);
     return new Set(room?.connections ?? []);
   }, [map, roomId]);
+
+  // Fog of war: you know the room you are in, its neighbours, and anywhere you have been.
+  // Everything else is a position, not a type.
+  const revealed = new Set<string>([roomId, ...(currentRoom?.connections ?? []), ...visited]);
 
   if (phase === 'menu') {
     return (
@@ -413,7 +467,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
           </p>
         </div>
         <div className="rounded-blob border-2 border-line bg-paper p-4 shadow-sticker-sm">
-          <p className="text-xs font-bold text-ink-soft uppercase">{L.stats}</p>
+          <p className="text-sm font-bold text-ink-soft uppercase">{L.stats}</p>
           <ul className="mt-2 grid grid-cols-2 gap-2 text-sm">
             <li>{L.questions}: {stats.correct + stats.wrong}</li>
             <li>{L.correct}: {stats.correct}</li>
@@ -437,20 +491,27 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     const enemyHp = Math.max(0, battle.hp);
     return (
       <div className="mx-auto flex max-w-3xl flex-col gap-3">
+        {damageFlash ? (
+          <div
+            className="animate-damage pointer-events-none fixed inset-0 z-50"
+            style={{ boxShadow: 'inset 0 0 90px 24px var(--color-coral)' }}
+            aria-hidden
+          />
+        ) : null}
         <div className="flex items-center justify-between rounded-blob border-2 border-line bg-ink px-4 py-2 text-cream shadow-sticker-sm">
-          <span className="text-xs font-bold uppercase">
+          <span className="text-sm font-bold uppercase">
             {L.layer} {layer + 1}/3 · {L.boss}: {bossCopy?.name ?? ''}
           </span>
-          <span className="text-xs">
+          <span className="text-sm">
             {L.hp} {hp}/{maxHp} · {L.gold} {gold}
           </span>
         </div>
 
-        <div className={cn('rounded-blob border-2 border-line bg-paper p-4 shadow-sticker', battle.elite && 'ring-2 ring-butter')}>
+        <div className={cn('rounded-blob border-2 border-line bg-paper p-4 shadow-sticker', battle.elite && 'ring-2 ring-butter', enemyHit && 'animate-shake')}>
           <div className="flex items-center gap-3">
-            <span className="text-5xl">{battle.icon}</span>
+            <span className="text-6xl">{battle.icon}</span>
             <div className="flex-1">
-              <p className="font-display font-bold">{battle.name}</p>
+              <p className="font-display text-lg font-bold">{battle.name}</p>
               {!battle.broken ? (
                 <div className="mt-1">
                   <div className="flex items-center gap-2 text-xs font-semibold text-ink-soft">
@@ -491,7 +552,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
 
         <div className="rounded-blob border-2 border-line bg-paper p-4 shadow-sticker">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-bold text-ink-soft uppercase">
+            <span className="text-sm font-bold text-ink-soft uppercase">
               {L.questionNumber} · {question.category}
             </span>
             <span className="text-xs text-ink-soft">{L.attack}</span>
@@ -509,7 +570,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
                   disabled={feedback !== null || hidden}
                   onClick={() => answer(i)}
                   className={cn(
-                    'flex items-center justify-between gap-2 rounded-xl border-2 px-3 py-2 text-left text-sm transition-colors',
+                    'flex items-center justify-between gap-2 rounded-xl border-2 px-3 py-2.5 text-left text-base transition-colors',
                     hidden && 'opacity-30 line-through',
                     feedback && correct
                       ? 'border-mint-deep bg-mint-soft'
@@ -526,7 +587,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
           </div>
 
           {feedback ? (
-            <div className={cn('mt-3 rounded-xl border-2 border-line/30 px-3 py-2 text-sm', feedback.correct ? 'bg-mint-soft' : 'bg-coral-soft')}>
+            <div className={cn('mt-3 rounded-xl border-2 border-line/30 px-3 py-2 text-base', feedback.correct ? 'bg-mint-soft' : 'bg-coral-soft')}>
               <p className="font-bold">{feedback.correct ? L.correct : L.wrong}</p>
               <p className="mt-1 text-ink-soft">{feedback.explain}</p>
               <div className="mt-2 flex justify-end">
@@ -539,7 +600,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold text-ink-soft uppercase">{L.backpack}</span>
+          <span className="text-sm font-bold text-ink-soft uppercase">{L.backpack}</span>
           {items.length === 0 ? <span className="text-xs text-ink-soft">—</span> : null}
           {Array.from(new Set(items)).map((id) => {
             const item = copy.items.find((i) => i.id === id)!;
@@ -742,6 +803,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
               const reachable = availableRooms.has(room.id);
               const isCleared = cleared.has(room.id);
               const wasVisited = visited.has(room.id);
+              const known = revealed.has(room.id);
               return (
                 <button
                   key={room.id}
@@ -755,7 +817,9 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
                     isCleared && 'opacity-60',
                   )}
                 >
-                  <span>{roomIcon[room.type]}</span>
+                  <span className={cn(known ? 'text-3xl' : 'text-lg font-bold text-ink-soft')}>
+                    {known ? roomIcon[room.type] : '?'}
+                  </span>
                   {isCleared ? (
                     <span className="absolute right-1 bottom-1 text-xs text-mint-deep">✓</span>
                   ) : null}
@@ -785,28 +849,40 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
 
       <aside className="flex flex-col gap-3">
         <div className="rounded-blob border-2 border-line bg-paper p-3 shadow-sticker-sm">
-          <p className="text-xs font-bold text-ink-soft uppercase">{L.buffs}</p>
+          <p className="text-sm font-bold text-ink-soft uppercase">{L.buffs}</p>
           <div className="mt-2 flex flex-wrap gap-1">
             {buffs.size === 0 ? <span className="text-xs text-ink-soft">—</span> : null}
             {[...buffs].map((id) => {
               const buff = copy.buffs.find((b) => b.id === id)!;
               return (
-                <span key={id} title={buff.description} className="rounded-pill border-2 border-line bg-butter-soft px-2 py-1 text-xs">
+                <span
+                  key={id}
+                  className="group relative cursor-help rounded-pill border-2 border-line bg-butter-soft px-2.5 py-1.5 text-sm"
+                >
                   {buff.icon} {buff.name}
+                  <span className="pointer-events-none absolute bottom-full left-0 z-30 mb-1 hidden w-56 rounded-lg border-2 border-line bg-paper p-2 text-xs font-normal text-ink shadow-sticker-sm group-hover:block">
+                    {buff.description}
+                  </span>
                 </span>
               );
             })}
           </div>
         </div>
         <div className="rounded-blob border-2 border-line bg-paper p-3 shadow-sticker-sm">
-          <p className="text-xs font-bold text-ink-soft uppercase">{L.backpack}</p>
+          <p className="text-sm font-bold text-ink-soft uppercase">{L.backpack}</p>
           <div className="mt-2 flex flex-wrap gap-1">
             {items.length === 0 ? <span className="text-xs text-ink-soft">—</span> : null}
             {Array.from(new Set(items)).map((id) => {
               const item = copy.items.find((i) => i.id === id)!;
               return (
-                <span key={id} title={item.description} className="rounded-pill border-2 border-line bg-cream px-2 py-1 text-xs">
+                <span
+                  key={id}
+                  className="group relative cursor-help rounded-pill border-2 border-line bg-cream px-2.5 py-1.5 text-sm"
+                >
                   {item.icon} {items.filter((x) => x === id).length}
+                  <span className="pointer-events-none absolute bottom-full left-0 z-30 mb-1 hidden w-56 rounded-lg border-2 border-line bg-paper p-2 text-xs font-normal text-ink shadow-sticker-sm group-hover:block">
+                    {item.name}: {item.description}
+                  </span>
                 </span>
               );
             })}

@@ -154,15 +154,15 @@ function buildMap(id: string): DungeonMap | null {
   if (dist.size !== rooms.length) return null;
 
   const leaves = rooms.filter((r) => r.connections.length === 1 && r.id !== startRoom.id);
-  if (leaves.length < 2) return null;
+  if (leaves.length < 3) return null;
   const boss =
     [...leaves].sort((a, b) => (dist.get(b.id) ?? 0) - (dist.get(a.id) ?? 0))[0] ?? leaves[0]!;
   boss.type = 'boss';
 
   const spare = shuffle(leaves.filter((r) => r.id !== boss.id));
-  if (!spare[0]) return null;
+  if (!spare[0] || !spare[1]) return null;
   spare[0].type = 'chest';
-  if (spare[1]) spare[1].type = 'shop';
+  spare[1].type = 'shop';
 
   // Anything left is a battle room; 3-5 of them is the target shape.
   const battles = rooms.filter((r) => r.type === 'battle');
@@ -188,29 +188,11 @@ const TEMPLATES: Array<Array<[number, number, RoomType]>> = [
     [0, 3, 'start'],
     [1, 3, 'battle'],
     [2, 3, 'battle'],
-    [2, 2, 'chest'],
-    [1, 2, 'shop'],
-    [1, 1, 'battle'],
-    [1, 0, 'boss'],
-  ],
-  [
-    [3, 0, 'start'],
-    [2, 0, 'battle'],
-    [1, 0, 'battle'],
-    [1, 1, 'shop'],
-    [1, 2, 'battle'],
-    [2, 2, 'chest'],
-    [2, 3, 'battle'],
-    [1, 3, 'boss'],
-  ],
-  [
-    [0, 0, 'start'],
-    [0, 1, 'battle'],
-    [0, 2, 'battle'],
-    [1, 2, 'chest'],
     [2, 2, 'battle'],
-    [2, 1, 'shop'],
+    [2, 1, 'battle'],
     [2, 0, 'boss'],
+    [1, 2, 'chest'],
+    [1, 1, 'shop'],
   ],
 ];
 
@@ -241,7 +223,7 @@ export function generateMap(id: string): DungeonMap {
     const map = buildMap(id);
     if (map) return map;
   }
-  return templateMap(Math.abs(id.length) + randInt(3));
+  return templateMap(Math.abs(id.length) + randInt(TEMPLATES.length));
 }
 
 export function generateMapPool(count: number): DungeonMap[] {

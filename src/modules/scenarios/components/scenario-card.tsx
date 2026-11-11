@@ -25,8 +25,8 @@ export async function ScenarioCard({ data }: { data: ScenarioCardData }) {
 
   return (
     <Card tint={look.tint} interactive className="flex h-full flex-col">
-      <div className="flex items-start gap-3 px-5 pt-5">
-        <div className={cn('grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-line bg-paper')}>
+      <div className="flex items-start gap-3 px-4 pt-4">
+        <div className={cn('grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-line bg-paper')}>
           <Icon className="h-5 w-5" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
@@ -35,10 +35,10 @@ export async function ScenarioCard({ data }: { data: ScenarioCardData }) {
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col px-5 pt-3 pb-5">
-        <p className="text-sm text-ink-soft">{data.summary}</p>
+      <div className="flex flex-1 flex-col px-4 pt-2 pb-4">
+        <p className="line-clamp-2 text-sm text-ink-soft">{data.summary}</p>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <Badge tint="paper">{data.meta}</Badge>
           <Badge tint="paper">{fmt(t.scenarios.card.minutes, { minutes: data.minutes })}</Badge>
           {progress.completions > 0 ? (
@@ -58,7 +58,7 @@ export async function ScenarioCard({ data }: { data: ScenarioCardData }) {
           />
           <Link
             href={data.href}
-            className={buttonClasses(progress.started ? 'secondary' : 'primary', 'sm', 'mt-3 w-full')}
+            className={buttonClasses(progress.started ? 'secondary' : 'primary', 'sm', 'mt-2 w-full')}
           >
             {progress.started ? t.scenarios.common.continue : t.scenarios.common.start}{' '}
             <ArrowRight className="h-4 w-4" aria-hidden />

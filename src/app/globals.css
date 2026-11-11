@@ -6,6 +6,21 @@
   --font-nunito: 'Nunito';
 }
 
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.animate-shake { animation: shake 0.35s ease-in-out; }
+
+@keyframes damage-flash {
+  0% { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+.animate-damage { animation: damage-flash 0.45s ease-out; }
+
 /*
   Sprout design tokens. Use these through Tailwind classes (bg-coral, text-ink, shadow-sticker...)
   and never hard-code hex colours in components. See docs/standards/UI_GUIDELINES.md.

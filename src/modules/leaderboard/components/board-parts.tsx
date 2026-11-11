@@ -1,12 +1,17 @@
+'use client';
+
 // Presentational pieces of the leaderboard: podium, ranked rows, chase card, highlights, race.
 import { ArrowDown, ArrowUp, Crown, Flame, Minus, Swords, TrendingUp, Zap } from 'lucide-react';
 import { Avatar, Badge, Card, cn, Pip } from '@/components/ui';
+import { useT } from '@/i18n/client';
+import { fmt, plural } from '@/i18n/format';
 import type { BoardEntry } from '../queries';
 
 export function Movement({ value }: { value: number | null }) {
+  const t = useT();
   if (value === null || value === 0) {
     return (
-      <span className="inline-flex items-center text-ink-soft" aria-label="No change">
+      <span className="inline-flex items-center text-ink-soft" aria-label={t.leaderboard.movement.noChange}>
         <Minus className="h-4 w-4" />
       </span>
     );
@@ -15,7 +20,7 @@ export function Movement({ value }: { value: number | null }) {
   return (
     <span
       className={cn('inline-flex items-center gap-0.5 text-sm font-bold', up ? 'text-mint-deep' : 'text-coral-deep')}
-      aria-label={up ? `Up ${value}` : `Down ${-value}`}
+      aria-label={up ? fmt(t.leaderboard.movement.up, { value }) : fmt(t.leaderboard.movement.down, { value: -value })}
     >
       {up ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
       {Math.abs(value)}
@@ -30,10 +35,11 @@ const PODIUM = [
 ];
 
 export function Podium({ entries }: { entries: BoardEntry[] }) {
+  const t = useT();
   const top = entries.slice(0, 3);
   if (top.length === 0) return null;
   return (
-    <div className="flex items-end justify-center gap-2 pt-6 sm:gap-4" aria-label="Top three">
+    <div className="flex items-end justify-center gap-2 pt-6 sm:gap-4" aria-label={t.leaderboard.podium.topThree}>
       {PODIUM.map(({ place, height, tint, order }) => {
         const e = top[place - 1];
         if (!e) return <div key={place} className={cn('w-24 sm:w-32', order)} />;
@@ -42,9 +48,11 @@ export function Podium({ entries }: { entries: BoardEntry[] }) {
             {place === 1 ? <Crown className="mb-1 h-6 w-6 text-warning" aria-hidden /> : null}
             <Avatar seed={e.avatarSeed} name={e.name} size={place === 1 ? 64 : 52} className={cn(place === 1 && 'animate-float')} />
             <div className={cn('mt-1 max-w-full truncate text-center font-display font-bold', e.isMe && 'text-coral-deep')}>
-              {e.isMe ? 'You' : e.name}
+              {e.isMe ? t.chrome.common.you : e.name}
             </div>
-            <div className="text-xs font-semibold text-ink-soft">{e.xp} XP</div>
+            <div className="text-xs font-semibold text-ink-soft">
+              {e.xp} {t.chrome.common.xp}
+            </div>
             <div className={cn('mt-2 grid w-full place-items-center rounded-t-2xl border-2 border-b-0 border-line font-display text-3xl font-bold', height, tint)}>
               {place}
             </div>
@@ -56,6 +64,8 @@ export function Podium({ entries }: { entries: BoardEntry[] }) {
 }
 
 export function RankRow({ e, maxXp }: { e: BoardEntry; maxXp: number }) {
+  const t = useT();
+  const levelName = t.chrome.levels[e.levelName as keyof typeof t.chrome.levels] ?? e.levelName;
   return (
     <li
       className={cn(
@@ -67,16 +77,21 @@ export function RankRow({ e, maxXp }: { e: BoardEntry; maxXp: number }) {
       <Avatar seed={e.avatarSeed} name={e.name} size={36} />
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <span className="truncate font-display font-semibold">{e.isMe ? `${e.name} (you)` : e.name}</span>
+          <span className="truncate font-display font-semibold">
+            {e.isMe ? fmt(t.leaderboard.rows.nameYou, { name: e.name }) : e.name}
+          </span>
           {e.streak >= 3 ? (
-            <span className="inline-flex items-center gap-0.5 text-xs font-bold text-coral-deep" title={`${e.streak}-day streak`}>
+            <span
+              className="inline-flex items-center gap-0.5 text-xs font-bold text-coral-deep"
+              title={fmt(t.leaderboard.rows.streakTitle, { count: e.streak })}
+            >
               <Flame className="h-3.5 w-3.5" />
               {e.streak}
             </span>
           ) : null}
         </div>
         <div className="text-xs text-ink-soft">
-          Lv {e.level} {e.levelName}
+          {t.chrome.shell.level} {e.level} {levelName}
         </div>
       </div>
       {/* XP bar relative to the leader: makes gaps visible at a glance */}
@@ -85,7 +100,9 @@ export function RankRow({ e, maxXp }: { e: BoardEntry; maxXp: number }) {
           <div className="h-full bg-mint" style={{ width: `${maxXp ? Math.max(4, (e.xp / maxXp) * 100) : 0}%` }} />
         </div>
       </div>
-      <span className="text-right font-display font-bold whitespace-nowrap">{e.xp} XP</span>
+      <span className="text-right font-display font-bold whitespace-nowrap">
+        {e.xp} {t.chrome.common.xp}
+      </span>
       <span className="hidden justify-self-end sm:inline-flex">
         <Movement value={e.movement} />
       </span>
@@ -107,7 +124,9 @@ export function ChaseCard({
   };
   periodLabel: string;
 }) {
+  const t = useT();
   const { me, ahead, xpToPass, activitiesToPass, behind, lead } = chase;
+  const moreActivities = activitiesToPass ?? 1;
   return (
     <Card tint="butter" className="p-5">
       <div className="flex items-start gap-4">
@@ -115,20 +134,26 @@ export function ChaseCard({
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold text-ink-soft">{periodLabel}</div>
           <div className="font-display text-3xl font-bold">
-            #{me.rank} <span className="text-lg">with {me.xp} XP</span>
+            #{me.rank} <span className="text-lg">{fmt(t.leaderboard.chase.withXp, { xp: me.xp })}</span>
           </div>
           {ahead && xpToPass ? (
             <p className="mt-1">
               <Swords className="mr-1 inline h-4 w-4" aria-hidden />
-              <strong>{xpToPass} XP</strong> to pass <strong>{ahead.name}</strong>, about {activitiesToPass} more{' '}
-              {activitiesToPass === 1 ? 'activity' : 'activities'}.
+              <strong>{fmt(t.leaderboard.chase.xpChunk, { xp: xpToPass })}</strong>
+              {t.leaderboard.chase.toPass}
+              <strong>{ahead.name}</strong>
+              {fmt(plural(moreActivities, t.leaderboard.chase.aboutOne, t.leaderboard.chase.aboutMany), {
+                count: moreActivities,
+              })}
             </p>
           ) : (
-            <p className="mt-1 font-semibold">You are in the lead. Pip is impressed.</p>
+            <p className="mt-1 font-semibold">{t.leaderboard.chase.inLead}</p>
           )}
           {behind && lead !== null ? (
             <p className="text-sm text-ink-soft">
-              {behind.name} is {lead === 0 ? 'tied with you' : `${lead} XP behind you`}.
+              {lead === 0
+                ? fmt(t.leaderboard.chase.tied, { name: behind.name })
+                : fmt(t.leaderboard.chase.behindXp, { name: behind.name, xp: lead })}
             </p>
           ) : null}
         </div>
@@ -142,10 +167,29 @@ export function Highlights({
 }: {
   highlights: { climber: BoardEntry | null; streak: BoardEntry | null; busiest: BoardEntry | null };
 }) {
+  const t = useT();
   const items = [
-    highlights.climber && { icon: TrendingUp, label: 'Biggest climb', who: highlights.climber, value: `▲ ${highlights.climber.movement}`, tint: 'mint' as const },
-    highlights.streak && { icon: Flame, label: 'Longest streak', who: highlights.streak, value: `${highlights.streak.streak} days`, tint: 'coral' as const },
-    highlights.busiest && { icon: Zap, label: 'Most activities', who: highlights.busiest, value: `${highlights.busiest.activities} done`, tint: 'sky' as const },
+    highlights.climber && {
+      icon: TrendingUp,
+      label: t.leaderboard.highlights.climb,
+      who: highlights.climber,
+      value: `▲ ${highlights.climber.movement}`,
+      tint: 'mint' as const,
+    },
+    highlights.streak && {
+      icon: Flame,
+      label: t.leaderboard.highlights.streak,
+      who: highlights.streak,
+      value: fmt(t.leaderboard.highlights.days, { count: highlights.streak.streak }),
+      tint: 'coral' as const,
+    },
+    highlights.busiest && {
+      icon: Zap,
+      label: t.leaderboard.highlights.activities,
+      who: highlights.busiest,
+      value: fmt(t.leaderboard.highlights.done, { count: highlights.busiest.activities }),
+      tint: 'sky' as const,
+    },
   ].filter(Boolean) as { icon: typeof Flame; label: string; who: BoardEntry; value: string; tint: 'mint' | 'coral' | 'sky' }[];
   if (!items.length) return null;
   return (
@@ -157,7 +201,7 @@ export function Highlights({
             <div className="flex items-center gap-1 text-xs font-bold text-ink-soft uppercase">
               <Icon className="h-3.5 w-3.5" /> {label}
             </div>
-            <div className="truncate font-display font-semibold">{who.isMe ? 'You' : who.name}</div>
+            <div className="truncate font-display font-semibold">{who.isMe ? t.chrome.common.you : who.name}</div>
             <Badge tint="paper">{value}</Badge>
           </div>
         </Card>
@@ -173,16 +217,18 @@ export function RaceTrack({
   total: number;
   lanes: { userId: string; name: string; avatarSeed: string; done: number; percent: number; isMe: boolean }[];
 }) {
+  const t = useT();
   return (
-    <ol className="flex flex-col gap-2" aria-label="Course race">
+    <ol className="flex flex-col gap-2" aria-label={t.leaderboard.views.race}>
       {lanes.map((l, i) => (
         <li key={l.userId} className={cn('rounded-xl border-2 px-3 py-2', l.isMe ? 'border-line bg-butter-soft' : 'border-transparent bg-paper/70')}>
           <div className="mb-1 flex items-center justify-between text-sm">
             <span className="font-display font-semibold">
-              {i + 1}. {l.isMe ? `${l.name} (you)` : l.name}
+              {i + 1}. {l.isMe ? fmt(t.leaderboard.rows.nameYou, { name: l.name }) : l.name}
             </span>
             <span className="font-semibold text-ink-soft">
-              {l.done}/{total} lessons{l.percent === 100 ? ' 🏁' : ''}
+              {fmt(t.leaderboard.race.lessons, { done: l.done, total })}
+              {l.percent === 100 ? ' 🏁' : ''}
             </span>
           </div>
           {/* the lane: dashed track with the avatar sitting at its progress point */}

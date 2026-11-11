@@ -3,6 +3,9 @@ import type { SessionUser } from '@/core/types';
 import { Card, CardBody, CardHeader, PageHeader, PipSays } from '@/components/ui';
 import { growthStage } from '@/core/progress/xp';
 import { getUserStats } from '@/core/progress/service';
+import { getT, type Translations } from '@/i18n';
+import { localizeContent } from '@/i18n/content';
+import { localizeShipEnding } from '@/i18n/content/ship-endings';
 import { getRun } from '../queries';
 import {
   SHIP_TIME_BUDGET,
@@ -28,14 +31,19 @@ import { StartPanel } from './start-panel';
 import { ShipRunner } from './ship-runner';
 import { SprintRunner } from './sprint-runner';
 
-const DELTA_LABEL: Record<string, string> = {
-  budget: 'Budget',
-  morale: 'Morale',
-  users: 'Users',
-  quality: 'Quality',
-};
-
-function Intro({ title, summary, scenarioKey, stage }: { title: string; summary: string; scenarioKey: string; stage: 0 | 1 | 2 | 3 | 4 }) {
+function Intro({
+  title,
+  summary,
+  scenarioKey,
+  stage,
+  t,
+}: {
+  title: string;
+  summary: string;
+  scenarioKey: string;
+  stage: 0 | 1 | 2 | 3 | 4;
+  t: Translations;
+}) {
   return (
     <div className="flex flex-col gap-4">
       <PipSays mood="happy" stage={stage} size={76}>
@@ -44,12 +52,12 @@ function Intro({ title, summary, scenarioKey, stage }: { title: string; summary:
       </PipSays>
       <StartPanel scenarioKey={scenarioKey} />
       <Card>
-        <CardHeader title="How it works" />
+        <CardHeader title={t.scenarios.intro.howItWorks} />
         <CardBody>
           <ul className="flex list-disc flex-col gap-2 pl-5 text-sm text-ink-soft">
-            <li>Every decision moves a number, and the numbers carry forward.</li>
-            <li>There is no timer on the page. The cost of a bad call arrives later.</li>
-            <li>You can play it again; only your best score is kept.</li>
+            <li>{t.scenarios.intro.decisions}</li>
+            <li>{t.scenarios.intro.timing}</li>
+            <li>{t.scenarios.intro.replay}</li>
           </ul>
         </CardBody>
       </Card>
@@ -60,6 +68,16 @@ function Intro({ title, summary, scenarioKey, stage }: { title: string; summary:
 export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; scenarioKey: string }) {
   if (scenarioKey !== SHIP_IT.key && scenarioKey !== SPRINT_ZERO.key) notFound();
 
+  const { locale, t } = await getT();
+  const shipCopy = localizeContent(SHIP_IT, locale);
+  const sprintCopy = localizeContent(SPRINT_ZERO, locale);
+  const statLabels: Record<string, string> = {
+    budget: t.scenarios.stats.budget,
+    morale: t.scenarios.stats.morale,
+    users: t.scenarios.stats.users,
+    quality: t.scenarios.stats.quality,
+  };
+
   const [run, userStats] = await Promise.all([getRun(user.id, scenarioKey), getUserStats(user.id)]);
   const stage = growthStage(userStats.level.level);
   const state = run?.state as ShipState | SprintState | undefined;
@@ -68,29 +86,32 @@ export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; s
   const isShip = scenarioKey === SHIP_IT.key;
   const header = (
     <PageHeader
-      eyebrow={isShip ? SHIP_IT.meta : SPRINT_ZERO.meta}
-      title={isShip ? SHIP_IT.title : SPRINT_ZERO.title}
-      subtitle={isShip ? SHIP_IT.tagline : SPRINT_ZERO.tagline}
+      eyebrow={isShip ? shipCopy.meta : sprintCopy.meta}
+      title={isShip ? shipCopy.title : sprintCopy.title}
+      subtitle={isShip ? shipCopy.tagline : sprintCopy.tagline}
     />
   );
 
   // ---- Ship It ----
   if (scenarioKey === SHIP_IT.key) {
     const ship = (state ?? startShip()) as ShipState;
-    const turn = shipTurn(ship);
+    const rawTurn = shipTurn(ship);
+    const turn = rawTurn ? localizeContent(rawTurn, locale) : null;
     const done = ship.phase === 'done';
 
     if (!started && !done) {
       return (
         <div className="flex flex-col gap-6">
           {header}
-          <Intro title={SHIP_IT.title} summary={SHIP_IT.summary} scenarioKey={SHIP_IT.key} stage={stage} />
+          <Intro title={shipCopy.title} summary={shipCopy.summary} scenarioKey={SHIP_IT.key} stage={stage} t={t} />
         </div>
       );
     }
 
     const repairTurn = turn?.repair?.steps[ship.repairIndex];
-    const endingNow = done ? { ...shipEnding(ship), score: shipScore(ship) } : null;
+    const endingNow = done
+      ? localizeShipEnding({ ...shipEnding(ship), score: shipScore(ship) }, locale)
+      : null;
 
     return (
       <div className="flex flex-col gap-6">
@@ -132,9 +153,9 @@ export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; s
           series={shipQualitySeries(ship)}
           alternatives={shipAlternatives(ship)}
           history={ship.history.map((h) => ({
-            title: h.title,
+            title: localizeContent(h.title, locale),
             action: String(h.action),
-            note: h.note,
+            note: localizeContent(h.note, locale),
             delta: h.delta,
           }))}
         />
@@ -144,24 +165,31 @@ export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; s
 
   // ---- Sprint Zero ----
   const sprint = (state ?? startSprint()) as SprintState;
-  const step = sprintStep(sprint);
+  const rawStep = sprintStep(sprint);
+  const step = rawStep ? localizeContent(rawStep, locale) : null;
   const weekDef = sprintWeekDef(sprint.week);
+  const localizedWeeks = localizeContent(sprintCopy.weeks, locale);
   const drawnCount = sprint.drawn.length || (weekDef ? weekDef.draw[0] + weekDef.draw[1] + weekDef.draw[2] : 8);
 
   if (!started && sprint.view === 'select' && sprint.allHistory.length === 0) {
     return (
       <div className="flex flex-col gap-6">
         {header}
-        <Intro title={SPRINT_ZERO.title} summary={SPRINT_ZERO.summary} scenarioKey={SPRINT_ZERO.key} stage={stage} />
+        <Intro title={sprintCopy.title} summary={sprintCopy.summary} scenarioKey={SPRINT_ZERO.key} stage={stage} t={t} />
       </div>
     );
   }
 
-  const summary = sprint.view === 'summary' ? sprintWeekSummary(sprint) : null;
+  const summary = sprint.view === 'summary' ? localizeContent(sprintWeekSummary(sprint), locale) : null;
   const endingNow =
     sprint.view === 'ending'
-      ? { ...sprintEnding(sprint), score: sprintScore(sprint), fatal: Boolean(sprint.fatal) }
+      ? {
+          ...localizeContent(sprintEnding(sprint), locale),
+          score: sprintScore(sprint),
+          fatal: Boolean(sprint.fatal),
+        }
       : null;
+  const pending = sprint.pending ? localizeContent(sprint.pending, locale) : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -169,14 +197,14 @@ export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; s
       <SprintRunner
         view={sprint.view}
         week={sprint.week}
-        stats={SPRINT_ZERO.stats.map((s) => ({
+        stats={sprintCopy.stats.map((s) => ({
           key: s.key,
-          label: s.label,
+          label: statLabels[s.key] ?? s.label,
           value: sprint.stats[s.key],
           max: s.max,
           danger: s.danger,
         }))}
-        weeks={SPRINT_ZERO.weeks.map((w, i) => {
+        weeks={localizedWeeks.map((w, i) => {
           const total = w.draw[0] + w.draw[1] + w.draw[2];
           const done = sprint.completed[i] ? total : sprint.week === i ? sprint.stepIndex : 0;
           return {
@@ -204,14 +232,14 @@ export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; s
             : null
         }
         pending={
-          sprint.pending
+          pending
             ? {
-                label: sprint.pending.label,
-                outcome: sprint.pending.outcome,
-                deltas: Object.entries(sprint.pending.effects)
+                label: pending.label,
+                outcome: pending.outcome,
+                deltas: Object.entries(pending.effects)
                   .filter(([, v]) => v !== 0)
-                  .map(([k, v]) => ({ label: DELTA_LABEL[k] ?? k, value: v as number })),
-                timedOut: sprint.pending.timedOut,
+                  .map(([k, v]) => ({ label: statLabels[k] ?? k, value: v as number })),
+                timedOut: pending.timedOut,
               }
             : null
         }
@@ -219,7 +247,7 @@ export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; s
           summary
             ? {
                 delta: summary.delta.map((d) => ({
-                  label: DELTA_LABEL[d.key] ?? d.key,
+                  label: statLabels[d.key] ?? d.key,
                   from: d.from,
                   to: d.to,
                   change: d.change,
@@ -230,12 +258,11 @@ export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; s
         }
         ending={endingNow}
         history={sprint.allHistory.map((h) => ({
-          title: h.title,
-          choiceLabel: h.choiceLabel,
-          outcome: h.outcome,
+          title: localizeContent(h.title, locale),
+          choiceLabel: localizeContent(h.choiceLabel, locale),
+          outcome: localizeContent(h.outcome, locale),
         }))}
       />
     </div>
   );
 }
-

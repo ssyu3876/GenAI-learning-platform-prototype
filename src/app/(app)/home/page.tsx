@@ -3,31 +3,36 @@ import { getUserStats } from '@/core/progress/service';
 import { growthStage } from '@/core/progress/xp';
 import { cn, PipSays } from '@/components/ui';
 import { homeWidgetsFor } from '@/registry/modules';
+import { getT } from '@/i18n';
+import { fmt } from '@/i18n/format';
 
-function greeting(name: string, hour: number) {
+function greeting(name: string, hour: number, t: Awaited<ReturnType<typeof getT>>['t']) {
   const first = name.split(' ')[0];
-  if (hour < 5) return `Still up, ${first}? Pip is too.`;
-  if (hour < 12) return `Morning, ${first}! Fresh brain, good time to learn.`;
-  if (hour < 18) return `Hey ${first}, ready for a quick lesson?`;
-  return `Evening, ${first}. One small step before bed?`;
+  if (hour < 5) return fmt(t.chrome.home.greeting.stillUp, { name: first! });
+  if (hour < 12) return fmt(t.chrome.home.greeting.morning, { name: first! });
+  if (hour < 18) return fmt(t.chrome.home.greeting.afternoon, { name: first! });
+  return fmt(t.chrome.home.greeting.evening, { name: first! });
 }
 
 export default async function HomePage() {
   const user = await requireUser();
+  const { t } = await getT();
   const [stats, widgets] = [await getUserStats(user.id), homeWidgetsFor(user.role)];
   const hour = new Date().getHours();
+  const levelName = t.chrome.levels[stats.level.name as keyof typeof t.chrome.levels] ?? stats.level.name;
+  const statusHtml =
+    fmt(t.chrome.home.levelStatus, { levelName, xp: stats.totalXp }) +
+    (stats.streak > 0 ? ' ' + fmt(t.chrome.home.withStreak, { days: stats.streak }) : '') +
+    '.';
 
   return (
     <div className="flex flex-col gap-6">
       <PipSays mood="happy" stage={growthStage(stats.level.level)} size={84}>
-        <p className="font-display text-xl font-bold">{greeting(user.name, hour)}</p>
+        <p className="font-display text-xl font-bold">{greeting(user.name, hour, t)}</p>
         {user.role === 'learner' ? (
-          <p className="text-sm text-ink-soft">
-            You are a <strong>{stats.level.name}</strong> with {stats.totalXp} XP
-            {stats.streak > 0 ? ` and a ${stats.streak}-day streak` : ''}.
-          </p>
+          <p className="text-sm text-ink-soft" dangerouslySetInnerHTML={{ __html: statusHtml }} />
         ) : (
-          <p className="text-sm text-ink-soft">Here is what is happening on Sprout today.</p>
+          <p className="text-sm text-ink-soft">{t.chrome.home.instructorGreeting}</p>
         )}
       </PipSays>
 

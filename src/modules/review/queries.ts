@@ -7,6 +7,8 @@ import { activities, activityAttempts, courses, lessons } from '@/core/db/schema
 import { newId } from '@/core/ids';
 import { parseQuizAnswers, parseQuizQuestions, SESSION_SIZE, wrongQuestionIndexes } from './logic';
 import { reviewItems } from './schema';
+import { getLocale } from '@/i18n';
+import { localizeContent } from '@/i18n/content';
 
 const QUIZ_TYPE = 'quiz';
 
@@ -154,7 +156,8 @@ async function listReviewCards(userId: string): Promise<ReviewCard[]> {
       course: r.course,
     });
   }
-  return cards;
+  const locale = await getLocale();
+  return localizeContent(cards, locale);
 }
 
 export async function getReviewOverview(userId: string): Promise<ReviewOverview> {

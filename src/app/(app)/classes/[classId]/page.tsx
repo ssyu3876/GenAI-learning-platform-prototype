@@ -1,8 +1,12 @@
 import type { Metadata } from 'next';
 import { requireUser } from '@/core/auth/session';
+import { getT } from '@/i18n';
 import { ClassDetailPage, parseClassTab } from '@/modules/classes/pages/class-detail-page';
 
-export const metadata: Metadata = { title: 'Class' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getT();
+  return { title: t.classes.metadata.classTitle };
+}
 
 export default async function Page({
   params,

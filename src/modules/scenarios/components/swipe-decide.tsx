@@ -7,6 +7,7 @@ import { useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { cn } from '@/components/ui';
+import { useT } from '@/i18n/client';
 
 const THRESHOLD = 88;
 const MAX_OFFSET = 220;
@@ -32,6 +33,7 @@ export function SwipeDecide({
 }) {
   const [dx, setDx] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const t = useT();
   const dxRef = useRef(0);
   const gesture = useRef<{ id: number; x: number; y: number; active: boolean } | null>(null);
   const dragged = useRef(false);
@@ -133,16 +135,14 @@ export function SwipeDecide({
               )}
             >
               {approve ? <ArrowRight className="h-4 w-4" aria-hidden /> : <ArrowLeft className="h-4 w-4" aria-hidden />}
-              {approve ? 'Approve' : 'Reject'}
+              {approve ? t.scenarios.ship.approve : t.scenarios.ship.reject}
             </span>
           </div>
         ) : null}
       </div>
 
       {enabled ? (
-        <p className="mt-1 text-center text-xs text-ink-soft">
-          Or drag the card right to approve, left to reject. The buttons still work.
-        </p>
+        <p className="mt-1 text-center text-xs text-ink-soft">{t.scenarios.ship.swipeHint}</p>
       ) : null}
     </div>
   );

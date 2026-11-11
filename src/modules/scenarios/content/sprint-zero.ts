@@ -4,7 +4,7 @@
 // act, three from the middle, two from the end. So the order still reads like a week, but
 // two playthroughs are not the same week. Some options are traps: they end the run on the
 // spot, and the summary says why.
-import type { SprintScenario, SprintStep } from './types';
+import type { SprintEnding, SprintScenario, SprintStep } from './types';
 
 // ---------------------------------------------------------------------------
 // Week 1 — Build it
@@ -550,7 +550,23 @@ const W3: SprintStep[] = [
   },
 ];
 
-export const SPRINT_ZERO: SprintScenario = {
+/**
+ * Everything in Sprint Zero that a learner can read. Kept apart from the three pure
+ * functions below so the text can be translated as data (see src/i18n/content).
+ */
+export interface SprintZeroCopy {
+  key: string;
+  title: string;
+  tagline: string;
+  summary: string;
+  meta: string;
+  minutes: number;
+  stats: SprintScenario['stats'];
+  weeks: SprintScenario['weeks'];
+  endings: Record<'collapse' | 'sustainable' | 'pyrrhic', Omit<SprintEnding, 'key'>>;
+}
+
+export const SPRINT_ZERO_COPY: SprintZeroCopy = {
   key: 'sprint-zero',
   title: 'Sprint Zero',
   tagline: 'Pick a week, run it, live with the numbers',
@@ -564,12 +580,41 @@ export const SPRINT_ZERO: SprintScenario = {
     { key: 'users', label: 'Users', max: 100, danger: 1 },
     { key: 'quality', label: 'Quality', max: 100, danger: 30 },
   ],
-  start: () => ({ budget: 100, morale: 70, users: 0, quality: 80 }),
   weeks: [
     { id: 'build', title: 'Week 1: Build it', tagline: 'Six weeks, two people, no money.', bank: W1, draw: [3, 3, 2] },
     { id: 'pay', title: 'Week 2: Make it pay', tagline: 'Users exist. Revenue does not.', bank: W2, draw: [3, 3, 2] },
     { id: 'alive', title: 'Week 3: Keep it alive', tagline: 'Survive your own success.', bank: W3, draw: [3, 3, 2] },
   ],
+  endings: {
+    collapse: {
+      title: 'It never survived',
+      body: 'The runway ran out, or the team did, or the codebase did. There is no fourth week to write about.',
+      insight:
+        'No single call caused this. It was the accumulation: a scope you could not finish, a quality problem deferred twice, and a team that stopped believing the plan.',
+      takeaway: 'Protect morale and quality early. Both are cheap to keep and expensive to recover.',
+    },
+    sustainable: {
+      title: 'You built something that lasts',
+      body: 'It shipped, it earns, people use it, and the team is still standing.',
+      insight:
+        'The numbers that decide this are the boring ones: quality above sixty, morale above forty-five. Neither is exciting in a weekly review, and both decide whether month twelve exists.',
+      takeaway: 'The ending that lasts is the one where you said no at least once a week.',
+    },
+    pyrrhic: {
+      title: 'It survived and it cost you the team',
+      body: 'There is a product and there are users. But morale or quality is on the floor, and next quarter will be worse.',
+      insight:
+        'Shipping is not the only outcome. A product that leaves a codebase nobody wants to touch and a team quietly interviewing is a debt taken on to hit a date.',
+      takeaway: 'A launch that burns the team is a loan, not a win.',
+    },
+  },
+};
+
+const { endings, ...sprintCopy } = SPRINT_ZERO_COPY;
+
+export const SPRINT_ZERO: SprintScenario = {
+  ...sprintCopy,
+  start: () => ({ budget: 100, morale: 70, users: 0, quality: 80 }),
   score: (stats) =>
     Math.max(
       0,
@@ -579,33 +624,12 @@ export const SPRINT_ZERO: SprintScenario = {
       ),
     ),
   ending: (stats) => {
-    if (stats.budget <= 0 || stats.morale <= 0 || stats.quality <= 10) {
-      return {
-        key: 'collapse',
-        title: 'It never survived',
-        body: 'The runway ran out, or the team did, or the codebase did. There is no fourth week to write about.',
-        insight:
-          'No single call caused this. It was the accumulation: a scope you could not finish, a quality problem deferred twice, and a team that stopped believing the plan.',
-        takeaway: 'Protect morale and quality early. Both are cheap to keep and expensive to recover.',
-      };
-    }
-    if (stats.users >= 55 && stats.quality >= 60 && stats.morale >= 45) {
-      return {
-        key: 'sustainable',
-        title: 'You built something that lasts',
-        body: 'It shipped, it earns, people use it, and the team is still standing.',
-        insight:
-          'The numbers that decide this are the boring ones: quality above sixty, morale above forty-five. Neither is exciting in a weekly review, and both decide whether month twelve exists.',
-        takeaway: 'The ending that lasts is the one where you said no at least once a week.',
-      };
-    }
-    return {
-      key: 'pyrrhic',
-      title: 'It survived and it cost you the team',
-      body: 'There is a product and there are users. But morale or quality is on the floor, and next quarter will be worse.',
-      insight:
-        'Shipping is not the only outcome. A product that leaves a codebase nobody wants to touch and a team quietly interviewing is a debt taken on to hit a date.',
-      takeaway: 'A launch that burns the team is a loan, not a win.',
-    };
+    const key =
+      stats.budget <= 0 || stats.morale <= 0 || stats.quality <= 10
+        ? ('collapse' as const)
+        : stats.users >= 55 && stats.quality >= 60 && stats.morale >= 45
+          ? ('sustainable' as const)
+          : ('pyrrhic' as const);
+    return { key, ...endings[key] };
   },
 };

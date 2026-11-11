@@ -12,6 +12,9 @@ import { getDb } from '@/core/db/client';
 import { activities, lessons } from '@/core/db/schema';
 import { completeActivity, completeLesson, enrollInCourse } from '@/core/progress/service';
 import type { SessionUser } from '@/core/types';
+import { getT } from '@/i18n';
+import { outputLanguage } from '@/i18n/ai';
+import { localizeContent } from '@/i18n/content';
 import { getActivityType } from '@/registry/activities';
 import { ADAPTATION_VARIANTS, lessonAdaptations, type AdaptationVariant } from './schema';
 
@@ -102,23 +105,33 @@ const VARIANT_PROMPTS: Record<AdaptationVariant, string> = {
 /** "Explain it my way": personalised rewrite of the lesson, cached per variant. */
 export async function adaptLesson(lessonId: string, variant: AdaptationVariant): Promise<{ content: string; mocked: boolean }> {
   const user = await requireUser();
+  const { locale } = await getT();
   if (!ADAPTATION_VARIANTS.includes(variant)) throw new Error('Unknown variant');
   await courseForLesson(user, lessonId);
   const db = await getDb();
-  const [cached] = await db
-    .select()
-    .from(lessonAdaptations)
-    .where(and(eq(lessonAdaptations.lessonId, lessonId), eq(lessonAdaptations.variant, variant)))
-    .limit(1);
-  if (cached) return { content: cached.content, mocked: false };
+  // The cache has one slot per (lesson, variant) and no locale column, so only English
+  // results are cached; Chinese is generated (or mocked) per request instead of mixing.
+  if (locale === 'en') {
+    const [cached] = await db
+      .select()
+      .from(lessonAdaptations)
+      .where(and(eq(lessonAdaptations.lessonId, lessonId), eq(lessonAdaptations.variant, variant)))
+      .limit(1);
+    if (cached) return { content: cached.content, mocked: false };
+  }
 
-  const lesson = await getLessonWithActivities(lessonId);
-  if (!lesson) throw new Error('Lesson not found');
+  const rawLesson = await getLessonWithActivities(lessonId);
+  if (!rawLesson) throw new Error('Lesson not found');
+  const lesson = localizeContent(rawLesson, locale);
   const { text, mocked } = await generateText(
     [
       {
         role: 'system',
-        content: `You adapt lesson text for different learners. ${VARIANT_PROMPTS[variant]} Reply in Markdown, 120-260 words, warm and plain, no hype words, no intro like "Sure!".`,
+        content: [
+          `You adapt lesson text for different learners. ${VARIANT_PROMPTS[variant]}`,
+          'Reply in Markdown, 120-260 words, warm and plain, no hype words, no intro like "Sure!".',
+          outputLanguage(locale),
+        ].join('\n'),
       },
       { role: 'user', content: `Lesson title: ${lesson.title}\n\n${lesson.content.slice(0, 5000)}` },
     ],
@@ -128,14 +141,20 @@ export async function adaptLesson(lessonId: string, variant: AdaptationVariant):
       tier: 'fast',
       maxTokens: 700,
       mock: () =>
-        variant === 'simpler'
-          ? `### ${lesson.title}, in plain words\n\nThink of it like planning a group dinner: before anyone cooks, you ask who is coming, what they can eat and when they will arrive. Software teams do the same thing before they build.\n\n*(Demo text: add an AI key to get a real rewrite of this lesson.)*`
-          : variant === 'technical'
-            ? `### ${lesson.title}, for engineers\n\nIn practice this shows up in code review, CI pipelines and ticket refinement. A common pitfall is treating it as paperwork instead of a feedback loop.\n\n*(Demo text: add an AI key to get a real rewrite.)*`
-            : `### A story from a real team\n\nA four-person team spent two weeks building a feature nobody asked for. One 20-minute conversation with a user would have saved them. That is what "${lesson.title}" is about.\n\n*(Demo text: add an AI key for a story tailored to this lesson.)*`,
+        locale === 'zh'
+          ? variant === 'simpler'
+            ? `### ${lesson.title}，用大白话说\n\n可以把它想成安排一顿聚餐：开火之前，先问清楚谁会来、能吃什么、几点到。软件团队在动手之前做的也是这些事。\n\n*（演示文本：配置 AI 密钥后即可获得这一课的真实改写。）*`
+            : variant === 'technical'
+              ? `### ${lesson.title}，写给工程师\n\n在实际工作中，这会出现在代码评审、CI 流水线和需求梳理里。常见的坑是把它当成纸面流程，而不是反馈回路。\n\n*（演示文本：配置 AI 密钥后即可获得真实改写。）*`
+              : `### 一个真实团队的故事\n\n一个四人团队花了两周做一个没人要求的功能。只要和用户聊上 20 分钟，就能省下这两周。这正是“${lesson.title}”要讲的事。\n\n*（演示文本：配置 AI 密钥后即可获得针对这一课的故事。）*`
+          : variant === 'simpler'
+            ? `### ${lesson.title}, in plain words\n\nThink of it like planning a group dinner: before anyone cooks, you ask who is coming, what they can eat and when they will arrive. Software teams do the same thing before they build.\n\n*(Demo text: add an AI key to get a real rewrite of this lesson.)*`
+            : variant === 'technical'
+              ? `### ${lesson.title}, for engineers\n\nIn practice this shows up in code review, CI pipelines and ticket refinement. A common pitfall is treating it as paperwork instead of a feedback loop.\n\n*(Demo text: add an AI key to get a real rewrite.)*`
+              : `### A story from a real team\n\nA four-person team spent two weeks building a feature nobody asked for. One 20-minute conversation with a user would have saved them. That is what "${lesson.title}" is about.\n\n*(Demo text: add an AI key for a story tailored to this lesson.)*`,
     },
   );
-  if (!mocked) {
+  if (!mocked && locale === 'en') {
     await db.insert(lessonAdaptations).values({ lessonId, variant, content: text }).onConflictDoNothing();
   }
   return { content: text, mocked };

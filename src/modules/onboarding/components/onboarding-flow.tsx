@@ -4,6 +4,9 @@
 import { ChevronLeft } from 'lucide-react';
 import { useState, useTransition } from 'react';
 import { Button, Card, cn, Notice, PipSays, type PipMood } from '@/components/ui';
+import { useT } from '@/i18n/client';
+import type { Translations } from '@/i18n';
+import { fmt } from '@/i18n/format';
 import { completeOnboarding } from '../actions';
 import { INTEREST_OPTIONS, type OnboardingAnswers } from '../recommend';
 
@@ -14,59 +17,64 @@ type Step =
   | { key: 'interests'; question: string; mood: PipMood }
   | { key: 'style'; question: string; mood: PipMood; options: { value: OnboardingAnswers['style']; label: string; note: string }[] };
 
-const STEPS: Step[] = [
-  {
-    key: 'background',
-    question: 'Hi! I am Pip. First things first: what are you studying, or what did you study?',
-    mood: 'happy',
-    options: [
-      { value: 'non_cs', label: 'Something outside computing', note: 'Business, design, arts, science…' },
-      { value: 'cs_student', label: 'Computer science (still studying)', note: 'Or a related degree' },
-      { value: 'cs_graduate', label: 'Computer science (graduated)', note: 'Getting ready for a tech job' },
-      { value: 'other', label: 'Something else', note: 'Working, switching careers, curious' },
-    ],
-  },
-  {
-    key: 'codingLevel',
-    question: 'How much have you coded before? No wrong answers here.',
-    mood: 'think',
-    options: [
-      { value: 0, label: 'Never', note: 'Code looks like magic spells' },
-      { value: 1, label: 'A little', note: 'A tutorial or a class or two' },
-      { value: 2, label: 'Some projects', note: 'I can build small things' },
-      { value: 3, label: 'Regularly', note: 'I code most weeks' },
-    ],
-  },
-  {
-    key: 'goal',
-    question: 'What would make Sprout worth your time?',
-    mood: 'wow',
-    options: [
-      { value: 'understand', label: 'Understand how software is made', note: 'So I can work with tech teams' },
-      { value: 'career', label: 'Get ready for a tech job', note: 'Interviews, teamwork, real workflows' },
-      { value: 'build', label: 'Build my own idea', note: 'From idea to something that works' },
-      { value: 'ai_skills', label: 'Work better with AI coding tools', note: 'Without letting them drive' },
-    ],
-  },
-  { key: 'interests', question: 'Anything that sounds fun? Pick up to three.', mood: 'cheer' },
-  {
-    key: 'style',
-    question: 'Last one. How do you like to learn?',
-    mood: 'happy',
-    options: [
-      { value: 'concepts', label: 'Big picture first', note: 'Explain the idea, then let me try' },
-      { value: 'hands_on', label: 'Let me poke at it', note: 'Give me something to do straight away' },
-    ],
-  },
-];
+function buildSteps(t: Translations): Step[] {
+  const q = t.onboarding.flow.questions;
+  return [
+    {
+      key: 'background',
+      question: q.background.greeting,
+      mood: 'happy',
+      options: [
+        { value: 'non_cs', ...q.background.options.outsideComputing },
+        { value: 'cs_student', ...q.background.options.csStudent },
+        { value: 'cs_graduate', ...q.background.options.csGraduate },
+        { value: 'other', ...q.background.options.somethingElse },
+      ],
+    },
+    {
+      key: 'codingLevel',
+      question: q.codingLevel.question,
+      mood: 'think',
+      options: [
+        { value: 0, ...q.codingLevel.options.never },
+        { value: 1, ...q.codingLevel.options.aLittle },
+        { value: 2, ...q.codingLevel.options.someProjects },
+        { value: 3, ...q.codingLevel.options.regularly },
+      ],
+    },
+    {
+      key: 'goal',
+      question: q.goal.question,
+      mood: 'wow',
+      options: [
+        { value: 'understand', ...q.goal.options.understand },
+        { value: 'career', ...q.goal.options.career },
+        { value: 'build', ...q.goal.options.build },
+        { value: 'ai_skills', ...q.goal.options.aiSkills },
+      ],
+    },
+    { key: 'interests', question: q.interests.question, mood: 'cheer' },
+    {
+      key: 'style',
+      question: q.style.question,
+      mood: 'happy',
+      options: [
+        { value: 'concepts', ...q.style.options.concepts },
+        { value: 'hands_on', ...q.style.options.handsOn },
+      ],
+    },
+  ];
+}
 
 export function OnboardingFlow({ name }: { name: string }) {
+  const t = useT();
+  const STEPS = buildSteps(t);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Partial<OnboardingAnswers>>({ interests: [] });
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const current = STEPS[step]!;
-  const first = name.split(' ')[0];
+  const first = name.split(' ')[0] ?? name;
 
   function choose(key: keyof OnboardingAnswers, value: unknown) {
     const next = { ...answers, [key]: value };
@@ -88,26 +96,31 @@ export function OnboardingFlow({ name }: { name: string }) {
       } catch (err) {
         // redirect() surfaces as an error with a NEXT_REDIRECT digest; Next handles it, so ignore it
         const digest = err && typeof err === 'object' && 'digest' in err ? String(err.digest) : '';
-        if (!digest.startsWith('NEXT_REDIRECT')) setError('Something went wrong saving your answers. Try once more?');
+        if (!digest.startsWith('NEXT_REDIRECT')) setError(t.onboarding.flow.saveError);
       }
     });
   }
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 py-6">
-      <div className="flex items-center gap-2" aria-label={`Question ${step + 1} of ${STEPS.length}`}>
+      <div
+        className="flex items-center gap-2"
+        aria-label={fmt(t.onboarding.flow.questionProgress, { current: step + 1, total: STEPS.length })}
+      >
         {STEPS.map((s, i) => (
           <span key={s.key} className={cn('h-3 flex-1 rounded-pill border-2 border-line', i < step ? 'bg-mint' : i === step ? 'bg-butter' : 'bg-paper')} />
         ))}
       </div>
 
       <PipSays mood={pending ? 'think' : current.mood} size={96} className="animate-pop" key={current.key}>
-        <p className="font-display text-xl font-bold">{step === 0 ? current.question.replace('Hi!', `Hi ${first}!`) : current.question}</p>
+        <p className="font-display text-xl font-bold">
+          {step === 0 ? fmt(current.question, { name: first }) : current.question}
+        </p>
       </PipSays>
 
       <Card className="p-5">
         {pending ? (
-          <p className="py-8 text-center font-display text-lg font-semibold">Pip is planting your path…</p>
+          <p className="py-8 text-center font-display text-lg font-semibold">{t.onboarding.flow.planting}</p>
         ) : current.key === 'interests' ? (
           <div className="flex flex-col gap-4">
             <div className="grid gap-2 sm:grid-cols-2">
@@ -122,13 +135,13 @@ export function OnboardingFlow({ name }: { name: string }) {
                     className={cn('rounded-xl border-2 border-line px-4 py-3 text-left font-display font-semibold transition', on ? 'bg-butter shadow-sticker-sm' : 'bg-paper hover:bg-butter-soft')}
                   >
                     {on ? '✓ ' : ''}
-                    {o.label}
+                    {t.onboarding.flow.questions.interests.options[o.id]}
                   </button>
                 );
               })}
             </div>
             <Button className="self-end" onClick={() => setStep(step + 1)}>
-              {answers.interests?.length ? 'Next' : 'Skip for now'}
+              {answers.interests?.length ? t.chrome.common.next : t.onboarding.flow.skipForNow}
             </Button>
           </div>
         ) : (
@@ -154,7 +167,7 @@ export function OnboardingFlow({ name }: { name: string }) {
 
       {step > 0 && !pending ? (
         <Button variant="ghost" className="self-start" onClick={() => setStep(step - 1)}>
-          <ChevronLeft className="h-4 w-4" /> Back
+          <ChevronLeft className="h-4 w-4" /> {t.chrome.common.back}
         </Button>
       ) : null}
     </div>

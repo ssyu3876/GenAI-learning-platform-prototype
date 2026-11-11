@@ -1,0 +1,42 @@
+{
+  "askPip": "Ask Pip",
+  "subtitle": "Your study buddy. Hints, not answers.",
+  "newChat": "Start a new chat",
+  "close": "Close Pip (Esc)",
+  "conversation": "Conversation with Pip",
+  "youLabel": "You: ",
+  "pipLabel": "Pip: ",
+  "stopped": "Stopped",
+  "thinking": "Pip is thinking…",
+  "thinkingStatus": "Pip is thinking",
+  "typingStatus": "Pip is typing",
+  "quickPrompts": {
+    "label": "Quick questions",
+    "simpler": "Explain this more simply",
+    "example": "Give me a real-world example",
+    "quiz": "Quiz me with one question",
+    "atWork": "How is this used at work?"
+  },
+  "empty": {
+    "greeting": "Hi {name}, what are you stuck on?",
+    "fallbackName": "there",
+    "lessonHint": "Ask anything about this lesson, or tap a quick question below.",
+    "generalHint": "Ask about anything you are learning. Open a lesson and I will know what you are reading."
+  },
+  "context": {
+    "talkingAbout": "Talking about: {title}",
+    "thisLesson": "this lesson"
+  },
+  "composer": {
+    "label": "Message Pip",
+    "placeholder": "Ask a question…",
+    "send": "Send message",
+    "stop": "Stop",
+    "stopAnswer": "Stop Pip's answer",
+    "hint": "Enter to send, Shift+Enter for a new line, Esc to close."
+  },
+  "errors": {
+    "noAnswer": "Pip could not answer just now. Try again in a moment.",
+    "generic": "Something went wrong. Try again."
+  }
+}

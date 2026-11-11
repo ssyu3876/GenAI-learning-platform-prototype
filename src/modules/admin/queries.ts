@@ -13,6 +13,8 @@ import {
   type CourseStatus,
   type UserRole,
 } from '@/core/db/schema';
+import { getLocale } from '@/i18n';
+import { localizeContent } from '@/i18n/content';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 export const COURSE_STATUSES: CourseStatus[] = ['draft', 'pending_review', 'published', 'archived'];
@@ -149,7 +151,11 @@ async function selectCourses(where: SQL | undefined): Promise<AdminCourseRow[]> 
         .groupBy(lessons.courseId)
     : [];
   const countMap = new Map(counts.map((c) => [c.courseId, c.n]));
-  return rows.map((r) => ({ ...r, lessonCount: countMap.get(r.id) ?? 0 }));
+  const locale = await getLocale();
+  return localizeContent(
+    rows.map((r) => ({ ...r, lessonCount: countMap.get(r.id) ?? 0 })),
+    locale,
+  );
 }
 
 export function listPendingCourses(): Promise<AdminCourseRow[]> {

@@ -3,6 +3,8 @@ import { and, count, desc, eq, inArray, isNull, ne, or, type SQL } from 'drizzle
 import { getDb } from '@/core/db/client';
 import { courses, lessons, type Course } from '@/core/db/schema';
 import type { SessionUser } from '@/core/types';
+import { getLocale } from '@/i18n';
+import { localizeContent } from '@/i18n/content';
 
 export type StudioCourse = Course & { lessonCount: number };
 
@@ -32,7 +34,8 @@ function studioScope(user: SessionUser): SQL | undefined {
 export async function listStudioCourses(user: SessionUser): Promise<StudioCourse[]> {
   const db = await getDb();
   const rows = await db.select().from(courses).where(studioScope(user)).orderBy(desc(courses.updatedAt));
-  return withLessonCounts(rows);
+  const locale = await getLocale();
+  return localizeContent(await withLessonCounts(rows), locale);
 }
 
 /** Published catalog courses (public or class) the user does not own, to duplicate and customise. */
@@ -51,7 +54,8 @@ export async function listForkableCourses(user: SessionUser): Promise<StudioCour
       ),
     )
     .orderBy(desc(courses.updatedAt));
-  return withLessonCounts(rows);
+  const locale = await getLocale();
+  return localizeContent(await withLessonCounts(rows), locale);
 }
 
 export interface StudioOverview {
@@ -62,6 +66,7 @@ export interface StudioOverview {
 }
 
 export async function getStudioOverview(user: SessionUser): Promise<StudioOverview> {
+  const locale = await getLocale();
   const db = await getDb();
   const rows = await db
     .select({ status: courses.status, n: count() })
@@ -75,5 +80,5 @@ export async function getStudioOverview(user: SessionUser): Promise<StudioOvervi
     .where(studioScope(user))
     .orderBy(desc(courses.updatedAt))
     .limit(1);
-  return { drafts: n('draft'), published: n('published'), pending: n('pending_review'), lastEdited: last ?? null };
+  return { drafts: n('draft'), published: n('published'), pending: n('pending_review'), lastEdited: last ? localizeContent(last, locale) : null };
 }

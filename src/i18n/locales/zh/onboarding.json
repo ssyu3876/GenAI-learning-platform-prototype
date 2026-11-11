@@ -1,0 +1,110 @@
+{
+  "title": "规划我的学习路线",
+  "widget": {
+    "letPipPlan": "让 Pip 帮你规划路线",
+    "fiveQuestions": "五个小问题（大约一分钟），就能拿到适合你背景和目标的课程。",
+    "start": "开始",
+    "yourPath": "你的路线",
+    "retake": "重新规划",
+    "explorerTrack": "探索路线 · 先懂思路",
+    "builderTrack": "动手路线 · 先上手做",
+    "step": "第 {current} 步",
+    "upNext": "接下来",
+    "done": "已完成"
+  },
+  "flow": {
+    "questionProgress": "第 {current} 题，共 {total} 题",
+    "planting": "Pip 正在为你种下这条路线…",
+    "skipForNow": "先跳过",
+    "saveError": "保存你的答案时出了点问题，再试一次好吗？",
+    "questions": {
+      "background": {
+        "greeting": "{name}，你好！我是 Pip。先问个最基础的：你在学什么，或者学过什么？",
+        "options": {
+          "outsideComputing": {
+            "label": "计算机之外的专业",
+            "note": "商科、设计、艺术、理科…"
+          },
+          "csStudent": {
+            "label": "计算机专业（还在读）",
+            "note": "或者相关专业"
+          },
+          "csGraduate": {
+            "label": "计算机专业（已毕业）",
+            "note": "正在准备技术类工作"
+          },
+          "somethingElse": {
+            "label": "其他情况",
+            "note": "在工作、准备转行，或者只是好奇"
+          }
+        }
+      },
+      "codingLevel": {
+        "question": "你之前写过多少代码？这里没有错误答案。",
+        "options": {
+          "never": {
+            "label": "从没写过",
+            "note": "代码看起来像魔法咒语"
+          },
+          "aLittle": {
+            "label": "写过一点",
+            "note": "看过一个教程，或者上过一两门课"
+          },
+          "someProjects": {
+            "label": "做过一些项目",
+            "note": "能做出小东西"
+          },
+          "regularly": {
+            "label": "经常写",
+            "note": "大多数星期都会写代码"
+          }
+        }
+      },
+      "goal": {
+        "question": "Sprout 怎么做，才值得你花时间？",
+        "options": {
+          "understand": {
+            "label": "搞懂软件是怎么做出来的",
+            "note": "这样就能和技术团队一起工作"
+          },
+          "career": {
+            "label": "为技术类工作做好准备",
+            "note": "面试、团队协作、真实的工作流程"
+          },
+          "build": {
+            "label": "把自己的想法做出来",
+            "note": "从一个想法到真正能用的东西"
+          },
+          "aiSkills": {
+            "label": "更好地和 AI 编程工具合作",
+            "note": "而不是被它们牵着走"
+          }
+        }
+      },
+      "interests": {
+        "question": "有哪些听起来挺有意思？最多选三个。",
+        "options": {
+          "ai-agents": "AI 编程助手",
+          "teamwork": "团队协作与沟通",
+          "interview": "求职面试",
+          "requirements": "想清楚要做什么",
+          "testing": "测试与质量",
+          "product": "产品思维"
+        }
+      },
+      "style": {
+        "question": "最后一个问题。你喜欢怎么学？",
+        "options": {
+          "concepts": {
+            "label": "先看整体",
+            "note": "先讲清思路，再让我动手"
+          },
+          "handsOn": {
+            "label": "让我先动手试试",
+            "note": "直接给我一件事做"
+          }
+        }
+      }
+    }
+  }
+}

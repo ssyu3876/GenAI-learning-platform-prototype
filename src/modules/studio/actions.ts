@@ -26,6 +26,10 @@ import {
 } from '@/core/db/schema';
 import { newId } from '@/core/ids';
 import type { ActionResult } from '@/core/types';
+import { fmt, getT } from '@/i18n';
+import type { Translations } from '@/i18n';
+import { outputLanguage } from '@/i18n/ai';
+import { localizeContent } from '@/i18n/content';
 import { ACTIVITY_TYPES, activitySpecs, getActivityType } from '@/registry/activities';
 import {
   activityOrder,
@@ -50,7 +54,26 @@ const STAFF: UserRole[] = ['instructor', 'admin'];
 const MAX_LESSONS = 20;
 const MAX_ACTIVITIES_PER_LESSON = 10;
 
-const NOT_ALLOWED: ActionResult = { ok: false, error: 'You can only edit your own courses.' };
+/** Dictionary keys for the activity type names shown inside action messages. */
+const ACTIVITY_LABEL_KEY: Record<string, keyof Translations['activities']['types']> = {
+  slides: 'slides',
+  sequence: 'sequence',
+  sort: 'sort',
+  quiz: 'quiz',
+  roleplay: 'roleplay',
+  coding: 'coding',
+  codingExercise: 'codingExercise',
+  reading: 'reading',
+};
+
+function activityLabel(t: Translations, type: string, fallback: string): string {
+  const key = ACTIVITY_LABEL_KEY[type];
+  return key ? t.activities.types[key] : fallback;
+}
+
+function notAllowed(t: Translations): ActionResult {
+  return { ok: false, error: t.studio.actions.notAllowed };
+}
 
 /** Optional text field: trims, and treats an empty string as "not given". */
 const optionalText = (max: number) =>
@@ -78,23 +101,28 @@ function revalidateCourse(course: { id: string; slug: string }) {
 // Create courses
 // ---------------------------------------------------------------------------
 
-const generateSchema = z.object({
-  topic: z.string().trim().min(3, 'Tell Pip what the course is about (at least 3 characters).').max(200),
-  audienceNote: optionalText(300),
-  level: levelSchema.catch('beginner'),
-  lessonCount: z.coerce.number().int().min(1).max(6).catch(3),
-  materials: optionalText(20000),
-  requirements: optionalText(1000),
-  types: z.array(z.string()).default([]),
-});
+const generateSchema = (t: Translations) =>
+  z.object({
+    topic: z.string().trim().min(3, t.studio.actions.topicTooShort).max(200),
+    audienceNote: optionalText(300),
+    level: levelSchema.catch('beginner'),
+    lessonCount: z.coerce.number().int().min(1).max(6).catch(3),
+    materials: optionalText(20000),
+    requirements: optionalText(1000),
+    types: z.array(z.string()).default([]),
+  });
 
 export async function generateCourse(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await requireUser(STAFF);
-  const parsed = generateSchema.safeParse({ ...Object.fromEntries(formData), types: formData.getAll('types') });
-  if (!parsed.success) return { ok: false, error: firstError(parsed.error, 'Check the form and try again.') };
-  const known = parsed.data.types.filter((t) => getActivityType(t));
+  const { locale, t } = await getT();
+  const parsed = generateSchema(t).safeParse({
+    ...Object.fromEntries(formData),
+    types: formData.getAll('types'),
+  });
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error, t.studio.actions.checkForm) };
+  const known = parsed.data.types.filter((type) => getActivityType(type));
   if (ACTIVITY_TYPES.length > 0 && known.length === 0) {
-    return { ok: false, error: 'Pick at least one activity type.' };
+    return { ok: false, error: t.studio.actions.pickAtLeastOneType };
   }
 
   const { draft, mocked } = await generateCourseDraft({
@@ -107,6 +135,7 @@ export async function generateCourse(_prev: ActionResult | null, formData: FormD
     specs: activitySpecs(known),
     feature: 'studio.generate_course',
     userId: user.id,
+    locale,
   });
   const saved = await saveCourseDraft(draft, {
     ownerId: user.id,
@@ -118,17 +147,20 @@ export async function generateCourse(_prev: ActionResult | null, formData: FormD
   redirect(`/studio/${saved.id}${mocked ? '?demo=1' : ''}`);
 }
 
-const blankSchema = z.object({
-  title: z.string().trim().min(3, 'Give the course a title (at least 3 characters).').max(100),
-  subject: optionalText(60),
-  level: levelSchema.catch('beginner'),
-  audience: audienceSchema.catch('everyone'),
-});
+const blankSchema = (t: Translations) =>
+  z.object({
+    title: z.string().trim().min(3, t.studio.actions.courseTitleMin).max(100),
+    subject: optionalText(60),
+    level: levelSchema.catch('beginner'),
+    audience: audienceSchema.catch('everyone'),
+  });
 
 export async function createBlankCourse(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await requireUser(STAFF);
-  const parsed = blankSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, error: firstError(parsed.error, 'Give the course a title.') };
+  const { locale, t } = await getT();
+  const parsed = blankSchema(t).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error, t.studio.actions.courseTitleRequired) };
+  const lessonTitle = locale === 'zh' ? '第 1 课' : 'Lesson 1';
   const draft: CourseDraft = {
     title: parsed.data.title,
     summary: '',
@@ -140,8 +172,11 @@ export async function createBlankCourse(_prev: ActionResult | null, formData: Fo
     color: 'mint',
     lessons: [
       {
-        title: 'Lesson 1',
-        content: '## Lesson 1\n\nWrite your lesson here. Markdown works: **bold**, lists, tables and code.',
+        title: lessonTitle,
+        content:
+          locale === 'zh'
+            ? '## 第 1 课\n\n在这里写下你的课程内容。支持 Markdown：**加粗**、列表、表格和代码。'
+            : '## Lesson 1\n\nWrite your lesson here. Markdown works: **bold**, lists, tables and code.',
         estimatedMinutes: 10,
         activities: [],
       },
@@ -161,32 +196,56 @@ export async function createBlankCourse(_prev: ActionResult | null, formData: Fo
 // Course details, publishing, duplicating
 // ---------------------------------------------------------------------------
 
-const metaSchema = z.object({
-  courseId: z.string().min(1),
-  title: z.string().trim().min(3, 'Give the course a title (at least 3 characters).').max(100, 'Keep the title under 100 characters.'),
-  summary: z.string().trim().max(400, 'Keep the summary under 400 characters.').default(''),
-  subject: z.string().trim().max(60, 'Keep the subject under 60 characters.').default(''),
-  level: levelSchema,
-  audience: audienceSchema,
-  tags: z.string().max(400).default(''),
-  emoji: z.string().trim().min(1, 'Pick an emoji for the course.').max(16, 'Use a single emoji.'),
-  color: z.enum(COURSE_COLORS),
-});
+const metaSchema = (t: Translations) =>
+  z.object({
+    courseId: z.string().min(1),
+    title: z
+      .string()
+      .trim()
+      .min(3, t.studio.actions.courseTitleMin)
+      .max(100, t.studio.actions.courseTitleTooLong),
+    summary: z.string().trim().max(400, t.studio.actions.summaryTooLong).default(''),
+    subject: z.string().trim().max(60, t.studio.actions.subjectTooLong).default(''),
+    level: levelSchema,
+    audience: audienceSchema,
+    tags: z.string().max(400).default(''),
+    emoji: z
+      .string()
+      .trim()
+      .min(1, t.studio.actions.pickEmoji)
+      .max(16, t.studio.actions.singleEmoji),
+    color: z.enum(COURSE_COLORS),
+  });
 
 export async function updateCourseMeta(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await requireUser(STAFF);
-  const parsed = metaSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, error: firstError(parsed.error, 'Check the course details.') };
+  const { locale, t } = await getT();
+  const parsed = metaSchema(t).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error, t.studio.actions.checkCourseDetails) };
   const course = await loadEditableCourse(user, parsed.data.courseId);
-  if (!course) return NOT_ALLOWED;
+  if (!course) return notAllowed(t);
   const { courseId: _id, tags, subject, ...fields } = parsed.data;
+  // In Chinese mode the form shows translated text. If a field was not edited, keep the
+  // original English value so switching back to English still shows the author's text.
+  const unchanged = (submitted: string, original: string) =>
+    locale === 'zh' && submitted === localizeContent(original, locale) ? original : submitted;
+  const parsedTags = parseTags(tags);
+  const localizedTags = localizeContent(course.tags, locale);
+  const nextTags = JSON.stringify(parsedTags) === JSON.stringify(localizedTags) ? course.tags : parsedTags;
   const db = await getDb();
   await db
     .update(courses)
-    .set({ ...fields, subject: subject || 'General', tags: parseTags(tags), updatedAt: new Date() })
+    .set({
+      ...fields,
+      title: unchanged(fields.title, course.title),
+      summary: unchanged(fields.summary.replace(/\r\n/g, '\n'), course.summary),
+      subject: subject ? unchanged(subject, course.subject) : 'General',
+      tags: nextTags,
+      updatedAt: new Date(),
+    })
     .where(eq(courses.id, course.id));
   revalidateCourse(course);
-  return { ok: true, message: 'Course details saved.' };
+  return { ok: true, message: t.studio.actions.courseMetaSaved };
 }
 
 const statusSchema = z.object({
@@ -194,35 +253,35 @@ const statusSchema = z.object({
   intent: z.enum(['publish_class', 'submit_public', 'unpublish', 'archive']),
 });
 
-const STATUS_CHANGES: Record<
-  z.infer<typeof statusSchema>['intent'],
-  { status: CourseStatus; visibility?: CourseVisibility; message: string }
-> = {
+const STATUS_CHANGES = (
+  t: Translations,
+): Record<z.infer<typeof statusSchema>['intent'], { status: CourseStatus; visibility?: CourseVisibility; message: string }> => ({
   publish_class: {
     status: 'published',
     visibility: 'class',
-    message: 'Published to your classes. Assign it to a class so learners can find it.',
+    message: t.studio.actions.publishClassMessage,
   },
   submit_public: {
     status: 'pending_review',
     visibility: 'public',
-    message: 'Sent for review. It shows up in the public catalog once an admin approves it.',
+    message: t.studio.actions.submitPublicMessage,
   },
-  unpublish: { status: 'draft', message: 'Back to draft. Learners cannot open it for now.' },
-  archive: { status: 'archived', message: 'Archived. It is hidden from learners and the catalog.' },
-};
+  unpublish: { status: 'draft', message: t.studio.actions.unpublishMessage },
+  archive: { status: 'archived', message: t.studio.actions.archiveMessage },
+});
 
 export async function setCourseStatus(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await requireUser(STAFF);
+  const { t } = await getT();
   const parsed = statusSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, error: 'Something went wrong. Reload the page and try again.' };
+  if (!parsed.success) return { ok: false, error: t.studio.actions.generic };
   const course = await loadEditableCourse(user, parsed.data.courseId);
-  if (!course) return NOT_ALLOWED;
+  if (!course) return notAllowed(t);
   const db = await getDb();
-  const change = STATUS_CHANGES[parsed.data.intent];
+  const change = STATUS_CHANGES(t)[parsed.data.intent];
   if (change.status === 'published' || change.status === 'pending_review') {
     const [row] = await db.select({ n: count() }).from(lessons).where(eq(lessons.courseId, course.id));
-    if (!row?.n) return { ok: false, error: 'Add at least one lesson before publishing.' };
+    if (!row?.n) return { ok: false, error: t.studio.actions.addLessonFirst };
   }
   await db
     .update(courses)
@@ -242,14 +301,15 @@ const courseIdSchema = z.object({ courseId: z.string().min(1) });
 /** Copies a published course (lessons + activities) into a private draft owned by the user. */
 export async function duplicateCourse(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await requireUser(STAFF);
+  const { t } = await getT();
   const parsed = courseIdSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, error: 'Pick a course to duplicate.' };
+  if (!parsed.success) return { ok: false, error: t.studio.actions.pickCourseToDuplicate };
   const source = await getCourseById(parsed.data.courseId);
   if (!source || source.status !== 'published' || !(await canViewCourse(user, source))) {
-    return { ok: false, error: 'Only published courses you can see can be duplicated.' };
+    return { ok: false, error: t.studio.actions.onlyPublishedCanDuplicate };
   }
   const outline = await getCourseOutline(source.id);
-  if (!outline) return { ok: false, error: 'That course no longer exists.' };
+  if (!outline) return { ok: false, error: t.studio.actions.courseGone };
 
   const db = await getDb();
   const id = newId('course');
@@ -307,23 +367,24 @@ export async function duplicateCourse(_prev: ActionResult | null, formData: Form
 
 export async function addLesson(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await requireUser(STAFF);
+  const { locale, t } = await getT();
   const parsed = courseIdSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, error: 'Something went wrong. Reload the page and try again.' };
+  if (!parsed.success) return { ok: false, error: t.studio.actions.generic };
   const course = await loadEditableCourse(user, parsed.data.courseId);
-  if (!course) return NOT_ALLOWED;
+  if (!course) return notAllowed(t);
   const existing = await lessonOrder(course.id);
   if (existing.length >= MAX_LESSONS) {
-    return { ok: false, error: `A mini-course can have up to ${MAX_LESSONS} lessons.` };
+    return { ok: false, error: fmt(t.studio.actions.maxLessons, { max: MAX_LESSONS }) };
   }
   const db = await getDb();
   const lessonId = newId('lesson');
-  const title = `Lesson ${existing.length + 1}`;
+  const title = locale === 'zh' ? `第 ${existing.length + 1} 课` : `Lesson ${existing.length + 1}`;
   await db.insert(lessons).values({
     id: lessonId,
     courseId: course.id,
     position: existing.length,
     title,
-    content: `## ${title}\n\nWrite your lesson here.`,
+    content: locale === 'zh' ? `## ${title}\n\n在这里写下你的课程内容。` : `## ${title}\n\nWrite your lesson here.`,
     estimatedMinutes: 10,
   });
   await touchCourse(course.id);
@@ -336,28 +397,30 @@ const moveSchema = z.object({ direction: z.enum(['up', 'down']) });
 
 export async function deleteLesson(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await requireUser(STAFF);
+  const { t } = await getT();
   const parsed = lessonIdSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, error: 'Something went wrong. Reload the page and try again.' };
+  if (!parsed.success) return { ok: false, error: t.studio.actions.generic };
   const found = await loadEditableLesson(user, parsed.data.lessonId);
-  if (!found) return NOT_ALLOWED;
+  if (!found) return notAllowed(t);
   const { lesson, course } = found;
   if ((await lessonOrder(course.id)).length <= 1) {
-    return { ok: false, error: 'A course needs at least one lesson. Add another before deleting this one.' };
+    return { ok: false, error: t.studio.actions.onlyLesson };
   }
   const db = await getDb();
   await db.delete(lessons).where(eq(lessons.id, lesson.id));
   await renumberLessons(course.id);
   await touchCourse(course.id);
   revalidateCourse(course);
-  return { ok: true, message: 'Lesson deleted.' };
+  return { ok: true, message: t.studio.actions.lessonDeleted };
 }
 
 export async function moveLesson(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await requireUser(STAFF);
+  const { t } = await getT();
   const parsed = lessonIdSchema.extend(moveSchema.shape).safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, error: 'Something went wrong. Reload the page and try again.' };
+  if (!parsed.success) return { ok: false, error: t.studio.actions.generic };
   const found = await loadEditableLesson(user, parsed.data.lessonId);
-  if (!found) return NOT_ALLOWED;
+  if (!found) return notAllowed(t);
   const rows = await lessonOrder(found.course.id);
   const ordered = moveItem(
     rows.map((r) => r.id),
@@ -370,43 +433,54 @@ export async function moveLesson(_prev: ActionResult | null, formData: FormData)
   return { ok: true };
 }
 
-const lessonSchema = z.object({
-  lessonId: z.string().min(1),
-  title: z.string().trim().min(1, 'Give the lesson a title.').max(120, 'Keep the title under 120 characters.'),
-  estimatedMinutes: z.coerce
-    .number({ message: 'Minutes must be a number.' })
-    .int('Use whole minutes.')
-    .min(1, 'A lesson takes at least 1 minute.')
-    .max(120, 'Keep a lesson under 120 minutes.'),
-  content: z.string().max(40000, 'This lesson is very long. Split it into two lessons.'),
-});
+const lessonSchema = (t: Translations) =>
+  z.object({
+    lessonId: z.string().min(1),
+    title: z
+      .string()
+      .trim()
+      .min(1, t.studio.actions.lessonTitleRequired)
+      .max(120, t.studio.actions.lessonTitleTooLong),
+    estimatedMinutes: z.coerce
+      .number({ message: t.studio.actions.minutesNumber })
+      .int(t.studio.actions.wholeMinutes)
+      .min(1, t.studio.actions.minutesMin)
+      .max(120, t.studio.actions.minutesMax),
+    content: z.string().max(40000, t.studio.actions.contentTooLong),
+  });
 
 export async function updateLesson(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await requireUser(STAFF);
-  const parsed = lessonSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, error: firstError(parsed.error, 'Check the lesson fields.') };
+  const { locale, t } = await getT();
+  const parsed = lessonSchema(t).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error, t.studio.actions.checkLessonFields) };
   const found = await loadEditableLesson(user, parsed.data.lessonId);
-  if (!found) return NOT_ALLOWED;
+  if (!found) return notAllowed(t);
+  const unchanged = (submitted: string, original: string) =>
+    locale === 'zh' && submitted === localizeContent(original, locale) ? original : submitted;
+  // Browsers submit textarea line breaks as CRLF; the stored Markdown uses LF.
+  const submittedContent = parsed.data.content.replace(/\r\n/g, '\n');
   const db = await getDb();
   await db
     .update(lessons)
     .set({
-      title: parsed.data.title,
+      title: unchanged(parsed.data.title, found.lesson.title),
       estimatedMinutes: parsed.data.estimatedMinutes,
-      content: parsed.data.content,
+      content: unchanged(submittedContent, found.lesson.content),
       updatedAt: new Date(),
     })
     .where(eq(lessons.id, found.lesson.id));
   await touchCourse(found.course.id);
   revalidateCourse(found.course);
-  return { ok: true, message: 'Lesson saved.' };
+  return { ok: true, message: t.studio.actions.lessonSaved };
 }
 
-const rewriteSchema = z.object({
-  lessonId: z.string().min(1),
-  instruction: z.string().trim().min(3, 'Pick a preset or say how Pip should rewrite it.').max(500),
-  content: z.string().trim().min(1, 'Write something first, then ask Pip to rewrite it.').max(40000),
-});
+const rewriteSchema = (t: Translations) =>
+  z.object({
+    lessonId: z.string().min(1),
+    instruction: z.string().trim().min(3, t.studio.actions.rewriteInstructionMin).max(500),
+    content: z.string().trim().min(1, t.studio.actions.rewriteContentEmpty).max(40000),
+  });
 
 /** Returns rewritten Markdown without saving it: the instructor accepts or discards it. */
 export async function rewriteLesson(
@@ -414,13 +488,16 @@ export async function rewriteLesson(
   formData: FormData,
 ): Promise<ActionResult<{ content: string }>> {
   const user = await requireUser(STAFF);
-  const parsed = rewriteSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, error: firstError(parsed.error, 'Say how Pip should rewrite it.') };
+  const { locale, t } = await getT();
+  const parsed = rewriteSchema(t).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { ok: false, error: firstError(parsed.error, t.studio.actions.rewriteInstructionFallback) };
+  }
   const found = await loadEditableLesson(user, parsed.data.lessonId);
-  if (!found) return { ok: false, error: 'You can only edit your own courses.' };
+  if (!found) return { ok: false, error: t.studio.actions.notAllowed };
   const { text, mocked } = await generateText(
     [
-      { role: 'system', content: REWRITE_SYSTEM_PROMPT },
+      { role: 'system', content: `${REWRITE_SYSTEM_PROMPT}\n${outputLanguage(locale)}` },
       {
         role: 'user',
         content: buildRewritePrompt({
@@ -442,9 +519,7 @@ export async function rewriteLesson(
   return {
     ok: true,
     data: { content: mocked ? text : stripOuterFence(text) },
-    message: mocked
-      ? 'Demo mode: no AI key is set up, so Pip returned the lesson unchanged.'
-      : 'Here is Pip’s version. Nothing changes until you use it and save.',
+    message: mocked ? t.studio.actions.rewriteDemo : t.studio.actions.rewriteResult,
   };
 }
 
@@ -462,24 +537,25 @@ const addActivitySchema = z.object({
 /** Adds an activity of any registered type: blank (its defaultConfig) or written by AI. */
 export async function addActivity(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await requireUser(STAFF);
+  const { locale, t } = await getT();
   const parsed = addActivitySchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, error: 'Pick an activity type.' };
+  if (!parsed.success) return { ok: false, error: t.studio.actions.pickActivityType };
   const def = getActivityType(parsed.data.type);
-  if (!def) return { ok: false, error: 'That activity type is not installed.' };
+  if (!def) return { ok: false, error: t.studio.actions.activityTypeMissing };
   const found = await loadEditableLesson(user, parsed.data.lessonId);
-  if (!found) return NOT_ALLOWED;
+  if (!found) return notAllowed(t);
   const { lesson, course } = found;
   const existing = await activityOrder(lesson.id);
   if (existing.length >= MAX_ACTIVITIES_PER_LESSON) {
-    return { ok: false, error: `A lesson can have up to ${MAX_ACTIVITIES_PER_LESSON} activities.` };
+    return { ok: false, error: fmt(t.studio.actions.maxActivities, { max: MAX_ACTIVITIES_PER_LESSON }) };
   }
 
-  let config: unknown = def.defaultConfig;
+  let config: unknown = locale === 'zh' ? localizeContent(def.defaultConfig, locale) : def.defaultConfig;
   let mocked = false;
   if (parsed.data.mode === 'ai') {
     const result = await generateJson(
       [
-        { role: 'system', content: buildActivitySystemPrompt(def) },
+        { role: 'system', content: buildActivitySystemPrompt({ ...def, locale }) },
         {
           role: 'user',
           content: buildActivityUserPrompt({
@@ -496,7 +572,7 @@ export async function addActivity(_prev: ActionResult | null, formData: FormData
         userId: user.id,
         tier: 'fast',
         maxTokens: 2500,
-        mock: () => def.mock({ topic: course.title, lessonTitle: lesson.title }),
+        mock: () => def.mock({ topic: course.title, lessonTitle: lesson.title, locale }),
       },
     );
     config = result.data;
@@ -509,85 +585,119 @@ export async function addActivity(_prev: ActionResult | null, formData: FormData
     lessonId: lesson.id,
     position: existing.length,
     type: def.type,
-    title: (parsed.data.mode === 'ai' ? `${def.label}: ${lesson.title}` : def.label).slice(0, 120),
+    title: (parsed.data.mode === 'ai' ? `${activityLabel(t, def.type, def.label)}: ${lesson.title}` : activityLabel(t, def.type, def.label)).slice(0, 120),
     config,
     xpReward: 20,
   });
   await touchCourse(course.id);
   revalidateCourse(course);
-  if (parsed.data.mode === 'blank') return { ok: true, message: `${def.label} added. Edit it below.` };
+  const label = activityLabel(t, def.type, def.label);
+  // English messages use the type name mid-sentence, so keep it lowercase there.
+  const sentenceLabel = locale === 'en' ? label.toLowerCase() : label;
+  if (parsed.data.mode === 'blank') {
+    return { ok: true, message: fmt(t.studio.actions.activityAdded, { label }) };
+  }
   return {
     ok: true,
     message: mocked
-      ? `Demo mode: no AI key is set up, so Pip added a sample ${def.label.toLowerCase()}.`
-      : `Pip wrote a ${def.label.toLowerCase()} from this lesson. Check it below.`,
+      ? fmt(t.studio.actions.activityAddedDemo, { label: sentenceLabel })
+      : fmt(t.studio.actions.activityAddedAi, { label: sentenceLabel }),
   };
 }
 
-const updateActivitySchema = z.object({
-  activityId: z.string().min(1),
-  title: z.string().trim().min(1, 'Give the activity a title.').max(120, 'Keep the title under 120 characters.'),
-  xpReward: z.coerce
-    .number({ message: 'XP must be a number.' })
-    .int('Use a whole number of XP.')
-    .min(5, 'XP must be between 5 and 100.')
-    .max(100, 'XP must be between 5 and 100.'),
-  config: z.string().max(60000, 'This setup is too large.'),
-});
+const updateActivitySchema = (t: Translations) =>
+  z.object({
+    activityId: z.string().min(1),
+    title: z
+      .string()
+      .trim()
+      .min(1, t.studio.actions.activityTitleRequired)
+      .max(120, t.studio.actions.lessonTitleTooLong),
+    xpReward: z.coerce
+      .number({ message: t.studio.actions.xpNumber })
+      .int(t.studio.actions.wholeXp)
+      .min(5, t.studio.actions.xpRange)
+      .max(100, t.studio.actions.xpRange),
+    config: z.string().max(60000, t.studio.actions.setupTooLarge),
+  });
 
 export async function updateActivity(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await requireUser(STAFF);
-  const parsed = updateActivitySchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, error: firstError(parsed.error, 'Check the activity fields.') };
+  const { locale, t } = await getT();
+  const parsed = updateActivitySchema(t).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error, t.studio.actions.checkActivityFields) };
   const found = await loadEditableActivity(user, parsed.data.activityId);
-  if (!found) return NOT_ALLOWED;
+  if (!found) return notAllowed(t);
   const def = getActivityType(found.activity.type);
   if (!def) {
-    return { ok: false, error: `The “${found.activity.type}” activity type is not installed, so this setup cannot be checked.` };
+    return {
+      ok: false,
+      error: fmt(t.studio.actions.activityTypeNotInstalledSetup, { type: found.activity.type }),
+    };
   }
   let raw: unknown;
   try {
     raw = JSON.parse(parsed.data.config);
   } catch (err) {
-    const detail = err instanceof Error ? err.message : 'check commas and quotes';
-    return { ok: false, error: `The setup is not valid JSON: ${detail}` };
+    const detail = err instanceof Error ? err.message : t.studio.actions.jsonDetailFallback;
+    return { ok: false, error: fmt(t.studio.actions.invalidJsonDetail, { detail }) };
   }
   const config = def.schema.safeParse(raw);
   if (!config.success) {
-    return { ok: false, error: `The setup does not fit a ${def.label.toLowerCase()}:\n${formatIssues(config.error.issues)}` };
+    return {
+      ok: false,
+      error: fmt(t.studio.actions.setupMismatch, {
+        label: activityLabel(t, def.type, def.label).toLowerCase(),
+        issues: formatIssues(config.error.issues),
+      }),
+    };
   }
+  // Keep the authored English when the Chinese form text was only displayed, not edited.
+  const unchangedTitle =
+    locale === 'zh' && parsed.data.title === localizeContent(found.activity.title, locale)
+      ? found.activity.title
+      : parsed.data.title;
+  const unchangedConfig =
+    locale === 'zh' && JSON.stringify(raw) === JSON.stringify(localizeContent(found.activity.config, locale));
   const db = await getDb();
   await db
     .update(activities)
-    .set({ title: parsed.data.title, xpReward: parsed.data.xpReward, config: config.data, updatedAt: new Date() })
+    .set({
+      title: unchangedTitle,
+      xpReward: parsed.data.xpReward,
+      config: unchangedConfig ? found.activity.config : config.data,
+      updatedAt: new Date(),
+    })
     .where(eq(activities.id, found.activity.id));
   await touchCourse(found.course.id);
   revalidateCourse(found.course);
-  return { ok: true, message: 'Activity saved.' };
+  return { ok: true, message: t.studio.actions.activitySaved };
 }
 
 const activityIdSchema = z.object({ activityId: z.string().min(1) });
 
 export async function deleteActivity(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await requireUser(STAFF);
+  const { t } = await getT();
   const parsed = activityIdSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, error: 'Something went wrong. Reload the page and try again.' };
+  if (!parsed.success) return { ok: false, error: t.studio.actions.generic };
   const found = await loadEditableActivity(user, parsed.data.activityId);
-  if (!found) return NOT_ALLOWED;
+  if (!found) return notAllowed(t);
   const db = await getDb();
   await db.delete(activities).where(eq(activities.id, found.activity.id));
   await renumberActivities(found.lesson.id);
   await touchCourse(found.course.id);
   revalidateCourse(found.course);
-  return { ok: true, message: 'Activity deleted.' };
+  return { ok: true, message: t.studio.actions.activityDeleted };
 }
 
 export async function moveActivity(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await requireUser(STAFF);
+  const { t } = await getT();
   const parsed = activityIdSchema.extend(moveSchema.shape).safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, error: 'Something went wrong. Reload the page and try again.' };
+  if (!parsed.success) return { ok: false, error: t.studio.actions.generic };
   const found = await loadEditableActivity(user, parsed.data.activityId);
-  if (!found) return NOT_ALLOWED;
+  if (!found) return notAllowed(t);
   const rows = await activityOrder(found.lesson.id);
   const ordered = moveItem(
     rows.map((r) => r.id),

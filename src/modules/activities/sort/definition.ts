@@ -1,5 +1,6 @@
 import { Shuffle } from 'lucide-react';
 import { defineActivity } from '@/core/activity-types';
+import { byLocale } from '@/i18n/ai';
 import { gradeSort } from '../grading';
 import { SortPlayer } from './player';
 import { sortConfigSchema, type SortConfig } from './schema';
@@ -22,16 +23,28 @@ export const sortActivity = defineActivity<SortConfig>({
       { text: 'Works with a screen reader', bucket: 'Non-functional' },
     ],
   },
-  mock: ({ topic }) => ({
-    instructions: `Sort these statements about ${topic}.`,
-    buckets: ['Fact', 'Myth'],
-    items: [
-      { text: 'Practice with feedback beats re-reading', bucket: 'Fact' },
-      { text: 'You must be "a natural" to learn this', bucket: 'Myth' },
-      { text: 'Small daily sessions add up', bucket: 'Fact' },
-      { text: 'Mistakes mean you should give up', bucket: 'Myth' },
-    ],
-  }),
+  mock: ({ topic, locale }) => {
+    const buckets = byLocale(locale, ['Fact', 'Myth'], ['事实', '误区']);
+    return {
+      instructions: byLocale(locale, `Sort these statements about ${topic}.`, `给这些关于${topic}的说法分类。`),
+      buckets,
+      items: byLocale(
+        locale,
+        [
+          { text: 'Practice with feedback beats re-reading', bucket: buckets[0]! },
+          { text: 'You must be "a natural" to learn this', bucket: buckets[1]! },
+          { text: 'Small daily sessions add up', bucket: buckets[0]! },
+          { text: 'Mistakes mean you should give up', bucket: buckets[1]! },
+        ],
+        [
+          { text: '带着反馈练习，比反复阅读更有效', bucket: buckets[0]! },
+          { text: '必须“有天赋”才学得会', bucket: buckets[1]! },
+          { text: '每天学一点点，会积少成多', bucket: buckets[0]! },
+          { text: '犯了错就说明该放弃', bucket: buckets[1]! },
+        ],
+      ),
+    };
+  },
   grade: gradeSort,
   Player: SortPlayer,
 });

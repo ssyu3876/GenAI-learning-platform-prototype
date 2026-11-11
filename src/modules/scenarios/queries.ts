@@ -5,6 +5,10 @@ import { getTotalXp } from '@/core/progress/service';
 import { scenarioRuns, type RunStatus } from './schema';
 import type { InterviewRunState, ShipState, SprintState } from './engine';
 import { INTERVIEW_TYPES } from './content/interview';
+import { SHIP_IT } from './content/ship-it';
+import { SPRINT_ZERO } from './content/sprint-zero';
+import { getLocale } from '@/i18n';
+import { localizeContent } from '@/i18n/content';
 
 export interface StoredRun {
   id: string;
@@ -85,8 +89,8 @@ export interface Progress {
 }
 
 /** A compact progress line for a card: how far in, and the best result. */
-export function runProgress(key: string, run: StoredRun | undefined): Progress {
-  if (!run) return { started: false, label: 'Not started', percent: 0, best: 0, completions: 0 };
+export function runProgress(key: string, run: StoredRun | undefined, zh = false): Progress {
+  if (!run) return { started: false, label: zh ? '未开始' : 'Not started', percent: 0, best: 0, completions: 0 };
 
   if (key.startsWith('interview:')) {
     const total = 5;
@@ -94,7 +98,13 @@ export function runProgress(key: string, run: StoredRun | undefined): Progress {
     const finished = done >= total || run.completions > 0;
     return {
       started: done > 0 || run.completions > 0,
-      label: finished ? `Best ${run.bestScore}/100` : `${done} of ${total} answered`,
+      label: finished
+        ? zh
+          ? `最佳 ${run.bestScore}/100`
+          : `Best ${run.bestScore}/100`
+        : zh
+          ? `已答 ${done}/${total} 题`
+          : `${done} of ${total} answered`,
       percent: finished ? 100 : Math.round((done / total) * 100),
       best: run.bestScore,
       completions: run.completions,
@@ -107,7 +117,13 @@ export function runProgress(key: string, run: StoredRun | undefined): Progress {
     const finished = run.completions > 0 && done === 0;
     return {
       started: done > 0 || run.completions > 0,
-      label: finished ? `Best ${run.bestScore}/100` : `${Math.min(done, total)} of ${total} reviewed`,
+      label: finished
+        ? zh
+          ? `最佳 ${run.bestScore}/100`
+          : `Best ${run.bestScore}/100`
+        : zh
+          ? `已审阅 ${Math.min(done, total)}/${total}`
+          : `${Math.min(done, total)} of ${total} reviewed`,
       percent: Math.round((Math.min(done, total) / total) * 100),
       best: run.bestScore,
       completions: run.completions,
@@ -119,7 +135,13 @@ export function runProgress(key: string, run: StoredRun | undefined): Progress {
   const finished = run.completions > 0 && done === 0;
   return {
     started: done > 0 || run.completions > 0,
-    label: finished ? `Best ${run.bestScore}/100` : `${done} of ${total} decisions`,
+    label: finished
+      ? zh
+        ? `最佳 ${run.bestScore}/100`
+        : `Best ${run.bestScore}/100`
+      : zh
+        ? `已做 ${done}/${total} 个决定`
+        : `${done} of ${total} decisions`,
     percent: Math.round((Math.min(done, total) / total) * 100),
     best: run.bestScore,
     completions: run.completions,
@@ -138,44 +160,47 @@ export interface ScenarioCardData {
 }
 
 export async function getScenarioCards(userId: string): Promise<ScenarioCardData[]> {
+  const locale = await getLocale();
+  const zh = locale === 'zh';
   const runs = await getAllRuns(userId);
+  const ship = localizeContent(SHIP_IT, locale);
+  const sprint = localizeContent(SPRINT_ZERO, locale);
+  const interviewsCopy = localizeContent(INTERVIEW_TYPES, locale);
 
   const main: ScenarioCardData[] = [
     {
       key: 'ship-it',
-      title: 'Ship It',
-      tagline: 'Spend review time, keep project quality',
-      summary:
-        'Nine claims from an agent. Approving is free, rejecting costs a little, repairing costs the most. Most turns cannot be fixed by one click.',
-      meta: '9 turns',
-      minutes: 12,
+      title: ship.title,
+      tagline: ship.tagline,
+      summary: ship.summary,
+      meta: ship.meta,
+      minutes: ship.minutes,
       href: '/scenarios/ship-it',
-      progress: runProgress('ship-it', runs.get('ship-it')),
+      progress: runProgress('ship-it', runs.get('ship-it'), zh),
     },
     {
       key: 'sprint-zero',
-      title: 'Sprint Zero',
-      tagline: 'Pick a week, run it, live with the numbers',
-      summary:
-        'Three weeks, eight decisions each, drawn from a bank of twelve. Each week starts where the last one ended and ends with a summary of what moved.',
-      meta: '3 weeks',
-      minutes: 20,
+      title: sprint.title,
+      tagline: sprint.tagline,
+      summary: sprint.summary,
+      meta: sprint.meta,
+      minutes: sprint.minutes,
       href: '/scenarios/sprint-zero',
-      progress: runProgress('sprint-zero', runs.get('sprint-zero')),
+      progress: runProgress('sprint-zero', runs.get('sprint-zero'), zh),
     },
   ];
 
-  const interviews: ScenarioCardData[] = INTERVIEW_TYPES.map((type) => {
+  const interviews: ScenarioCardData[] = interviewsCopy.map((type) => {
     const key = `interview:${type.id}`;
     return {
       key,
       title: type.name,
       tagline: type.blurb,
       summary: type.blurb,
-      meta: '5 questions',
+      meta: zh ? '5 道题' : '5 questions',
       minutes: 10,
       href: `/scenarios/interview?type=${type.id}`,
-      progress: runProgress(key, runs.get(key)),
+      progress: runProgress(key, runs.get(key), zh),
     };
   });
 

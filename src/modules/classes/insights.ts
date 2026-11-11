@@ -167,9 +167,27 @@ export function resolveQuestionRefs(summary: MisconceptionSummary, focus: Questi
 }
 
 /** Offline fallback built straight from the numbers, so the tab works with no AI key. */
-export function mockMisconceptionSummary(focus: QuestionInsight[]): MisconceptionSummary {
+export function mockMisconceptionSummary(focus: QuestionInsight[], locale: 'en' | 'zh' = 'en'): MisconceptionSummary {
   const top = focus.slice(0, 3);
   const worst = top[0];
+  if (locale === 'zh') {
+    return {
+      overview: worst
+        ? `有 ${focus.length} 道题比较突出。最难的是“${worst.lessonTitle}”里的那道，${worst.answered} 名学生中有 ${worst.wrong} 名答错。`
+        : '暂时还看不出明显规律。',
+      misconceptions: top.map((q) => {
+        const wrong = q.topWrong ? q.options[q.topWrong.index] : undefined;
+        return {
+          title: wrong ? `选择了 ${quoted(wrong, 50)}` : clip(q.prompt, 60),
+          detail: wrong
+            ? `有 ${q.topWrong!.count} 名学生选了 ${quoted(wrong, 120)}，而不是 ${quoted(q.options[q.answerIndex] ?? '', 120)}。`
+            : `${q.errorRate}% 的答案答错了。`,
+          questions: [clip(q.prompt, 200)],
+          tip: q.explanation || '下节课开始时，一起把这道题讲一遍。',
+        };
+      }),
+    };
+  }
   return {
     overview: worst
       ? `${focus.length} question${focus.length === 1 ? '' : 's'} stand out. The hardest was in "${worst.lessonTitle}", missed by ${worst.wrong} of ${worst.answered} students.`

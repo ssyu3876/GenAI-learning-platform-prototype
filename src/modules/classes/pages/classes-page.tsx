@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowRight, BookOpen, Users } from 'lucide-react';
 import type { SessionUser } from '@/core/types';
 import { Badge, buttonClasses, Card, CardBody, CardHeader, EmptyState, PageHeader, asTint, TINT_BG, cn } from '@/components/ui';
+import { fmt, getT } from '@/i18n';
 import { CreateClassForm, JoinClassForm } from '../components/class-forms';
 import { CopyButton } from '../components/copy-button';
 import { listLearnerClasses, listStaffClasses } from '../queries';
@@ -13,22 +14,24 @@ export async function ClassesPage({ user }: { user: SessionUser }) {
 }
 
 async function StaffClasses({ user }: { user: SessionUser }) {
+  const { t } = await getT();
+
   const list = await listStaffClasses(user);
   return (
     <div>
       <PageHeader
-        title="Your classes"
+        title={t.classes.page.yourClasses}
         subtitle={
           user.role === 'admin'
-            ? 'Every class on Sprout. Open one to manage students, courses and engagement.'
-            : 'Import students, assign courses and see who might need a nudge.'
+            ? t.classes.page.subtitleAdmin
+            : t.classes.page.subtitleStaff
         }
       />
       <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
-        <section aria-label="Class list" className="flex flex-col gap-4">
+        <section aria-label={t.classes.page.classList} className="flex flex-col gap-4">
           {list.length === 0 ? (
-            <EmptyState title="No classes yet">
-              Create your first class on the right. You will get an invite code to share.
+            <EmptyState title={t.classes.page.noClasses}>
+              {t.classes.page.createFirstClass}
             </EmptyState>
           ) : (
             list.map((c) => (
@@ -42,26 +45,26 @@ async function StaffClasses({ user }: { user: SessionUser }) {
                     </h2>
                     {c.description ? <p className="mt-1 text-sm text-ink-soft">{c.description}</p> : null}
                     {user.role === 'admin' ? (
-                      <p className="mt-1 text-xs font-semibold text-ink-soft">Run by {c.instructorName}</p>
+                      <p className="mt-1 text-xs font-semibold text-ink-soft">{fmt(t.classes.page.runBy, { instructor: c.instructorName })}</p>
                     ) : null}
                   </div>
                   <Link href={`/classes/${c.id}`} className={buttonClasses('secondary', 'sm')}>
-                    Open class <ArrowRight className="h-4 w-4" aria-hidden />
+                    {t.classes.page.openClass} <ArrowRight className="h-4 w-4" aria-hidden />
                   </Link>
                 </div>
                 <div className="mt-4 flex flex-wrap items-center gap-2">
                   <Badge tint="sky">
-                    <Users className="h-3.5 w-3.5" aria-hidden /> {c.memberCount} student{c.memberCount === 1 ? '' : 's'}
+                    <Users className="h-3.5 w-3.5" aria-hidden /> {c.memberCount} {c.memberCount === 1 ? t.chrome.common.student : t.chrome.common.students}
                   </Badge>
                   <Badge tint="mint">
-                    <BookOpen className="h-3.5 w-3.5" aria-hidden /> {c.courseCount} course{c.courseCount === 1 ? '' : 's'}
+                    <BookOpen className="h-3.5 w-3.5" aria-hidden /> {c.courseCount} {c.courseCount === 1 ? t.chrome.common.course : t.chrome.common.courses}
                   </Badge>
                   <span className="ml-auto flex items-center gap-2 text-sm">
-                    <span className="text-ink-soft">Invite code</span>
+                    <span className="text-ink-soft">{t.classes.page.inviteCode}</span>
                     <code className="rounded-lg border-2 border-line bg-butter-soft px-2 py-0.5 font-mono font-bold tracking-widest">
                       {c.inviteCode}
                     </code>
-                    <CopyButton value={c.inviteCode} label="Copy" variant="ghost" />
+                    <CopyButton value={c.inviteCode} label={t.classes.page.copy} variant="ghost" />
                   </span>
                 </div>
               </Card>
@@ -69,7 +72,7 @@ async function StaffClasses({ user }: { user: SessionUser }) {
           )}
         </section>
         <Card tint="sky" className="h-fit">
-          <CardHeader title="New class" subtitle="Students join with the invite code, or you import them." />
+          <CardHeader title={t.classes.page.newClass} subtitle={t.classes.page.newClassSubtitle} />
           <CardBody>
             <CreateClassForm />
           </CardBody>
@@ -80,24 +83,26 @@ async function StaffClasses({ user }: { user: SessionUser }) {
 }
 
 async function LearnerClasses({ user }: { user: SessionUser }) {
+  const { t } = await getT();
+
   const list = await listLearnerClasses(user.id);
   return (
     <div>
-      <PageHeader title="My classes" subtitle="Classes you belong to and the courses your teachers picked for you." />
+      <PageHeader title={t.classes.page.myClasses} subtitle={t.classes.page.subtitleLearner} />
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
-        <section aria-label="Joined classes" className="flex flex-col gap-4">
+        <section aria-label={t.classes.page.joinedClasses} className="flex flex-col gap-4">
           {list.length === 0 ? (
-            <EmptyState title="You are not in a class yet" mood="happy">
-              Got an invite code from your teacher? Pop it in the box and you are in.
+            <EmptyState title={t.classes.page.notInClass} mood="happy">
+              {t.classes.page.gotInviteCode}
             </EmptyState>
           ) : (
             list.map((c) => (
               <Card key={c.id}>
-                <CardHeader title={c.name} subtitle={`With ${c.instructorName}`} />
+                <CardHeader title={c.name} subtitle={fmt(t.classes.page.withTeacher, { teacher: c.instructorName })} />
                 <CardBody>
                   {c.description ? <p className="mb-3 text-sm text-ink-soft">{c.description}</p> : null}
                   {c.courses.length === 0 ? (
-                    <p className="text-sm text-ink-soft">No courses assigned yet.</p>
+                    <p className="text-sm text-ink-soft">{t.classes.page.noCoursesAssigned}</p>
                   ) : (
                     <ul className="flex flex-wrap gap-2">
                       {c.courses.map((course) => (
@@ -122,7 +127,7 @@ async function LearnerClasses({ user }: { user: SessionUser }) {
           )}
         </section>
         <Card tint="butter" className="h-fit">
-          <CardHeader title="Join with a code" />
+          <CardHeader title={t.classes.page.joinWithCode} />
           <CardBody>
             <JoinClassForm />
           </CardBody>

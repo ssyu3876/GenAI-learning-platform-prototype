@@ -3,10 +3,12 @@
 import { useTransition } from 'react';
 import { Play } from 'lucide-react';
 import { Button } from '@/components/ui';
+import { useT } from '@/i18n/client';
 import { startScenario } from '../actions';
 
 /** Starts (or resumes) a choice scenario. Kept tiny so the page itself stays a server component. */
 export function StartPanel({ scenarioKey }: { scenarioKey: string }) {
+  const t = useT();
   const [isPending, startTransition] = useTransition();
 
   return (
@@ -20,7 +22,8 @@ export function StartPanel({ scenarioKey }: { scenarioKey: string }) {
         })
       }
     >
-      <Play className="h-5 w-5" aria-hidden /> {isPending ? 'Starting...' : 'Start'}
+      <Play className="h-5 w-5" aria-hidden />{' '}
+      {isPending ? t.scenarios.common.starting : t.scenarios.common.start}
     </Button>
   );
 }

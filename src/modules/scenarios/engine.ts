@@ -380,6 +380,8 @@ export function shipEnding(state: ShipState) {
   const wrong = state.history.filter((h) => h.delta < 0).length;
   const repaired = state.history.filter((h) => h.action === 'verdict').length;
   const approvedClean = state.history.filter((h) => h.action === 'approve' && h.delta === 0).length;
+  // Sized so the UI can word the same ending in another language.
+  const data = { repaired, approvedClean, wrong, quality: state.quality, minutes: state.minutes };
 
   if (score >= 85) {
     return {
@@ -389,6 +391,7 @@ export function shipEnding(state: ShipState) {
       insight:
         'Approving is the cheapest action available, which is why it is the one to distrust. The turns that cost the most were the ones where the only correct move was to read the tests first, or to make the output better before deciding.',
       takeaway: 'A claim you cannot verify is not a decision yet. Check, then decide.',
+      data,
     };
   }
   if (score >= 60) {
@@ -399,6 +402,7 @@ export function shipEnding(state: ShipState) {
       insight:
         'The time you saved did not survive the invoice. Quality and review time trade against each other, and the weighting is deliberately unkind to approving in a hurry.',
       takeaway: 'If there is no time to check a change, there is no time to ship it.',
+      data,
     };
   }
   return {
@@ -408,6 +412,7 @@ export function shipEnding(state: ShipState) {
     insight:
       'Every wrong turn was cheaper than the right one at the moment you took it. That is the trap: the cost of a bad approval arrives later and lands on someone else.',
     takeaway: 'The cheapest action in the moment is usually the most expensive one in the quarter.',
+    data,
   };
 }
 

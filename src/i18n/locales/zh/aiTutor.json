@@ -1,0 +1,42 @@
+{
+  "askPip": "问问 Pip",
+  "subtitle": "你的学习伙伴。只给提示，不给答案。",
+  "newChat": "开始新对话",
+  "close": "关闭 Pip（Esc）",
+  "conversation": "与 Pip 的对话",
+  "youLabel": "你：",
+  "pipLabel": "Pip：",
+  "stopped": "已停止",
+  "thinking": "Pip 正在思考…",
+  "thinkingStatus": "Pip 正在思考",
+  "typingStatus": "Pip 正在输入",
+  "quickPrompts": {
+    "label": "快捷问题",
+    "simpler": "用更简单的话解释一下",
+    "example": "举一个现实生活中的例子",
+    "quiz": "出一道题考考我",
+    "atWork": "这在工作中怎么用？"
+  },
+  "empty": {
+    "greeting": "嗨，{name}，你卡在哪儿了？",
+    "fallbackName": "朋友",
+    "lessonHint": "这一课有什么不懂的都可以问我，也可以点下面的快捷问题。",
+    "generalHint": "你在学的内容都可以问我。打开一课后，我就知道你正在读什么。"
+  },
+  "context": {
+    "talkingAbout": "正在聊：{title}",
+    "thisLesson": "这一课"
+  },
+  "composer": {
+    "label": "给 Pip 发消息",
+    "placeholder": "问个问题…",
+    "send": "发送消息",
+    "stop": "停止",
+    "stopAnswer": "停止 Pip 的回答",
+    "hint": "Enter 发送，Shift + Enter 换行，Esc 关闭。"
+  },
+  "errors": {
+    "noAnswer": "Pip 刚才没能回答，请稍后再试。",
+    "generic": "出了点问题，请再试一次。"
+  }
+}

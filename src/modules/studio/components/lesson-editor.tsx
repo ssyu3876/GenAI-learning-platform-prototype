@@ -5,8 +5,10 @@
 import { useState } from 'react';
 import { WandSparkles } from 'lucide-react';
 import { Badge, Button, Card, CardBody, CardHeader, cn, Field, Input, Markdown, Notice, Textarea } from '@/components/ui';
+import type { Translations } from '@/i18n';
+import { useT } from '@/i18n/client';
 import { rewriteLesson, updateLesson } from '../actions';
-import { REWRITE_PRESETS } from '../prompts';
+import { REWRITE_PRESETS, type RewritePresetId } from '../prompts';
 import { useFormAction } from './use-form-action';
 
 interface LessonValues {
@@ -15,6 +17,14 @@ interface LessonValues {
   estimatedMinutes: number;
   content: string;
 }
+
+const PRESET_LABEL_KEY: Record<RewritePresetId, keyof Translations['studio']['rewrite']['presets']> = {
+  simpler: 'simpler',
+  example: 'example',
+  technical: 'technical',
+  shorter: 'shorter',
+  chinese: 'chinese',
+};
 
 function RewriteBox({
   lessonId,
@@ -25,6 +35,7 @@ function RewriteBox({
   content: string;
   onAccept: (markdown: string) => void;
 }) {
+  const t = useT();
   const { state, pending, onSubmit } = useFormAction(rewriteLesson);
   const [instruction, setInstruction] = useState('');
   // The result object we already accepted or discarded, so it does not show again
@@ -33,12 +44,12 @@ function RewriteBox({
 
   return (
     <Card tint="lilac">
-      <CardHeader title="AI rewrite" subtitle="Pip rewrites the current text. Nothing changes until you use it." />
+      <CardHeader title={t.studio.rewrite.title} subtitle={t.studio.rewrite.subtitle} />
       <CardBody className="flex flex-col gap-3">
         <form onSubmit={onSubmit} className="flex flex-col gap-3">
           <input type="hidden" name="lessonId" value={lessonId} />
           <input type="hidden" name="content" value={content} />
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Rewrite presets">
+          <div className="flex flex-wrap gap-2" role="group" aria-label={t.studio.rewrite.presetsLabel}>
             {REWRITE_PRESETS.map((p) => (
               <button
                 key={p.id}
@@ -50,11 +61,15 @@ function RewriteBox({
                   instruction === p.instruction ? 'bg-butter' : 'bg-paper hover:bg-butter-soft',
                 )}
               >
-                {p.label}
+                {t.studio.rewrite.presets[PRESET_LABEL_KEY[p.id]]}
               </button>
             ))}
           </div>
-          <Field label="Instruction" htmlFor="rewrite-instruction" hint="Pick a preset above or write your own.">
+          <Field
+            label={t.studio.rewrite.instruction}
+            htmlFor="rewrite-instruction"
+            hint={t.studio.rewrite.instructionHint}
+          >
             <Textarea
               id="rewrite-instruction"
               name="instruction"
@@ -62,14 +77,14 @@ function RewriteBox({
               maxLength={500}
               value={instruction}
               onChange={(e) => setInstruction(e.target.value)}
-              placeholder="e.g. Use an example from a coffee shop"
+              placeholder={t.studio.rewrite.instructionPlaceholder}
             />
           </Field>
           {state && !state.ok ? <Notice tone="error">{state.error}</Notice> : null}
           <div>
             <Button type="submit" variant="secondary" disabled={pending} aria-busy={pending}>
               <WandSparkles className="h-4 w-4" aria-hidden />
-              {pending ? 'Pip is rewriting…' : 'Rewrite with AI'}
+              {pending ? t.studio.rewrite.rewriting : t.studio.rewrite.submit}
             </Button>
           </div>
         </form>
@@ -88,10 +103,10 @@ function RewriteBox({
                   setHandled(result);
                 }}
               >
-                Use this version
+                {t.studio.rewrite.useVersion}
               </Button>
               <Button variant="ghost" onClick={() => setHandled(result)}>
-                Discard
+                {t.studio.rewrite.discard}
               </Button>
             </div>
           </div>
@@ -102,6 +117,7 @@ function RewriteBox({
 }
 
 export function LessonEditor({ lesson }: { lesson: LessonValues }) {
+  const t = useT();
   const { state, pending, onSubmit } = useFormAction(updateLesson);
   const [content, setContent] = useState(lesson.content);
   const [accepted, setAccepted] = useState(false);
@@ -111,23 +127,21 @@ export function LessonEditor({ lesson }: { lesson: LessonValues }) {
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader
-          title="Lesson text"
-          subtitle="Markdown works: ## headings, **bold**, lists, tables and code."
-          action={isDirty ? <Badge tint="butter">Unsaved changes</Badge> : null}
+          title={t.studio.lesson.textTitle}
+          subtitle={t.studio.lesson.textSubtitle}
+          action={isDirty ? <Badge tint="butter">{t.studio.lesson.unsaved}</Badge> : null}
         />
         <CardBody>
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
             <input type="hidden" name="lessonId" value={lesson.id} />
             {state && !state.ok ? <Notice tone="error">{state.error}</Notice> : null}
             {state?.ok && state.message && !isDirty ? <Notice tone="success">{state.message}</Notice> : null}
-            {accepted && isDirty ? (
-              <Notice>Pip’s version is in the editor. Save the lesson to keep it.</Notice>
-            ) : null}
+            {accepted && isDirty ? <Notice>{t.studio.lesson.acceptedNotice}</Notice> : null}
             <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
-              <Field label="Title" htmlFor="lesson-title">
+              <Field label={t.studio.fields.title} htmlFor="lesson-title">
                 <Input id="lesson-title" name="title" defaultValue={lesson.title} required maxLength={120} />
               </Field>
-              <Field label="Minutes" htmlFor="lesson-minutes">
+              <Field label={t.studio.fields.minutes} htmlFor="lesson-minutes">
                 <Input
                   id="lesson-minutes"
                   name="estimatedMinutes"
@@ -140,7 +154,7 @@ export function LessonEditor({ lesson }: { lesson: LessonValues }) {
               </Field>
             </div>
             <div className="grid gap-4 xl:grid-cols-2">
-              <Field label="Content (Markdown)" htmlFor="lesson-content">
+              <Field label={t.studio.lesson.content} htmlFor="lesson-content">
                 <Textarea
                   id="lesson-content"
                   name="content"
@@ -153,23 +167,23 @@ export function LessonEditor({ lesson }: { lesson: LessonValues }) {
               </Field>
               <div className="flex min-w-0 flex-col gap-1.5">
                 <span className="font-display text-sm font-semibold" id="lesson-preview-label">
-                  Preview
+                  {t.studio.lesson.preview}
                 </span>
                 <div
                   aria-labelledby="lesson-preview-label"
                   className="max-h-[32rem] min-h-24 overflow-y-auto rounded-xl border-2 border-dashed border-line/50 bg-cream px-4 py-3"
                 >
                   {content.trim() ? (
-                    <Markdown>{content}</Markdown>
+                    <Markdown videos>{content}</Markdown>
                   ) : (
-                    <p className="text-ink-soft">Start typing and the preview shows up here.</p>
+                    <p className="text-ink-soft">{t.studio.lesson.previewEmpty}</p>
                   )}
                 </div>
               </div>
             </div>
             <div>
               <Button type="submit" variant="mint" disabled={pending} aria-busy={pending}>
-                {pending ? 'Saving…' : 'Save lesson'}
+                {pending ? t.chrome.common.saving : t.studio.lesson.save}
               </Button>
             </div>
           </form>

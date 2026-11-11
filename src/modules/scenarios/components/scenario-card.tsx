@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { ArrowRight, Flag, Mic, Ship } from 'lucide-react';
 import { Badge, buttonClasses, Card, ProgressBar, cn, type Tint } from '@/components/ui';
+import { getT } from '@/i18n';
+import { fmt } from '@/i18n/format';
 import type { ScenarioCardData } from '../queries';
 
 export const SCENARIO_LOOK: Record<string, { icon: typeof Ship; tint: Tint; solid: string }> = {
@@ -15,7 +17,8 @@ export function lookFor(key: string) {
 }
 
 /** One scenario, as a sticker card. Used on the hub page and the home widget. */
-export function ScenarioCard({ data }: { data: ScenarioCardData }) {
+export async function ScenarioCard({ data }: { data: ScenarioCardData }) {
+  const { t } = await getT();
   const look = lookFor(data.key);
   const Icon = look.icon;
   const { progress } = data;
@@ -37,8 +40,10 @@ export function ScenarioCard({ data }: { data: ScenarioCardData }) {
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <Badge tint="paper">{data.meta}</Badge>
-          <Badge tint="paper">{data.minutes} min</Badge>
-          {progress.completions > 0 ? <Badge tint="mint">Best {progress.best}</Badge> : null}
+          <Badge tint="paper">{fmt(t.scenarios.card.minutes, { minutes: data.minutes })}</Badge>
+          {progress.completions > 0 ? (
+            <Badge tint="mint">{fmt(t.scenarios.card.best, { score: progress.best })}</Badge>
+          ) : null}
         </div>
 
         <div className="mt-auto pt-4">
@@ -46,12 +51,17 @@ export function ScenarioCard({ data }: { data: ScenarioCardData }) {
             <span>{progress.label}</span>
             {progress.percent > 0 ? <span>{progress.percent}%</span> : null}
           </div>
-          <ProgressBar value={progress.percent} label={`${data.title} progress`} size="sm" />
+          <ProgressBar
+            value={progress.percent}
+            label={fmt(t.scenarios.card.progressLabel, { title: data.title })}
+            size="sm"
+          />
           <Link
             href={data.href}
             className={buttonClasses(progress.started ? 'secondary' : 'primary', 'sm', 'mt-3 w-full')}
           >
-            {progress.started ? 'Continue' : 'Start'} <ArrowRight className="h-4 w-4" aria-hidden />
+            {progress.started ? t.scenarios.common.continue : t.scenarios.common.start}{' '}
+            <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
         </div>
       </div>

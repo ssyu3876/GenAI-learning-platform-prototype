@@ -2,9 +2,13 @@
 // Pure SVG so it can be clicked and keyboard-focused without a chart dependency. Two layouts
 // share the same data: a horizontal map on wider screens and a three-column one on phones,
 // because nineteen nodes in a 300px-wide horizontal strip are too small to tap.
+//
+// Server component: badge names and group labels come from the active locale, looked up by id.
 import { Lock } from 'lucide-react';
 import { cn, type Tint } from '@/components/ui';
-import { GROUP_LABEL, GROUP_ORDER, type BadgeGroup } from '../definitions';
+import { getT, type Translations } from '@/i18n';
+import { fmt } from '@/i18n/format';
+import { GROUP_ORDER, type BadgeGroup } from '../definitions';
 import type { BadgeState } from '../queries';
 
 const NODE_FILL: Record<Tint, string> = {
@@ -59,17 +63,23 @@ function lanePoints(badges: BadgeState[], group: BadgeGroup, vertical: boolean):
     .join(' ');
 }
 
-function BadgeNode({ placed, radius }: { placed: Placed; radius: number }) {
+type Copy = Translations;
+
+function BadgeNode({ placed, radius, t }: { placed: Placed; radius: number; t: Copy }) {
   const { badge, x, y } = placed;
   const { def, earned, have, need } = badge;
+  const copy = t.achievements.badges[def.id];
   const Icon = def.icon;
   const label = earned
-    ? `${def.name}: earned.`
-    : `${def.name}: ${need > 0 ? `${have} of ${need}` : 'not yet'}. ${def.description}`;
+    ? fmt(t.achievements.map.ariaEarned, { name: copy.name })
+    : fmt(t.achievements.map.ariaOpen, { name: copy.name, have, need });
+  const tooltip = earned
+    ? fmt(t.achievements.map.tooltipEarned, { name: copy.name })
+    : fmt(t.achievements.map.tooltipOpen, { name: copy.name, have, need });
 
   return (
     <a href={`#badge-${def.id}`} aria-label={label} className="group">
-      <title>{earned ? `${def.name} — earned` : `${def.name} — ${have} / ${need}`}</title>
+      <title>{tooltip}</title>
       <g
         style={{ transformOrigin: `${x}px ${y}px` }}
         className="transition-transform duration-150 group-hover:scale-110 group-focus-visible:scale-110"
@@ -96,7 +106,7 @@ function BadgeNode({ placed, radius }: { placed: Placed; radius: number }) {
   );
 }
 
-function Trails({ badges, vertical }: { badges: BadgeState[]; vertical: boolean }) {
+function Trails({ badges, vertical, t }: { badges: BadgeState[]; vertical: boolean; t: Copy }) {
   const nodes = place(badges, vertical);
 
   return (
@@ -117,56 +127,55 @@ function Trails({ badges, vertical }: { badges: BadgeState[]; vertical: boolean 
             textAnchor={vertical ? 'middle' : 'start'}
             className="fill-ink-soft text-[10px] font-semibold"
           >
-            {GROUP_LABEL[group]}
+            {t.achievements.groups[group]}
           </text>
         </g>
       ))}
       {nodes.map((placed) => (
-        <BadgeNode key={placed.badge.def.id} placed={placed} radius={vertical ? TALL.radius : WIDE.radius} />
+        <BadgeNode
+          key={placed.badge.def.id}
+          placed={placed}
+          radius={vertical ? TALL.radius : WIDE.radius}
+          t={t}
+        />
       ))}
     </g>
   );
 }
 
-export function BadgeMap({ badges }: { badges: BadgeState[] }) {
+export async function BadgeMap({ badges }: { badges: BadgeState[] }) {
+  const { t } = await getT();
   const earned = badges.filter((b) => b.earned).length;
-  const perGroup = GROUP_ORDER.map(
-    (group) =>
-      `${GROUP_LABEL[group]} ${badges.filter((b) => b.def.group === group && b.earned).length} of ${
-        badges.filter((b) => b.def.group === group).length
-      }`,
-  ).join(', ');
+  const perGroup = GROUP_ORDER.map((group) => {
+    const here = badges.filter((b) => b.def.group === group);
+    return `${t.achievements.groups[group]} ${here.filter((b) => b.earned).length} / ${here.length}`;
+  }).join(', ');
+  const aria = fmt(t.achievements.map.aria, {
+    earned,
+    total: badges.length,
+    groups: perGroup,
+  });
 
   return (
     <div className="flex flex-col gap-3">
       <div className="hidden sm:block">
-        <svg
-          viewBox={`0 0 ${WIDE.width} ${WIDE.height}`}
-          role="group"
-          aria-label={`Badge map. ${earned} of ${badges.length} earned. ${perGroup}.`}
-          className="h-auto w-full"
-        >
-          <Trails badges={badges} vertical={false} />
+        <svg viewBox={`0 0 ${WIDE.width} ${WIDE.height}`} role="group" aria-label={aria} className="h-auto w-full">
+          <Trails badges={badges} vertical={false} t={t} />
         </svg>
       </div>
       <div className="sm:hidden">
-        <svg
-          viewBox={`0 0 ${TALL.width} ${TALL.height}`}
-          role="group"
-          aria-label={`Badge map. ${earned} of ${badges.length} earned. ${perGroup}.`}
-          className="h-auto w-full"
-        >
-          <Trails badges={badges} vertical />
+        <svg viewBox={`0 0 ${TALL.width} ${TALL.height}`} role="group" aria-label={aria} className="h-auto w-full">
+          <Trails badges={badges} vertical t={t} />
         </svg>
       </div>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-soft">
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-3 w-3 rounded-full border-2 border-line bg-mint-soft" aria-hidden />
-          earned
+          {t.achievements.map.earned}
         </span>
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-3 w-3 rounded-full border-2 border-line bg-cream" aria-hidden />
-          still open
+          {t.achievements.map.open}
         </span>
         <span className="ml-auto font-semibold text-ink">
           {earned} / {badges.length}

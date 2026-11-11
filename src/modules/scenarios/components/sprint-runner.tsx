@@ -4,6 +4,8 @@ import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Check, Clock, Lock, Play, RotateCcw } from 'lucide-react';
 import { Badge, Button, Card, CardBody, CardHeader, ProgressBar, cn } from '@/components/ui';
+import { useT } from '@/i18n/client';
+import { fmt } from '@/i18n/format';
 import { sprintEnter, sprintGoOn, sprintLeaveWeekSummary, sprintPick, resetScenario } from '../actions';
 import { Radar } from './radar';
 
@@ -62,6 +64,7 @@ function StatBars({ stats }: { stats: SprintRunnerProps['stats'] }) {
 // initial state is already the right time. Resetting it in the effect would cause an extra
 // render and is flagged by react-hooks/set-state-in-effect.
 function Countdown({ seconds, onTimeout }: { seconds: number; onTimeout: () => void }) {
+  const t = useT();
   const [left, setLeft] = useState(seconds);
   useEffect(() => {
     const id = setInterval(() => {
@@ -79,13 +82,14 @@ function Countdown({ seconds, onTimeout }: { seconds: number; onTimeout: () => v
   }, [seconds]);
   return (
     <Badge tint={left <= 5 ? 'coral' : 'butter'} className="gap-1.5">
-      <Clock className="h-3.5 w-3.5" aria-hidden /> {left}s left
+      <Clock className="h-3.5 w-3.5" aria-hidden /> {fmt(t.scenarios.sprint.secondsLeft, { seconds: left })}
     </Badge>
   );
 }
 
 export function SprintRunner(props: SprintRunnerProps) {
   const { view, week, stats, weeks, step, pending, summary, ending, history } = props;
+  const t = useT();
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -102,31 +106,44 @@ export function SprintRunner(props: SprintRunnerProps) {
         <Card tint={tone}>
           <CardHeader
             title={ending.title}
-            subtitle={ending.fatal ? 'The run ended early' : `${ending.score} / 100`}
-            action={<Badge tint="paper">{ending.fatal ? 'Ended' : 'Result'}</Badge>}
+            subtitle={ending.fatal ? t.scenarios.sprint.endedEarly : fmt(t.scenarios.sprint.scoreOutOf, { score: ending.score })}
+            action={
+              <Badge tint="paper">{ending.fatal ? t.scenarios.common.ended : t.scenarios.common.result}</Badge>
+            }
           />
           <CardBody className="flex flex-col gap-3">
             <p>{ending.body}</p>
             <div className="rounded-blob border-2 border-line bg-paper px-4 py-3">
-              <div className="text-xs font-semibold tracking-wide text-ink-soft uppercase">What decided it</div>
+              <div className="text-xs font-semibold tracking-wide text-ink-soft uppercase">
+                {t.scenarios.common.whatDecided}
+              </div>
               <p className="mt-1 text-sm">{ending.insight}</p>
             </div>
             <div className="rounded-blob border-2 border-dashed border-line/60 px-4 py-3">
-              <div className="text-xs font-semibold tracking-wide text-ink-soft uppercase">Keep this</div>
+              <div className="text-xs font-semibold tracking-wide text-ink-soft uppercase">
+                {t.scenarios.common.keepThis}
+              </div>
               <p className="mt-1 font-display font-semibold">{ending.takeaway}</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button variant="primary" onClick={() => act(() => resetScenario({ key: 'sprint-zero' }))} disabled={isPending}>
-                <RotateCcw className="h-4 w-4" aria-hidden /> Play again
+              <Button
+                variant="primary"
+                onClick={() => act(() => resetScenario({ key: 'sprint-zero' }))}
+                disabled={isPending}
+              >
+                <RotateCcw className="h-4 w-4" aria-hidden /> {t.scenarios.common.playAgain}
               </Button>
               <Button variant="ghost" onClick={() => router.push('/scenarios')}>
-                Back to scenarios
+                {t.scenarios.common.backToScenarios}
               </Button>
             </div>
           </CardBody>
         </Card>
         <Card>
-          <CardHeader title="Where you finished" subtitle="Four numbers, one shape" />
+          <CardHeader
+            title={t.scenarios.sprint.whereFinished}
+            subtitle={t.scenarios.sprint.fourNumbers}
+          />
           <CardBody className="mx-auto w-full max-w-[360px]">
             <Radar
               axes={stats.map((s) => ({
@@ -137,12 +154,15 @@ export function SprintRunner(props: SprintRunnerProps) {
                 danger: s.danger,
               }))}
               tone="sky"
-              label="Final stats"
+              label={t.scenarios.sprint.finalStats}
             />
           </CardBody>
         </Card>
         <Card>
-          <CardHeader title="Your decisions" subtitle={`${history.length} recorded`} />
+          <CardHeader
+            title={t.scenarios.sprint.yourDecisions}
+            subtitle={fmt(t.scenarios.sprint.recorded, { count: history.length })}
+          />
           <CardBody>
             <ol className="flex flex-col gap-2">
               {history.map((h, i) => (
@@ -165,9 +185,9 @@ export function SprintRunner(props: SprintRunnerProps) {
       <div className="flex flex-col gap-4">
         <Card tint="sky">
           <CardHeader
-            title={`End of week ${week + 1}`}
-            subtitle="What moved, and what to watch"
-            action={<Badge tint="paper">Summary</Badge>}
+            title={fmt(t.scenarios.sprint.endOfWeek, { week: week + 1 })}
+            subtitle={t.scenarios.sprint.summarySubtitle}
+            action={<Badge tint="paper">{t.scenarios.common.summary}</Badge>}
           />
           <CardBody className="flex flex-col gap-4">
             <ul className="flex flex-col gap-2">
@@ -189,23 +209,31 @@ export function SprintRunner(props: SprintRunnerProps) {
               ))}
             </ul>
             <div className="rounded-blob border-2 border-line bg-paper px-4 py-3">
-              <div className="text-xs font-semibold tracking-wide text-ink-soft uppercase">Advice</div>
+              <div className="text-xs font-semibold tracking-wide text-ink-soft uppercase">
+                {t.scenarios.common.advice}
+              </div>
               <p className="mt-1 text-sm">{summary.advice}</p>
               {worst && worst.change < 0 ? (
                 <p className="mt-1 text-xs text-ink-soft">
-                  The biggest drop this week was {worst.label.toLowerCase()}, down {Math.abs(worst.change)}.
+                  {fmt(t.scenarios.sprint.biggestDrop, {
+                    label: worst.label.toLowerCase(),
+                    amount: Math.abs(worst.change),
+                  })}
                 </p>
               ) : null}
             </div>
             <div>
               <Button variant="primary" onClick={() => act(() => sprintLeaveWeekSummary())} disabled={isPending}>
-                Back to weeks <ArrowRight className="h-4 w-4" aria-hidden />
+                {t.scenarios.sprint.backToWeeks} <ArrowRight className="h-4 w-4" aria-hidden />
               </Button>
             </div>
           </CardBody>
         </Card>
         <Card>
-          <CardHeader title="The shape of your week" subtitle="Dashed line is where the week started" />
+          <CardHeader
+            title={t.scenarios.sprint.shapeOfWeek}
+            subtitle={t.scenarios.sprint.weekStartLine}
+          />
           <CardBody className="mx-auto flex w-full max-w-[360px] flex-col gap-2">
             <Radar
               axes={stats.map((s) => ({
@@ -222,11 +250,9 @@ export function SprintRunner(props: SprintRunnerProps) {
                 max: s.max,
               }))}
               tone="sky"
-              label="Stats at the end of the week"
+              label={t.scenarios.sprint.weekStats}
             />
-            <p className="text-xs text-ink-soft">
-              A point that sits further in than the rest is the one to spend next week on.
-            </p>
+            <p className="text-xs text-ink-soft">{t.scenarios.sprint.shapeHint}</p>
           </CardBody>
         </Card>
         <StatBars stats={stats} />
@@ -240,7 +266,10 @@ export function SprintRunner(props: SprintRunnerProps) {
       <div className="flex flex-col gap-4">
         <StatBars stats={stats} />
         <Card>
-          <CardHeader title="Pick a week" subtitle="A week you finished can be replayed, and later weeks re-lock when you do." />
+          <CardHeader
+            title={t.scenarios.sprint.pickWeek}
+            subtitle={t.scenarios.sprint.pickWeekSubtitle}
+          />
           <CardBody>
             <ul className="flex flex-col gap-3">
               {weeks.map((w) => (
@@ -257,19 +286,19 @@ export function SprintRunner(props: SprintRunnerProps) {
                         <span className="font-display font-bold">{w.title}</span>
                         {w.complete ? (
                           <Badge tint="mint">
-                            <Check className="h-3 w-3" aria-hidden /> done
+                            <Check className="h-3 w-3" aria-hidden /> {t.scenarios.common.done}
                           </Badge>
                         ) : w.available ? (
-                          <Badge tint="butter">available</Badge>
+                          <Badge tint="butter">{t.scenarios.common.available}</Badge>
                         ) : (
                           <Badge tint="paper">
-                            <Lock className="h-3 w-3" aria-hidden /> locked
+                            <Lock className="h-3 w-3" aria-hidden /> {t.scenarios.common.locked}
                           </Badge>
                         )}
                       </div>
                       <p className="mt-0.5 text-sm text-ink-soft">{w.tagline}</p>
                       <p className="mt-1 text-xs text-ink-soft">
-                        {w.done} of {w.total} decisions
+                        {fmt(t.scenarios.sprint.decisionsProgress, { done: w.done, total: w.total })}
                       </p>
                     </div>
                     {w.available ? (
@@ -280,23 +309,31 @@ export function SprintRunner(props: SprintRunnerProps) {
                         onClick={() => act(() => sprintEnter({ week: w.index }))}
                       >
                         <Play className="h-3.5 w-3.5" aria-hidden />
-                        {w.complete ? 'Replay' : w.done > 0 ? 'Continue' : 'Start'}
+                        {w.complete
+                          ? t.scenarios.common.replay
+                          : w.done > 0
+                            ? t.scenarios.common.continue
+                            : t.scenarios.common.start}
                       </Button>
                     ) : (
-                      <span className="text-xs font-semibold text-ink-soft">Finish week {w.index} first</span>
+                      <span className="text-xs font-semibold text-ink-soft">
+                        {fmt(t.scenarios.sprint.finishWeekFirst, { week: w.index })}
+                      </span>
                     )}
                   </div>
                   <div className="mt-2">
-                    <ProgressBar value={Math.round((w.done / w.total) * 100)} label={`${w.title} progress`} size="sm" />
+                    <ProgressBar
+                      value={Math.round((w.done / w.total) * 100)}
+                      label={fmt(t.scenarios.card.progressLabel, { title: w.title })}
+                      size="sm"
+                    />
                   </div>
                 </li>
               ))}
             </ul>
           </CardBody>
         </Card>
-        <p className="text-xs text-ink-soft">
-          Replaying a week restores the numbers it started on and clears everything after it.
-        </p>
+        <p className="text-xs text-ink-soft">{t.scenarios.sprint.replayHint}</p>
       </div>
     );
   }
@@ -306,7 +343,7 @@ export function SprintRunner(props: SprintRunnerProps) {
     return (
       <Card>
         <CardBody>
-          <p className="text-ink-soft">Nothing left this week.</p>
+          <p className="text-ink-soft">{t.scenarios.sprint.nothingLeft}</p>
         </CardBody>
       </Card>
     );
@@ -318,14 +355,18 @@ export function SprintRunner(props: SprintRunnerProps) {
         <StatBars stats={stats} />
         <Card tint={pending.deltas.some((d) => d.value < 0) ? 'coral' : 'mint'}>
           <CardHeader
-            title="What happened"
-            subtitle={pending.timedOut ? 'The timer ran out, so this was decided for you.' : `You chose: ${pending.label}`}
+            title={t.scenarios.sprint.whatHappened}
+            subtitle={
+              pending.timedOut
+                ? t.scenarios.sprint.timedOut
+                : fmt(t.scenarios.sprint.youChose, { choice: pending.label })
+            }
           />
           <CardBody className="flex flex-col gap-3">
             <p>{pending.outcome}</p>
             <div className="flex flex-wrap gap-2">
               {pending.deltas.length === 0 ? (
-                <Badge tint="paper">No change</Badge>
+                <Badge tint="paper">{t.scenarios.sprint.noChange}</Badge>
               ) : (
                 pending.deltas.map((d) => (
                   <Badge key={d.label} tint={d.value > 0 ? 'mint' : 'coral'}>
@@ -337,7 +378,7 @@ export function SprintRunner(props: SprintRunnerProps) {
             </div>
             <div>
               <Button variant="primary" onClick={() => act(() => sprintGoOn())} disabled={isPending}>
-                Next <ArrowRight className="h-4 w-4" aria-hidden />
+                {t.scenarios.common.next} <ArrowRight className="h-4 w-4" aria-hidden />
               </Button>
             </div>
           </CardBody>
@@ -350,9 +391,9 @@ export function SprintRunner(props: SprintRunnerProps) {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge tint="sky">Week {week + 1}</Badge>
+          <Badge tint="sky">{fmt(t.scenarios.sprint.week, { week: week + 1 })}</Badge>
           <span className="text-sm font-semibold text-ink-soft">
-            Decision {step.index + 1} of {step.total}
+            {fmt(t.scenarios.sprint.decisionOf, { current: step.index + 1, total: step.total })}
           </span>
         </div>
         {step.seconds ? (
@@ -366,11 +407,18 @@ export function SprintRunner(props: SprintRunnerProps) {
         ) : null}
       </div>
 
-      <ProgressBar value={Math.round(((step.index + 1) / step.total) * 100)} label="Week progress" size="sm" />
+      <ProgressBar
+        value={Math.round(((step.index + 1) / step.total) * 100)}
+        label={t.scenarios.sprint.weekProgress}
+        size="sm"
+      />
       <StatBars stats={stats} />
 
       <Card tint="butter">
-        <CardHeader title={step.title} subtitle={`Decision ${step.index + 1}`} />
+        <CardHeader
+          title={step.title}
+          subtitle={fmt(t.scenarios.sprint.decision, { number: step.index + 1 })}
+        />
         <CardBody>
           <p className="text-[1.02rem] leading-relaxed">{step.body}</p>
         </CardBody>

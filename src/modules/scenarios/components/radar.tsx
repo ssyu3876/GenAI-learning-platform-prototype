@@ -1,7 +1,11 @@
+'use client';
+
 // A small radar for four or five axes, in plain SVG. It is used twice: Sprint Zero's four
 // stats and the interview debrief's five competencies. Values are normalised per axis, so a
 // 0-100 stat and a 1-5 score can share one picture.
 import { cn } from '@/components/ui';
+import { useT } from '@/i18n/client';
+import { fmt } from '@/i18n/format';
 
 export interface RadarAxis {
   key: string;
@@ -47,6 +51,7 @@ export function Radar({
   decimals?: 0 | 1;
   label: string;
 }) {
+  const t = useT();
   const n = axes.length;
   if (n < 3) return null;
 
@@ -68,7 +73,9 @@ export function Radar({
   const toneClasses = TONE[tone];
 
   const description = axes
-    .map((a) => `${a.label} ${a.value.toFixed(decimals)} out of ${a.max}`)
+    .map((a) =>
+      fmt(t.scenarios.radarValue, { label: a.label, value: a.value.toFixed(decimals), max: a.max }),
+    )
     .join(', ');
 
   return (

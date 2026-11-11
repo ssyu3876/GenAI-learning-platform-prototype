@@ -1,20 +1,28 @@
 import { Pip, ProgressBar, Card, CardBody, CardHeader, Badge, cn, type PipStage } from '@/components/ui';
 import { Leaf, Lock, Sparkles } from 'lucide-react';
 import { getLevel } from '@/core/progress/xp';
+import { getT } from '@/i18n';
+import type { Translations } from '@/i18n';
+import { fmt } from '@/i18n/format';
 import { growthProgress } from '../queries';
 import type { BadgeSnapshot } from '../definitions';
 
-const STAGES: Array<{ stage: PipStage; name: string; xp: number; note: string }> = [
-  { stage: 0, name: 'Seed', xp: 0, note: 'Just planted' },
-  { stage: 1, name: 'Sprout', xp: 100, note: 'First leaf' },
-  { stage: 2, name: 'Seedling', xp: 250, note: 'Two leaves' },
-  { stage: 3, name: 'Young tree', xp: 900, note: 'Three leaves' },
-  { stage: 4, name: 'Grove', xp: 2100, note: 'In flower' },
+type GrowthStageLevel = keyof Translations['achievements']['growth']['notes'];
+
+const STAGES: ReadonlyArray<{ stage: PipStage; level: GrowthStageLevel; xp: number }> = [
+  { stage: 0, level: 'Seed', xp: 0 },
+  { stage: 1, level: 'Sprout', xp: 100 },
+  { stage: 2, level: 'Seedling', xp: 250 },
+  { stage: 3, level: 'Young Tree', xp: 900 },
+  { stage: 4, level: 'Grove', xp: 2100 },
 ];
 
 /** The growth journey: XP in, leaves out. Shown on the badges page. */
-export function GrowthCard({ snapshot }: { snapshot: BadgeSnapshot }) {
+export async function GrowthCard({ snapshot }: { snapshot: BadgeSnapshot }) {
+  const { t } = await getT();
+
   const level = getLevel(snapshot.totalXp);
+  const levelName = t.chrome.levels[level.name as keyof typeof t.chrome.levels] ?? level.name;
   const growth = growthProgress(snapshot);
   const current = STAGES[growth.stage]!;
   const next = STAGES[growth.stage + 1];
@@ -23,9 +31,9 @@ export function GrowthCard({ snapshot }: { snapshot: BadgeSnapshot }) {
   return (
     <Card tint="mint">
       <CardHeader
-        title="Pip is growing"
-        subtitle={`Level ${level.level}: ${level.name}`}
-        action={<Badge tint="paper">{snapshot.totalXp} XP</Badge>}
+        title={t.achievements.growth.title}
+        subtitle={fmt(t.achievements.growth.levelLine, { level: level.level, name: levelName })}
+        action={<Badge tint="paper">{fmt(t.achievements.growth.xp, { xp: snapshot.totalXp })}</Badge>}
       />
 
       <CardBody className="flex flex-col gap-5">
@@ -39,37 +47,39 @@ export function GrowthCard({ snapshot }: { snapshot: BadgeSnapshot }) {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <div>
-                <div className="font-display text-xl font-bold">{current.name}</div>
-                <div className="text-sm text-ink-soft">{current.note}</div>
+                <div className="font-display text-xl font-bold">{t.chrome.levels[current.level]}</div>
+                <div className="text-sm text-ink-soft">{t.achievements.growth.notes[current.level]}</div>
               </div>
               {next ? (
                 <div className="text-right text-sm font-semibold text-ink-soft">
-                  {remaining} XP to {next.name}
+                  {fmt(t.achievements.remainingToNext, { xp: remaining, next: t.chrome.levels[next.level] })}
                 </div>
               ) : (
-                <div className="text-right text-sm font-semibold text-ink-soft">Fully grown</div>
+                <div className="text-right text-sm font-semibold text-ink-soft">{t.achievements.growth.fullyGrown}</div>
               )}
             </div>
 
             <div className="mt-2">
               <ProgressBar
                 value={growth.percent}
-                label={next ? `Progress to ${next.name}` : 'Fully grown'}
+                label={
+                  next
+                    ? fmt(t.achievements.growth.progressTo, { next: t.chrome.levels[next.level] })
+                    : t.achievements.growth.fullyGrown
+                }
                 tint={growth.percent >= 90 ? 'coral' : 'mint'}
               />
             </div>
 
             <p className="mt-2 text-sm text-ink-soft">
-              {next
-                ? 'Every finished activity, lesson, course and scenario adds XP. Pip grows at set thresholds, so the next leaf is always a target you can see.'
-                : 'Pip has every leaf. There is nothing left to grow, so the numbers are only there for the leaderboard now.'}
+              {next ? t.achievements.growth.advice : t.achievements.growth.maxed}
             </p>
           </div>
         </div>
 
         <div>
           <div className="mb-2 flex items-center gap-2 text-xs font-semibold tracking-wide text-ink-soft uppercase">
-            <Leaf className="h-3.5 w-3.5" aria-hidden /> The five stages
+            <Leaf className="h-3.5 w-3.5" aria-hidden /> {t.achievements.growth.fiveStages}
           </div>
           <ol className="grid gap-2 sm:grid-cols-5">
             {STAGES.map((s) => {
@@ -86,12 +96,12 @@ export function GrowthCard({ snapshot }: { snapshot: BadgeSnapshot }) {
                   <Pip stage={s.stage} size={40} mood={isNow ? 'happy' : reached ? 'happy' : 'sleepy'} />
                   <div className="mt-1 flex items-center gap-1 text-xs font-semibold">
                     {!reached ? <Lock className="h-3 w-3" aria-hidden /> : null}
-                    {s.name}
+                    {t.chrome.levels[s.level]}
                   </div>
-                  <div className="text-[0.68rem] text-ink-soft">{s.xp} XP</div>
+                  <div className="text-[0.68rem] text-ink-soft">{fmt(t.achievements.growth.xp, { xp: s.xp })}</div>
                   {isNow ? (
                     <div className="mt-1 inline-flex items-center gap-1 rounded-pill bg-butter px-2 py-0.5 text-[0.65rem] font-bold">
-                      <Sparkles className="h-2.5 w-2.5" aria-hidden /> now
+                      <Sparkles className="h-2.5 w-2.5" aria-hidden /> {t.achievements.growth.now}
                     </div>
                   ) : null}
                 </li>

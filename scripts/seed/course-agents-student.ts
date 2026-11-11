@@ -813,7 +813,7 @@ This is the lab that turns the course into evidence you can show. You will ship 
 
 export const agentsStudentCourse: CourseDraft = {
   ...agentsCourse,
-  title: 'Working with AI Coding Agents · Student Edition',
+  title: 'Working with AI Coding Agents',
   summary:
     'A 30-hour, project-based course for students who want real command of AI coding agents, not just a tour. Nine core lessons plus nine guided labs: repo audits, briefs and acceptance tests, plan comparisons, a vertical slice, code review, test-first repair, security drills, a team review simulation and a capstone with a portfolio case study.',
   tags: ['ai-agents', 'prompting', 'code-review', 'student', 'labs', 'career'],

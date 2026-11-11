@@ -1,7 +1,7 @@
 import type { CourseDraft } from '@/core/content/draft';
 
 export const agentsCourseZh: CourseDraft = {
-  title: '和 AI 编程智能体一起工作 · 职场版',
+  title: '和 AI 编程智能体一起工作',
   summary:
     '一门给忙碌职场人和准备进入技术岗位的毕业生的结构化课程：从只会用 AI 自动补全，走到能在工作里指挥编程智能体。课程分三部分——基础、工作循环、安全交付——每课都有 10 分钟的核心内容，也有可选的深读。快速路径：约 90 分钟。完整版：约 3.5 小时。',
   subject: '软件工程',

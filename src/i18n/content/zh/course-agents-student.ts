@@ -929,7 +929,7 @@ const labs: CourseDraft['lessons'] = [
 
 export const agentsStudentCourseZh: CourseDraft = {
   ...agentsCourseZh,
-  title: '和 AI 编程智能体一起工作 · 学生版',
+  title: '和 AI 编程智能体一起工作',
   summary:
     '一门 30 小时、以项目为线索的课程，适合想真正驾驭 AI 编程智能体、而不只是走马观花的学生。九节核心课加九个带指导的实验：仓库审计、交代与验收测试、计划对比、一条纵向切片、代码评审、测试先行修复、安全演练、团队评审模拟，以及一个带作品集案例研究的结课项目。',
   tags: ['AI 智能体', '提示词', '代码评审', '学生', '实验', '职业发展'],

@@ -1,7 +1,7 @@
 import type { CourseDraft } from '@/core/content/draft';
 
 export const agentsCourse: CourseDraft = {
-  title: 'Working with AI Coding Agents · Professional Edition',
+  title: 'Working with AI Coding Agents',
   summary:
     'A structured course for busy professionals and graduates preparing for technical work who want to move from using AI autocomplete to directing coding agents at work. Three parts — foundations, the working loop, and shipping safely — with a 10-minute core and optional depth in every lesson. Fast path: about 90 minutes. Full book: about 3.5 hours.',
   subject: 'Software Engineering',

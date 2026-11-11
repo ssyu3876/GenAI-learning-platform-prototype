@@ -26,7 +26,10 @@ The questionnaire is unchanged. Its four identity options map to two editions:
 | Working, changing career, or curious (`other`) | Professional edition |
 
 `recommendCourses()` filters out the edition that does not match the learner's identity, so the
-path never contains both. The other two preset courses remain available to everyone and are not
+path never contains both. The catalog applies the same rule: both editions keep the plain title
+**Working with AI Coding Agents**, the non-matching row is hidden for that learner, and the
+edition tags are not displayed. A learner therefore sees one AI agents card and three preset
+cards in total; the other two preset courses remain available to everyone and are not
 duplicated.
 
 ## Professional edition structure

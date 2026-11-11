@@ -25,8 +25,9 @@ describe('AI agents student edition', () => {
     }
   });
 
-  it('keeps the student title and summary student-facing', () => {
-    expect(agentsStudentCourse.title).toContain('Student Edition');
+  it('keeps the student title plain and the summary student-facing', () => {
+    expect(agentsStudentCourse.title).toBe('Working with AI Coding Agents');
+    expect(agentsStudentCourse.title).not.toContain('Student Edition');
     expect(agentsStudentCourse.summary.toLowerCase()).toContain('student');
     expect(agentsStudentCourse.summary.toLowerCase()).not.toContain('busy professionals');
     expect(agentsStudentCourse.tags).toContain('student');

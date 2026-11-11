@@ -174,7 +174,7 @@ export function LessonEditor({ lesson }: { lesson: LessonValues }) {
                   className="max-h-[32rem] min-h-24 overflow-y-auto rounded-xl border-2 border-dashed border-line/50 bg-cream px-4 py-3"
                 >
                   {content.trim() ? (
-                    <Markdown>{content}</Markdown>
+                    <Markdown videos>{content}</Markdown>
                   ) : (
                     <p className="text-ink-soft">{t.studio.lesson.previewEmpty}</p>
                   )}

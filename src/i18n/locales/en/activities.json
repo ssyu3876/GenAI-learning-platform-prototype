@@ -87,7 +87,8 @@
     "play": "Play narration",
     "noSpeech": "Your browser cannot read aloud; captions are shown instead.",
     "finish": "Finish slides",
-    "narration": "Narration"
+    "narration": "Narration",
+    "speed": "Narration speed: {speed}×"
   },
   "roleplay": {
     "talkingTo": "You are talking to",

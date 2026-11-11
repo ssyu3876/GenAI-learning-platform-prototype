@@ -16,6 +16,10 @@ export const peopleCourse: CourseDraft = {
       estimatedMinutes: 10,
       content: `Sooner or later you will need to explain a technical problem to someone who does not care about the technology: a client, a manager, a user. They care about **what it means for them**.
 
+This talk walks through the same problem from a practitioner's side:
+
+[Video: How to explain technical things to a non-technical person · Patrick McLean (11 min)](https://www.youtube.com/watch?v=Q5zaQ6CC134)
+
 ### Three moves
 
 1. **Lead with the impact.** "Orders placed after 11:30 are not reaching the kitchen" beats "the webhook queue is backing up".
@@ -46,6 +50,48 @@ export const peopleCourse: CourseDraft = {
               { text: '"We pushed v2 to staging behind a feature flag."', bucket: 'Too much jargon' },
               { text: '"Card payments are safe: we never see or store the card number."', bucket: 'Clear for her' },
               { text: '"We\'re PCI-compliant via tokenisation."', bucket: 'Too much jargon' },
+            ],
+          },
+        },
+        {
+          type: 'quiz',
+          title: 'Lead with the impact',
+          xpReward: 15,
+          config: {
+            questions: [
+              {
+                prompt: 'A client asks why the site was slow yesterday. Which opening is best?',
+                options: [
+                  'Between 9 and 10, checkout took 12 seconds instead of 2. It is fixed, and we are checking why it happened.',
+                  'A downstream dependency saturated the connection pool.',
+                  'We had a P1 incident in the payment service.',
+                  'Intermittent latency affected a subset of requests.',
+                ],
+                answerIndex: 0,
+                explanation: 'Lead with what happened to them, then what you did. The cause can come second.',
+              },
+              {
+                prompt: 'You need a decision from a busy manager. What should the message end with?',
+                options: [
+                  'Let me know if you have any questions.',
+                  'Two options: a workaround today that is safe but slow, or a proper fix by Friday. Which do you prefer?',
+                  'I will keep you posted.',
+                  'This is urgent and needs attention.',
+                ],
+                answerIndex: 1,
+                explanation: 'A decision with a deadline beats an open-ended update.',
+              },
+              {
+                prompt: 'Which analogy explains a database index to a café owner?',
+                options: [
+                  'It is a B-tree over the primary key.',
+                  'It is like the index at the back of a recipe book: you jump to the page instead of reading every recipe.',
+                  'It is a materialised view of the query planner.',
+                  'It reduces the asymptotic complexity of lookups.',
+                ],
+                answerIndex: 1,
+                explanation: 'An analogy from their world does work that a definition cannot.',
+              },
             ],
           },
         },
@@ -105,12 +151,31 @@ Assume good intent, ask questions when unclear, and remember: comments on your c
             ],
           },
         },
+        {
+          type: 'sort',
+          title: 'Must-fix or nice to have?',
+          xpReward: 20,
+          config: {
+            instructions: 'A review with ten "must fix" items is the same as one with none. Sort these.',
+            buckets: ['Blocks the merge', 'Nice to have'],
+            items: [
+              { text: '"Line 8 writes the password into the log."', bucket: 'Blocks the merge' },
+              { text: '"This helper could be named totalCents."', bucket: 'Nice to have' },
+              { text: '"The retry loop has no cap, so a failing gateway gets hammered."', bucket: 'Blocks the merge' },
+              { text: '"Nit: extra blank line at the end."', bucket: 'Nice to have' },
+              { text: '"The empty cart path is not tested, and that is the bug we just fixed."', bucket: 'Blocks the merge' },
+              { text: '"A for-of loop would read a little better here."', bucket: 'Nice to have' },
+            ],
+          },
+        },
       ],
     },
     {
       title: 'Telling your story: the STAR method',
       estimatedMinutes: 15,
       content: `Behavioural interview questions ("Tell me about a time you…") are not trick questions. The interviewer wants evidence of how you work. The **STAR** structure keeps your answer clear and short:
+
+[Video: How to answer STAR interview questions in 4 minutes · Clark Glassford (4 min)](https://www.youtube.com/watch?v=N5KoRxO4jEk)
 
 | | What to say | Example |
 |---|---|---|
@@ -124,7 +189,9 @@ Assume good intent, ask questions when unclear, and remember: comments on your c
 - Say **"I"**, not only "we". The interviewer is hiring you.
 - Keep it under two minutes. Practise out loud.
 - Have 3–4 stories ready (a conflict, a mistake, a success, a time you learned fast) and adapt them.
-- It is fine to talk about AI tools. Explain how *you* directed and checked them.`,
+- It is fine to talk about AI tools. Explain how *you* directed and checked them.
+
+Want a full run? The [practice interviews](/scenarios/interview) ask five questions and end with a debrief on structure, specifics and how you check AI output.`,
       activities: [
         {
           type: 'sequence',
@@ -137,6 +204,43 @@ Assume good intent, ask questions when unclear, and remember: comments on your c
               'As the team lead, I had to get us back on track without burning people out.',
               'I split the remaining work into small tasks and set up a 10-minute daily check-in.',
               'We delivered on time, and our final demo got the top grade in the class.',
+            ],
+          },
+        },
+        {
+          type: 'quiz',
+          title: 'STAR or rambling?',
+          xpReward: 15,
+          config: {
+            questions: [
+              {
+                prompt: 'Which sentence belongs in the Result?',
+                options: [
+                  'We had four weeks and a team of five.',
+                  'I split the work into small tasks and set a daily check-in.',
+                  'We delivered on time and the demo got the top grade.',
+                  'I was the team lead for that project.',
+                ],
+                answerIndex: 2,
+                explanation: 'The result is the outcome. Situation, task and action come before it.',
+              },
+              {
+                prompt: 'An answer describes the project and the team but never says what you did. Which part is missing?',
+                options: ['Situation', 'Task', 'Action', 'Result'],
+                answerIndex: 2,
+                explanation: 'Interviewers hire you, not the team. Say what you did.',
+              },
+              {
+                prompt: 'What is the best way to keep a STAR answer under two minutes?',
+                options: [
+                  'Memorise one answer word for word and use it for every question.',
+                  'Prepare three or four stories and adapt the one that fits.',
+                  'Speak faster.',
+                  'Skip the Result to save time.',
+                ],
+                answerIndex: 1,
+                explanation: 'A small set of real stories covers most questions without sounding rehearsed.',
+              },
             ],
           },
         },
@@ -211,6 +315,124 @@ Assume good intent, ask questions when unclear, and remember: comments on your c
                 ],
                 answerIndex: 0,
                 explanation: 'Diligence means owning the result and improving the process.',
+              },
+            ],
+          },
+        },
+        {
+          type: 'roleplay',
+          title: 'The slipping release',
+          xpReward: 45,
+          config: {
+            scenario: 'Two days before release, a review finds a bug that can log users out at random. You have to tell your lead the date moves.',
+            persona: 'Priya',
+            personaRole: 'Engineering lead on the release',
+            personaBrief:
+              'Direct, calm, allergic to vague updates. Wants the headline first, then the impact and the options. Pushes back on "it should be fine". Cares more about the team not burning out than about the date itself. Never proposes the solution for you.',
+            learnerRole: 'Engineer who owns the release',
+            goals: [
+              'Say the headline first: the date moves',
+              'Own what you know and what you do not',
+              'Offer two realistic options with a trade-off',
+              'Agree the next step and who decides',
+            ],
+            opening: 'You asked for five minutes. What is going on?',
+            rubric: [
+              { criterion: 'Headline first', description: 'States the slip before the technical detail' },
+              { criterion: 'Clear options', description: 'Gives two realistic options and what each costs' },
+              { criterion: 'Ownership', description: 'Says what happens next without blaming the AI or the team' },
+            ],
+            maxTurns: 6,
+            mockReplies: [
+              'Okay. How bad is it, and who is affected?',
+              'When did we find this? Was it in the review or in production?',
+              'What are the options? I do not want "we will try harder".',
+              'If we ship on Friday anyway, what breaks?',
+              'Who needs to hear this, and who tells them?',
+              'Alright. Send me the two options in writing after this, and we decide at standup.',
+            ],
+          },
+        },
+      ],
+    },
+    {
+      title: 'Saying no without burning trust',
+      estimatedMinutes: 10,
+      content: `Saying no is part of the job. The deadline cannot move, the scope cannot grow, and the tests cannot be skipped — someone has to say so. The difference between a useful no and a rude one is what you offer instead.
+
+### Three moves
+
+1. **Say what you can do.** "I can get the export fix out by Friday" opens better than "I cannot do this week".
+2. **Name the constraint, once.** "The release is Thursday and the tests take a day." Facts, not mood.
+3. **Offer a choice.** "Do you want the export first, or the new dashboard?" A choice keeps the other person in charge.
+
+If the conversation matters, write it down afterwards: what was agreed, who does what, and when you check again.
+
+### What burns trust
+
+- **The silent yes.** Agreeing now and hoping is how dates quietly break.
+- **"That's not my job."** The boundary may be right; the sentence closes the relationship.
+- **A no with no follow-up.** Silence leaves the other person guessing.
+
+> A no without an alternative is a closed door. A no with one is a plan.
+
+Want to practise? [Sprint Zero](/scenarios/sprint-zero) is three weeks of these trade-offs.`,
+      activities: [
+        {
+          type: 'sort',
+          title: 'Keeps trust or burns it?',
+          xpReward: 20,
+          config: {
+            instructions: 'These are all ways to turn something down. Which ones keep the relationship?',
+            buckets: ['Keeps trust', 'Burns trust'],
+            items: [
+              { text: '"I can\'t do it this week. I can do next Tuesday, or hand it to Sam — which works?"', bucket: 'Keeps trust' },
+              { text: '"That\'s not my job."', bucket: 'Burns trust' },
+              { text: '"I\'ll try" and then nothing for a week.', bucket: 'Burns trust' },
+              { text: '"The deadline is fixed. Here is what I can drop to make room."', bucket: 'Keeps trust' },
+              { text: '"Yes, sure" and then quietly work the weekend.', bucket: 'Burns trust' },
+              { text: '"No for now, and here is what would change my answer."', bucket: 'Keeps trust' },
+            ],
+          },
+        },
+        {
+          type: 'quiz',
+          title: 'The polite no',
+          xpReward: 15,
+          config: {
+            questions: [
+              {
+                prompt: 'Your manager adds "one small feature" two days before release. What is the best response?',
+                options: [
+                  'We can add it after release on Tuesday, or swap it for the export fix. Which do you want first?',
+                  'Sure, I will squeeze it in.',
+                  'That is impossible.',
+                  'The AI can probably do it, ask it.',
+                ],
+                answerIndex: 0,
+                explanation: 'A trade, not a refusal. It keeps the date honest and leaves the choice with them.',
+              },
+              {
+                prompt: 'A teammate asks you to skip the tests "just this once". What protects the relationship?',
+                options: [
+                  'Explain what the tests caught last time and offer to pair on a faster subset.',
+                  'Say no and walk away.',
+                  'Report them to the lead.',
+                  'Agree, then run the tests anyway without telling them.',
+                ],
+                answerIndex: 0,
+                explanation: 'The boundary stays, and you give them a path that still ships safely.',
+              },
+              {
+                prompt: 'You have to decline a request in writing. What should the message contain?',
+                options: [
+                  'An apology and no alternative.',
+                  'The constraint, what you can do instead, and a date to check back.',
+                  'A list of everything else you are working on.',
+                  'Nothing; silence is safer.',
+                ],
+                answerIndex: 1,
+                explanation: 'Something they can act on beats an apology they cannot use.',
               },
             ],
           },

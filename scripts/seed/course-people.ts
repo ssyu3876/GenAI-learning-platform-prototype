@@ -81,6 +81,8 @@ If the message ends with "let me know if you have questions", it is a status upd
                 bullets: ['Checkout took 12 seconds', 'She does not care why'],
                 narration:
                   'Meet Dana. She runs online orders for the café. Yesterday, checkout took twelve seconds instead of two, and her staff took the calls. She does not want the cause first. She wants to know what happened, whether it will happen again, and whether she has to tell anyone.',
+                detail:
+                  'She will repeat your first sentence to her staff. Make sure it is the one you want repeated.',
                 visual: 'dialogue-client',
               },
               {
@@ -88,6 +90,8 @@ If the message ends with "let me know if you have questions", it is a status upd
                 bullets: ['What they felt', 'Their world, not yours', 'End with a choice'],
                 narration:
                   'Start with what she experienced: between nine and ten, checkout took twelve seconds. The queue is like a till that keeps re-scanning the same item, which gives her a picture without the jargon. Then end with a decision: a workaround today, or a proper fix by Friday. A choice turns a status update into a plan. Keep the cause for the second sentence.',
+                detail:
+                  'The analogy is doing real work: a till re-scanning the same item is the queue story with none of the technical words.',
                 visual: 'three-moves',
                 check: {
                   question: 'Which opening would Dana act on?',
@@ -105,6 +109,7 @@ If the message ends with "let me know if you have questions", it is a status upd
                 bullets: ['Name the gap', 'Give the next checkpoint'],
                 narration:
                   'You will not always know the cause, and inventing one costs more trust than admitting the gap. Say what you know: it is fixed, orders are going through, we do not know why yet. Then give a time: I will tell you by four. A checkpoint is a promise you can keep; it will not happen again is not.',
+                detail: 'A checkpoint you can keep is worth more than a confident guess.',
                 check: {
                   question: 'You do not know the root cause yet. What do you say?',
                   options: [
@@ -121,6 +126,7 @@ If the message ends with "let me know if you have questions", it is a status upd
                 bullets: ['Pick the impact-first message', 'Then choose the analogy'],
                 narration:
                   'Now try the next two activities. Pick the messages Dana would understand, and the ones that bury the point under jargon. Then choose the opening you would actually send. Notice how often the shortest version is also the clearest.',
+                detail: 'The deck sets up the practice; the next two activities do the work.',
               },
             ],
           },

@@ -82,6 +82,7 @@ export const peopleCourseZh: CourseDraft = {
                 bullets: ['结账花了 12 秒', '她并不关心原因'],
                 narration:
                   '认识一下 Dana，她负责咖啡馆的线上订单。昨天结账从 2 秒变成了 12 秒，店员一直在接电话。她想先知道发生了什么，而不是先听原因。她还要知道会不会再发生，以及今天要不要跟店员交代。',
+                detail: '她会把你的第一句话转述给店员。确保那是你希望被转述的一句。',
                 visual: 'dialogue-client',
               },
               {
@@ -89,6 +90,7 @@ export const peopleCourseZh: CourseDraft = {
                 bullets: ['她感受到了什么', '用她的世界', '最后给选择'],
                 narration:
                   '先说她经历的事：九点到十点之间，结账要 12 秒。队列就像收银台反复扫同一件商品，她不用懂技术也能想象。最后给一个决定：今天先上临时方案，还是周五前彻底修好。有了选择，进度汇报就变成了计划。原因放第二句就够了。',
+                detail: '这个比喻在干活：收银台反复扫同一件商品，就是队列的故事，一个技术词都没有。',
                 visual: 'three-moves',
                 check: {
                   question: '哪一句是 Dana 会立刻行动的开头？',
@@ -106,6 +108,7 @@ export const peopleCourseZh: CourseDraft = {
                 bullets: ['把空白说清楚', '给下一个时间点'],
                 narration:
                   '原因不一定马上知道，编一个比承认空白更伤信任。说清你确定的部分：已经修好了、订单能进来、原因还没查清。然后给一个时间：四点前告诉你。可兑现的时间点是承诺，“不会再发生”不是。',
+                detail: '一个能守住的时间点，比一个自信的猜测更值钱。',
                 check: {
                   question: '还不知道根因时，你怎么说？',
                   options: [
@@ -122,6 +125,7 @@ export const peopleCourseZh: CourseDraft = {
                 bullets: ['找出先说影响的句子', '再选出那个比喻'],
                 narration:
                   '接下来做两个活动：挑出 Dana 能听懂的话，也挑出那些被行话埋掉重点的话。然后选一个你真的会发出去的开头。留意一下，最短的版本往往也最清楚。',
+                detail: '讲解只是铺垫，真正起作用的是接下来的两个活动。',
               },
             ],
           },

@@ -24,6 +24,7 @@ export const roleplayActivity = defineActivity<RoleplayConfig>({
       { criterion: 'Finds the real need', description: 'Uncovers the underlying problem' },
     ],
     maxTurns: 6,
+    mockRules: [],
     mockReplies: [
       'Well, at lunch the queue goes out the door and people give up and leave.',
       'Budget? Not much. Maybe a few thousand dollars. I am not a big chain.',
@@ -47,6 +48,7 @@ export const roleplayActivity = defineActivity<RoleplayConfig>({
           { criterion: '有例子', description: '让概念变得具体' },
         ],
         maxTurns: 5,
+        mockRules: [],
         mockReplies: ['好吧……但这对我有什么用？', '能举个真实的例子吗？', '哦，这样一说就清楚多了。', '那入门难不难？'],
       };
     }
@@ -63,6 +65,7 @@ export const roleplayActivity = defineActivity<RoleplayConfig>({
         { criterion: 'Uses an example', description: 'Makes it concrete' },
       ],
       maxTurns: 5,
+      mockRules: [],
       mockReplies: ['Okay... but why would that matter to me?', 'Can you give me a real example?', 'Huh, that makes more sense now.', 'And is it hard to get started?'],
     };
   },

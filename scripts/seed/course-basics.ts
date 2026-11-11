@@ -44,7 +44,7 @@ After "Learn", the team goes back to "Understand" with new information. Each tri
           xpReward: 15,
           config: {
             slides: [
-              { heading: 'Software is built in loops', bullets: ['Understand → Plan → Design', 'Build → Test → Release → Learn'], narration: 'Here is the big secret: software is not built in one straight line. Teams go round a loop, again and again.' },
+              { heading: 'Software is built in loops', visual: 'software-loop', bullets: ['Understand → Plan → Design', 'Build → Test → Release → Learn'], narration: 'Here is the big secret: software is not built in one straight line. Teams go round a loop, again and again.' },
               { heading: 'Why loops?', bullets: ['Find mistakes early', 'Change is cheaper at the start'], narration: 'Fixing a wrong idea on a whiteboard costs minutes. Fixing it after launch can cost months. Short loops catch problems early.' },
               { heading: 'Coding is one stage of seven', bullets: ['Lots of thinking before', 'Lots of checking after'], narration: 'Notice that writing code is only one of the seven stages. The thinking before and the checking after matter just as much.' },
               { heading: 'Your turn', bullets: ['Put the stages in order', 'Think about CampusEats'], narration: 'Now let us see if you can put the stages in the right order. Picture the CampusEats team as you go.' },
@@ -114,7 +114,7 @@ After "Learn", the team goes back to "Understand" with new information. Each tri
     },
     {
       title: 'Requirements: what are we actually building?',
-      estimatedMinutes: 22,
+      estimatedMinutes: 25,
       content: `A **requirement** is something the software must do or be. Vague requirements are the number one reason projects go wrong: "make it easy to use" means something different to everyone.
 
 ### User stories
@@ -155,6 +155,37 @@ A requirement is testable when two people would agree on whether it is met. Repl
 
 Non-functional requirements are easy to forget and painful to add later. Ask about them early.`,
       activities: [
+        {
+          type: 'slides',
+          title: 'Pip explains user stories',
+          xpReward: 15,
+          config: {
+            slides: [
+              {
+                heading: 'Three parts of a user story',
+                visual: 'user-story',
+                bullets: ['Who: "As a student…"', 'What: "…I want to save my usual order…"', 'Why: "…so that I can reorder in one tap"'],
+                narration: 'A user story fits on a sticky note, and it has three parts. First, who wants it: a student. Second, what they want: to save their usual order. Third, the part people skip, why: so they can reorder in one tap.',
+              },
+              {
+                heading: 'From vague to testable',
+                visual: 'vague-to-testable',
+                bullets: ['Vague: "the app should be fast"', 'Testable: "the menu loads in under 2 seconds on 4G"', 'Check it: a clear yes or no'],
+                narration: 'Fast means something different to everyone, so nobody can check it. Swap the adjective for a number: the menu loads in under two seconds on 4G. Now anyone can test it and get a clear yes or no.',
+              },
+              {
+                heading: 'What it does, and how well',
+                bullets: ['Functional: what the system does', 'Non-functional: speed, security, accessibility', 'Ask about both early'],
+                narration: 'Functional requirements say what the system does, like letting a student cancel an order. Non-functional ones say how well it does it: speed, security, accessibility and cost. Those are easy to forget and painful to add later, so ask about them on day one.',
+              },
+              {
+                heading: 'Your turn',
+                bullets: ['Sort the CampusEats requirements', 'Then catch the vague ones'],
+                narration: 'Now try it with real CampusEats requirements. Sort them first, then catch the ones that are too vague to test.',
+              },
+            ],
+          },
+        },
         {
           type: 'sort',
           title: 'Functional or non-functional?',
@@ -229,7 +260,7 @@ Non-functional requirements are easy to forget and painful to add later. Ask abo
     },
     {
       title: 'Talking to your first client',
-      estimatedMinutes: 25,
+      estimatedMinutes: 28,
       content: `Clients rarely know exactly what they need. They know what *hurts*. Your job in a requirements conversation is to find the pain behind the request.
 
 Watch a business analyst go through the questions worth asking in a first requirements meeting:
@@ -252,6 +283,37 @@ Watch a business analyst go through the questions worth asking in a first requir
 
 > In the role-play below, Mrs. Lau will only tell you the useful details if you ask good questions. Warm up first by sorting questions into open and closed ones.`,
       activities: [
+        {
+          type: 'slides',
+          title: 'Pip\'s tips for a first client meeting',
+          xpReward: 15,
+          config: {
+            slides: [
+              {
+                heading: 'Find the problem behind the request',
+                visual: 'why-ladder',
+                bullets: ['"I need an app"', 'Why? "Apps look modern"', 'Why? "Regulars walk out at lunch"', 'The real need: a shorter lunch queue'],
+                narration: 'Clients often arrive with a solution, not a problem. The café owner starts with: I need an app. Ask why, and she says apps look modern. Ask why again, and you hear that regulars walk out at lunch. That is the real need: the lunch queue is too long.',
+              },
+              {
+                heading: 'Open questions get stories',
+                visual: 'open-closed',
+                bullets: ['Closed: "Do you want an app?" gets a yes', 'Open: "What happens at lunchtime?" gets a story'],
+                narration: 'A closed question gets a yes, a no or a number, and you learn almost nothing. An open question that starts with what, how or why gets a story full of useful details.',
+              },
+              {
+                heading: 'Before you leave the meeting',
+                bullets: ['Ask about budget, deadline and users', 'Summarise back in plain words', 'Promise a proposal; do not design on the spot'],
+                narration: 'Ask about the limits early: the budget, the deadline and who will actually use it. Then summarise what you heard in plain words and check you got it right. Do not design in the meeting; write things down and promise a proposal later.',
+              },
+              {
+                heading: 'Your turn',
+                bullets: ['Warm up: open or closed?', 'Then meet Mrs. Lau'],
+                narration: 'Warm up by sorting some questions into open and closed ones. Then sit down with the café owner and see what you can find out.',
+              },
+            ],
+          },
+        },
         {
           type: 'sort',
           title: 'Open or closed question?',
@@ -290,13 +352,42 @@ Watch a business analyst go through the questions worth asking in a first requir
               { criterion: 'Checks constraints and summarises', description: 'Asks about budget/deadline and summarises back in plain words' },
             ],
             maxTurns: 7,
+            // Offline only: what Mrs. Lau says when no AI model is available. Rules answer the topic
+            // the learner raised; the plain replies keep her vague when nothing matches.
             mockReplies: [
-              'Well... mostly I see people give up at lunchtime. The queue goes out the door.',
-              'Lunch customers? Office workers from the building next door, they only have 45 minutes.',
-              'Budget? I am a small café, not a bank. Maybe thirty thousand dollars.',
-              'Before July, please. Summer is when it gets really busy.',
-              'Honestly, I do not care how it works. I just do not want to lose those customers.',
-              'Yes, that is it exactly. You explain it better than I did!',
+              'Hmm. I am not sure what you mean. I just know my competitor has an app.',
+              'I do not know much about apps. Ask me about my café.',
+              'Is that important? I have customers waiting, you know.',
+            ],
+            mockRules: [
+              {
+                keywords: ['api', 'backend', 'back-end', 'back end', 'frontend', 'front-end', 'database', 'server', 'framework', 'deploy', 'cloud', 'sdk', 'tech stack', 'cms', 'saas', 'endpoint', 'microservice', '后端', '前端', '数据库', '服务器', '框架', '部署', '接口', '技术栈', '云端'],
+                reply: 'Sorry, you lost me there. I sell coffee. Can you say that in plain words?',
+              },
+              {
+                keywords: ['just to check', 'to confirm', 'let me check', 'summar', 'did i get', 'is that right', 'if i understand', 'so the real', 'so what you', 'so you need', '总结', '确认一下', '我理解得对', '理解得对吗', '也就是说', '我复述'],
+                reply: 'Yes, that is it exactly. You explain it better than I did!',
+              },
+              {
+                keywords: ['why', 'problem', 'what happens', 'happen', 'lunch', 'busy', 'busi', 'queue', 'line', 'wait', 'trouble', 'difficult', 'struggle', 'worr', 'tell me about', '为什么', '问题', '发生', '排队', '午饭', '午餐', '忙', '麻烦', '困难', '担心', '说说', '情况'],
+                reply: 'Well... mostly I see people give up at lunchtime. The queue goes out the door.',
+              },
+              {
+                keywords: ['who', 'customer', 'user', 'people', 'office', 'regular', '谁', '顾客', '客人', '客户', '用户', '上班族', '熟客'],
+                reply: 'Lunch customers? Office workers from the building next door, they only have 45 minutes.',
+              },
+              {
+                keywords: ['budget', 'cost', 'money', 'price', 'afford', 'spend', 'how much', 'expensive', 'cheap', '预算', '费用', '多少钱', '钱', '价格', '成本', '贵'],
+                reply: 'Budget? I am a small café, not a bank. Maybe thirty thousand dollars.',
+              },
+              {
+                keywords: ['when', 'deadline', 'date', 'how long', 'how soon', 'soon', 'time', 'july', 'summer', 'month', 'week', 'launch', 'ready by', '什么时候', '截止', '期限', '时间', '多久', '几月', '夏天', '上线', '日期'],
+                reply: 'Before July, please. Summer is when it gets really busy.',
+              },
+              {
+                keywords: ['feature', 'function', 'button', 'screen', 'design', 'look like', 'colour', 'color', 'logo', 'page', '功能', '按钮', '界面', '设计', '颜色', '页面', '样子'],
+                reply: 'Honestly, I do not care how it works. I just do not want to lose those customers.',
+              },
             ],
           },
         },
@@ -304,7 +395,7 @@ Watch a business analyst go through the questions worth asking in a first requir
     },
     {
       title: 'Agile in one page: sprints, stand-ups and retros',
-      estimatedMinutes: 18,
+      estimatedMinutes: 21,
       content: `Most teams today work in an **agile** way: plan a little, build a little, show it, adjust. The most common recipe is **Scrum**. You only need five words to follow along in any tech team:
 
 - **Backlog** – the to-do list of user stories, most important at the top.
@@ -331,6 +422,37 @@ Teams track work on a board with columns like **To do → In progress → Review
 
 > Agile is not about meetings. It is about getting feedback often enough that you never drift far from what people need.`,
       activities: [
+        {
+          type: 'slides',
+          title: 'Pip walks through one sprint',
+          xpReward: 15,
+          config: {
+            slides: [
+              {
+                heading: 'One sprint, start to finish',
+                visual: 'sprint-cycle',
+                bullets: ['Backlog: most valuable first', 'Sprint planning: pick what fits', 'Build, with a stand-up every morning', 'Sprint review: show working software', 'Retro: one thing to improve'],
+                narration: 'Here is one sprint from start to finish. It begins with the backlog, ordered so the most valuable stories are on top. In sprint planning, the team picks the stories it can finish in one or two weeks. Then they build, with a fifteen-minute stand-up every morning. At the sprint review, they show working software and collect feedback. Finally, the retro asks what to change next time, and the loop starts again.',
+              },
+              {
+                heading: 'Who is in a Scrum team?',
+                bullets: ['Product Owner: decides what matters most', 'Scrum Master: clears blockers', 'Developers: build and test the product'],
+                narration: 'The Product Owner decides what is most valuable and keeps the backlog in order. The Scrum Master helps the team follow the process and clears anything blocking them. The developers are everyone who builds and tests the product, not only programmers.',
+              },
+              {
+                heading: 'Make the work visible',
+                visual: 'task-board',
+                bullets: ['To do: chosen for this sprint', 'In progress: someone is on it', 'Review: a teammate checks it', 'Done: meets the Definition of Done'],
+                narration: 'A board shows everyone where the work is. To do holds the stories chosen for this sprint. In progress means someone is working on it right now. Review means a teammate is checking it. Done means it meets the Definition of Done, which is coming up in the next lesson.',
+              },
+              {
+                heading: 'Your turn',
+                bullets: ['Match each line to its meeting', 'Then put a sprint in order'],
+                narration: 'Let us practise. Match what people say to the right meeting, then put a whole sprint in order.',
+              },
+            ],
+          },
+        },
         {
           type: 'sort',
           title: 'Which meeting is this?',
@@ -388,7 +510,7 @@ Teams track work on a board with columns like **To do → In progress → Review
     },
     {
       title: 'Testing and release: is it really done?',
-      estimatedMinutes: 18,
+      estimatedMinutes: 22,
       content: `CampusEats now has a working order form. Is it *done*? Not yet. Good teams agree in advance what "done" means, check it with tests, and release carefully.
 
 ### The Definition of Done
@@ -430,6 +552,44 @@ With **continuous integration** (CI), everyone merges small changes often and th
 
 Want to practise? The [Sprint Zero scenario](/scenarios/sprint-zero) lets you lead a student team through three weeks of these decisions.`,
       activities: [
+        {
+          type: 'slides',
+          title: 'Pip on testing and release',
+          xpReward: 15,
+          config: {
+            slides: [
+              {
+                heading: 'What does "done" mean?',
+                visual: 'done-checklist',
+                bullets: ['The acceptance criteria pass', 'Tests are written and passing', 'Someone else reviewed the code', 'It is in front of real users'],
+                narration: 'Done is a checklist the whole team agrees on, not a feeling. First, the acceptance criteria pass. Second, tests are written and every one of them passes. Third, someone else has reviewed the code. And fourth, it is released to real users.',
+              },
+              {
+                heading: 'The test pyramid',
+                visual: 'test-pyramid',
+                bullets: ['Many fast unit tests', 'Some integration tests', 'A few end-to-end tests'],
+                narration: 'Picture a pyramid of tests. At the bottom, lots of small unit tests check one piece each and run in milliseconds. In the middle, integration tests check that pieces work together. At the top, a few slow end-to-end tests walk through the journeys that matter most.',
+              },
+              {
+                heading: 'Continuous integration',
+                visual: 'ci-pipeline',
+                bullets: ['Merge small changes often', 'Tests run on every change', 'Green: merge it. Red: fix it now'],
+                narration: 'With continuous integration, everyone merges small changes often. Every change runs the tests automatically. If they pass, it is merged; if one fails, you fix it within minutes, while the change is still fresh in your mind.',
+              },
+              {
+                heading: 'Release safely',
+                visual: 'safe-release',
+                bullets: ['Start with one canteen', 'Watch errors and slow pages', 'All good? Roll out to every canteen', 'Something broke? Roll back'],
+                narration: 'Even tested code can surprise you, so release in small steps. Start with one canteen. Watch for errors, slow pages and orders that never finish. If all is well, roll out to every canteen. If something breaks, roll back to the last version that worked, then investigate.',
+              },
+              {
+                heading: 'Your turn',
+                bullets: ['Which test would catch this bug?', 'Done or not done?'],
+                narration: 'Time to test yourself. Match each bug to the test that would catch it, then decide whether some stories are really done.',
+              },
+            ],
+          },
+        },
         {
           type: 'sort',
           title: 'Which test would catch this?',

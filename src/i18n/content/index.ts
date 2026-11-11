@@ -57,6 +57,8 @@ const IDENTIFIER_KEYS = new Set([
   'activityId',
   'turnId',
   'choiceId',
+  // Role-play keywords already list every language they should match
+  'keywords',
 ]);
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

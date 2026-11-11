@@ -20,6 +20,15 @@ export const roleplayConfigSchema = z.object({
   maxTurns: z.number().int().min(2).max(12).default(6),
   /** Canned replies used when no AI key is configured (offline demo) */
   mockReplies: z.array(z.string()).default([]),
+  /**
+   * Offline replies matched to what the learner asked: the first rule whose keywords appear in
+   * the learner's message answers it (see mock-reply.ts). Keywords are matched as written and
+   * may mix English and Chinese; they are never translated.
+   */
+  mockRules: z
+    .array(z.object({ keywords: z.array(z.string().min(1)).min(1).max(40), reply: z.string().min(1) }))
+    .max(12)
+    .default([]),
 });
 
 export type RoleplayConfig = z.infer<typeof roleplayConfigSchema>;

@@ -7,6 +7,7 @@
     "roleplay": "AI 角色扮演",
     "coding": "编程挑战",
     "codingExercise": "编程练习",
+    "releaseRun": "发布模拟",
     "reading": "阅读材料"
   },
   "descriptions": {
@@ -17,6 +18,7 @@
     "roleplay": "和 AI 扮演的角色（客户、面试官、同事）对话，再按评分标准打分。",
     "coding": "编写或修复一个小型 JavaScript 函数，测试直接在浏览器里运行。",
     "codingExercise": "编写或修复一个小型 JavaScript 函数，测试直接在浏览器里运行。",
+    "releaseRun": "一个简短的三周发布游戏：六个决策、四项指标、一个结局。",
     "reading": "读完这一课后，标记为已完成。"
   },
   "frame": {

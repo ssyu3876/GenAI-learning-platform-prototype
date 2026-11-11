@@ -7,6 +7,7 @@
     "roleplay": "AI role-play",
     "coding": "Coding challenge",
     "codingExercise": "Coding exercise",
+    "releaseRun": "Release simulation",
     "reading": "Reading material"
   },
   "descriptions": {
@@ -17,6 +18,7 @@
     "roleplay": "Chat with an AI character (client, interviewer, teammate) and get scored on a rubric.",
     "coding": "Write or fix a small JavaScript function; tests run in the browser.",
     "codingExercise": "Write or fix a small JavaScript function; tests run in the browser.",
+    "releaseRun": "A short three-week release game: six decisions, four meters, one ending.",
     "reading": "Read the lesson, then mark it as done."
   },
   "frame": {

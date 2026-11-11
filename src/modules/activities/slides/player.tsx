@@ -12,7 +12,7 @@ import { fmt } from '@/i18n/format';
 import { ActivityFrame, ResultPanel } from '../components/activity-frame';
 import { useCompletion } from '../components/use-completion';
 import type { SlidesConfig } from './schema';
-import { isSlideVisual, SlideVisual } from './visuals';
+import { isNumberedVisual, isSlideVisual, SlideVisual } from './visuals';
 import { bulletForSentence, splitSentences } from './narration';
 
 const noopSubscribe = () => () => {};
@@ -114,6 +114,9 @@ export function SlidesPlayer({ activity, config, onComplete, previousBest, previ
   const activeBullet = speaking
     ? bulletForSentence(sentenceIndex, narrationLines.length, slide.bullets.length)
     : null;
+  const visual = slide.visual && isSlideVisual(slide.visual) ? slide.visual : null;
+  // Step diagrams number their parts; the bullets carry the same numbers so they line up
+  const numbered = visual !== null && isNumberedVisual(visual);
 
   // Browser-only capability check without a hydration mismatch (false on the server)
   const canSpeak = useSyncExternalStore(
@@ -279,7 +282,7 @@ export function SlidesPlayer({ activity, config, onComplete, previousBest, previ
             <div className="mt-5 grid gap-5 sm:grid-cols-12 sm:items-center">
               {slide.visual && isSlideVisual(slide.visual) ? (
                 <div className="animate-pop sm:col-span-5">
-                  <SlideVisual name={slide.visual} progress={speaking ? sentenceIndex : null} />
+                  <SlideVisual name={slide.visual} active={activeBullet} />
                 </div>
               ) : null}
               <div
@@ -298,13 +301,25 @@ export function SlidesPlayer({ activity, config, onComplete, previousBest, previ
                           activeBullet === i && 'bg-butter-soft',
                         )}
                       >
-                        <span
-                          className={cn(
-                            'mt-2 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-line',
-                            activeBullet === i ? 'bg-coral' : 'bg-butter',
-                          )}
-                          aria-hidden
-                        />
+                        {numbered ? (
+                          <span
+                            className={cn(
+                              'mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 border-line font-display text-xs font-bold',
+                              activeBullet === i ? 'bg-coral' : 'bg-butter',
+                            )}
+                            aria-hidden
+                          >
+                            {i + 1}
+                          </span>
+                        ) : (
+                          <span
+                            className={cn(
+                              'mt-2 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-line',
+                              activeBullet === i ? 'bg-coral' : 'bg-butter',
+                            )}
+                            aria-hidden
+                          />
+                        )}
                         {b}
                       </li>
                     ))}

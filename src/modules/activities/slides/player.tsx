@@ -3,7 +3,8 @@
 // AI-narrated slides: text-to-speech in the browser (no audio files, no API cost).
 // Captions are always visible so it works muted and for deaf / hard-of-hearing learners.
 import { ChevronLeft, ChevronRight, Gauge, Pause, Play, Volume2 } from 'lucide-react';
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import type { ReactNode } from 'react';
 import type { ActivityPlayerProps } from '@/core/activity-types';
 import { Button, cn, Pip } from '@/components/ui';
 import { useLocale, useT } from '@/i18n/client';
@@ -12,6 +13,7 @@ import { ActivityFrame, ResultPanel } from '../components/activity-frame';
 import { useCompletion } from '../components/use-completion';
 import type { SlidesConfig } from './schema';
 import { isSlideVisual, SlideVisual } from './visuals';
+import { bulletForSentence, splitSentences } from './narration';
 
 const noopSubscribe = () => () => {};
 
@@ -62,11 +64,35 @@ function pickVoice(locale: string): SpeechSynthesisVoice | undefined {
   return voices.find((v) => preferred.test(v.name)) ?? voices[0];
 }
 
+/** Renders the narration as one string, wrapping the sentence being spoken. */
+function withHighlightedSentence(text: string, lines: string[], active: number | null): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  let cursor = 0;
+  lines.forEach((line, i) => {
+    const at = text.indexOf(line, cursor);
+    const start = at >= 0 ? at : cursor;
+    if (start > cursor) nodes.push(text.slice(cursor, start));
+    nodes.push(
+      active === i ? (
+        <span key={i} className="rounded bg-butter px-0.5 font-semibold">
+          {line}
+        </span>
+      ) : (
+        <Fragment key={i}>{line}</Fragment>
+      ),
+    );
+    cursor = start + line.length;
+  });
+  if (cursor < text.length) nodes.push(text.slice(cursor));
+  return nodes;
+}
+
 export function SlidesPlayer({ activity, config, onComplete, previousBest, preview }: ActivityPlayerProps<SlidesConfig>) {
   const t = useT();
   const locale = useLocale();
   const [index, setIndex] = useState(0);
   const [speaking, setSpeaking] = useState(false);
+  const [sentenceIndex, setSentenceIndex] = useState(0);
   const [autoplay, setAutoplay] = useState(false);
   const [seen, setSeen] = useState<Set<number>>(() => new Set([0]));
   const [finished, setFinished] = useState(false);
@@ -80,6 +106,10 @@ export function SlidesPlayer({ activity, config, onComplete, previousBest, previ
 
   const slide = config.slides[index]!;
   const last = index === config.slides.length - 1;
+  const narrationLines = splitSentences(slide.narration);
+  const activeBullet = speaking
+    ? bulletForSentence(sentenceIndex, narrationLines.length, slide.bullets.length)
+    : null;
 
   // Browser-only capability check without a hydration mismatch (false on the server)
   const canSpeak = useSyncExternalStore(
@@ -111,40 +141,60 @@ export function SlidesPlayer({ activity, config, onComplete, previousBest, previ
   function go(to: number) {
     stopSpeech();
     setSpeaking(false);
+    setSentenceIndex(0);
     setIndex(to);
     setSeen((s) => new Set(s).add(to));
   }
 
+  /**
+   * Speaks the slide one sentence at a time, so the matching bullet and caption can light up.
+   * Each sentence is its own utterance; onend queues the next one instead of relying on a
+   * timing file.
+   */
   function speak(i: number, rate = speedRef.current) {
     const synth = window.speechSynthesis;
     stopSpeech();
     const run = runRef.current;
-    const u = new SpeechSynthesisUtterance(config.slides[i]!.narration);
-    u.lang = locale === 'zh' ? 'zh-CN' : 'en-US';
+    const lines = splitSentences(config.slides[i]!.narration);
     const voice = pickVoice(locale);
-    if (voice) u.voice = voice;
-    u.rate = (locale === 'zh' ? BASE_RATE.zh : BASE_RATE.en) * rate;
-    u.pitch = 1.1;
-    u.onend = () => {
-      if (run !== runRef.current) return;
-      setSpeaking(false);
-      if (autoRef.current && i < config.slides.length - 1) {
-        setTimeout(() => {
-          if (run !== runRef.current) return;
-          go(i + 1);
-          speak(i + 1);
-        }, PAUSE_BETWEEN_SLIDES_MS);
-      }
-    };
-    u.onerror = (e) => {
-      if (run !== runRef.current || e.error === 'interrupted' || e.error === 'canceled') return;
-      setSpeaking(false);
-    };
     setSpeaking(true);
+    setSentenceIndex(0);
+
+    const speakLine = (line: number) => {
+      if (run !== runRef.current) return;
+      if (line >= lines.length) {
+        setSpeaking(false);
+        if (autoRef.current && i < config.slides.length - 1) {
+          setTimeout(() => {
+            if (run !== runRef.current) return;
+            go(i + 1);
+            speak(i + 1);
+          }, PAUSE_BETWEEN_SLIDES_MS);
+        }
+        return;
+      }
+
+      setSentenceIndex(line);
+      const u = new SpeechSynthesisUtterance(lines[line]!);
+      u.lang = locale === 'zh' ? 'zh-CN' : 'en-US';
+      if (voice) u.voice = voice;
+      u.rate = (locale === 'zh' ? BASE_RATE.zh : BASE_RATE.en) * rate;
+      u.pitch = 1.1;
+      u.onend = () => {
+        if (run !== runRef.current) return;
+        speakLine(line + 1);
+      };
+      u.onerror = (e) => {
+        if (run !== runRef.current || e.error === 'interrupted' || e.error === 'canceled') return;
+        setSpeaking(false);
+      };
+      synth.speak(u);
+    };
+
     setTimeout(() => {
       if (run !== runRef.current) return;
       synth.resume();
-      synth.speak(u);
+      speakLine(0);
     }, RESTART_DELAY_MS);
   }
 
@@ -170,6 +220,7 @@ export function SlidesPlayer({ activity, config, onComplete, previousBest, previ
   function finish() {
     stopSpeech();
     setSpeaking(false);
+    setSentenceIndex(0);
     setFinished(true);
     const score = Math.round((seen.size / config.slides.length) * 100);
     void submit({ score, detail: { seen: seen.size } });
@@ -211,8 +262,20 @@ export function SlidesPlayer({ activity, config, onComplete, previousBest, previ
           {slide.bullets.length ? (
             <ul className="mt-4 flex flex-col gap-2">
               {slide.bullets.map((b, i) => (
-                <li key={i} className="flex gap-2 text-lg">
-                  <span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-line bg-butter" aria-hidden />
+                <li
+                  key={i}
+                  className={cn(
+                    'flex gap-2 rounded-xl px-1 text-lg transition-colors',
+                    activeBullet === i && 'bg-butter-soft',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'mt-2 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-line',
+                      activeBullet === i ? 'bg-coral' : 'bg-butter',
+                    )}
+                    aria-hidden
+                  />
                   {b}
                 </li>
               ))}
@@ -222,11 +285,18 @@ export function SlidesPlayer({ activity, config, onComplete, previousBest, previ
 
         <div className="flex items-start gap-3">
           <Pip mood={speaking ? 'cheer' : 'happy'} size={56} className={cn(speaking && 'animate-wiggle')} />
-          <div className="flex-1 rounded-xl border-2 border-line bg-butter-soft px-3 py-2 text-sm" aria-live="polite">
+          <div
+            className="flex-1 rounded-xl border-2 border-line bg-butter-soft px-3 py-2 text-sm"
+            aria-live={speaking ? 'off' : 'polite'}
+          >
             <span className="mb-0.5 flex items-center gap-1 text-xs font-bold text-ink-soft">
               <Volume2 className="h-3 w-3" /> {t.activities.slides.captions}
             </span>
-            {slide.narration}
+            {withHighlightedSentence(
+              slide.narration,
+              narrationLines,
+              speaking ? sentenceIndex : null,
+            )}
           </div>
         </div>
 

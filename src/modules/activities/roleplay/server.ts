@@ -7,6 +7,7 @@ import { byLocale, outputLanguage } from '@/i18n/ai';
 import { getT } from '@/i18n';
 import { localizeContent } from '@/i18n/content';
 import { loadActivity } from '../server';
+import { pickMockReply } from './mock-reply';
 import { roleplayConfigSchema, roleplayMessageSchema, type RoleplayConfig } from './schema';
 
 const bodySchema = z.object({
@@ -63,9 +64,7 @@ export async function handleRoleplayChat(request: Request): Promise<Response> {
     role: m.role === 'persona' ? 'assistant' : 'user',
     content: m.content,
   }));
-  const learnerTurns = parsed.data.messages.filter((m) => m.role === 'learner').length;
   const fallback = byLocale(locale, GENERIC_MOCK, GENERIC_MOCK_ZH);
-  const replies = c.mockReplies.length ? c.mockReplies : fallback;
 
   const stream = await streamText([{ role: 'system', content: personaSystemPrompt(c, locale) }, ...history], {
     feature: 'activities.roleplay_chat',
@@ -73,7 +72,7 @@ export async function handleRoleplayChat(request: Request): Promise<Response> {
     tier: 'smart',
     temperature: 0.8,
     maxTokens: 220,
-    mock: () => replies[(learnerTurns - 1) % replies.length] ?? fallback[0]!,
+    mock: () => pickMockReply(c, parsed.data.messages, fallback),
   });
   return new Response(stream, { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } });
 }

@@ -108,6 +108,8 @@ export interface DungeonLabels {
   buffs: string;
   questions: string;
   time: string;
+  studyPoints: string;
+  points: string;
   bossLocked: string;
   elite: string;
   eliteDrop: string;
@@ -187,6 +189,8 @@ export const DUNGEON: DungeonContent = {
     buffs: 'Buffs',
     questions: 'Questions',
     time: 'Time',
+    studyPoints: 'Study points',
+    points: 'points',
     bossLocked: 'The boss seals the room until it falls.',
     elite: 'Elite',
     eliteDrop: 'Elite drop',

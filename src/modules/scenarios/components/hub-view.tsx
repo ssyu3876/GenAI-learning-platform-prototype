@@ -60,7 +60,7 @@ export async function ScenarioHubView({ user }: { user: SessionUser }) {
                 })
               : t.scenarios.hub.pipPrompt}
           </p>
-          <p className="mt-0.5 text-xs text-ink-soft">{t.scenarios.hub.pipNote}</p>
+          <p className="mt-0.5 text-sm text-ink-soft">{t.scenarios.hub.pipNote}</p>
         </PipSays>
       </div>
 
@@ -81,18 +81,18 @@ export async function ScenarioHubView({ user }: { user: SessionUser }) {
             className="animate-hero-glow pointer-events-none absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-mint/20 blur-2xl [animation-delay:1.5s]"
           />
           <div className="relative">
-            <p className="text-xs font-bold tracking-[0.2em] text-cream/60 uppercase">
+            <p className="text-sm font-bold tracking-[0.2em] text-cream/60 uppercase">
               {t.scenarios.hub.featured}
             </p>
             <h2 className="mt-1 font-display text-2xl font-bold">{dungeon.title}</h2>
             <p className="mt-1 text-sm text-cream/80">{dungeon.tagline}</p>
             <p className="mt-2 max-w-prose text-sm text-cream/70">{dungeon.summary}</p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <span className="rounded-pill border-2 border-cream/30 px-2.5 py-1 text-xs font-semibold">
+              <span className="rounded-pill border-2 border-cream/30 px-2.5 py-1 text-sm font-semibold">
                 {dungeon.meta}
               </span>
               {dungeon.progress.started ? (
-                <span className="rounded-pill border-2 border-cream/30 px-2.5 py-1 text-xs font-semibold">
+                <span className="rounded-pill border-2 border-cream/30 px-2.5 py-1 text-sm font-semibold">
                   {dungeon.progress.label}
                 </span>
               ) : null}

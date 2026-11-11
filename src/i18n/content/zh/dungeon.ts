@@ -60,6 +60,8 @@ export const DUNGEON_ZH: DungeonContent = {
     buffs: '增益',
     questions: '题数',
     time: '时间',
+    studyPoints: '学点',
+    points: '学点',
     bossLocked: 'Boss 锁住了房间，击败它才能离开。',
     elite: '精英',
     eliteDrop: '精英掉落',

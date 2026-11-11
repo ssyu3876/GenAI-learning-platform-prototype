@@ -661,20 +661,20 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     return (
       <div className="mx-auto flex max-w-2xl flex-col gap-4">
         <div className="rounded-blob border-2 border-line bg-ink p-6 text-cream shadow-sticker">
-          <p className="text-xs font-bold tracking-[0.2em] text-cream/60 uppercase">Agent Dungeon</p>
+          <p className="text-sm font-bold tracking-[0.2em] text-cream/60 uppercase">Agent Dungeon</p>
           <h2 className="mt-2 font-display text-3xl font-bold">{L.title}</h2>
           <p className="mt-2 text-sm text-cream/80">{L.summary}</p>
-          <p className="mt-3 text-xs text-cream/60">{L.difficulty}: 3 layers · 3 bosses</p>
+          <p className="mt-3 text-sm text-cream/60">{L.difficulty}: 3 layers · 3 bosses</p>
         </div>
 
         <div className="rounded-blob border-2 border-line bg-paper p-3 shadow-sticker-sm">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-bold">Study points</p>
+            <p className="text-sm font-bold">{L.studyPoints}</p>
             <span className="rounded-pill border-2 border-line bg-butter-soft px-2 py-0.5 text-sm font-bold">
-              {meta.points} 学点
+              {meta.points} {L.points}
             </span>
           </div>
-          <p className="mt-1 text-xs text-ink-soft">Characters</p>
+          <p className="mt-1 text-sm text-ink-soft">Characters</p>
           <div className="mt-1 grid grid-cols-5 gap-1">
             {CHARACTERS.map((character) => {
               const unlocked = meta.unlockedChars.includes(character.id);
@@ -686,19 +686,19 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
                   onClick={() => chooseCharacter(character.id)}
                   title={character.description}
                   className={cn(
-                    'rounded-lg border-2 border-line px-1 py-1.5 text-center text-xs',
+                    'rounded-lg border-2 border-line px-1 py-1.5 text-center text-sm',
                     selected ? 'bg-butter' : 'bg-cream',
                     !unlocked && 'opacity-70',
                   )}
                 >
                   <span className="block text-lg">{character.icon}</span>
                   <span className="block truncate">{character.name}</span>
-                  {!unlocked ? <span className="block text-[0.6rem] text-ink-soft">{character.cost} 学点</span> : null}
+                  {!unlocked ? <span className="block text-sm text-ink-soft">{character.cost} {L.points}</span> : null}
                 </button>
               );
             })}
           </div>
-          <p className="mt-2 text-xs text-ink-soft">Talents (max 2)</p>
+          <p className="mt-2 text-sm text-ink-soft">Talents (max 2)</p>
           <div className="mt-1 grid grid-cols-2 gap-1 sm:grid-cols-5">
             {TALENTS.map((talent) => {
               const unlocked = meta.unlockedTalents.includes(talent.id);
@@ -710,20 +710,20 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
                   onClick={() => toggleTalent(talent.id)}
                   title={talent.description}
                   className={cn(
-                    'rounded-lg border-2 border-line px-1 py-1 text-left text-[0.65rem] leading-tight',
+                    'rounded-lg border-2 border-line px-1 py-1 text-left text-sm leading-tight',
                     selected ? 'bg-mint-soft' : 'bg-cream',
                     !unlocked && 'opacity-70',
                   )}
                 >
                   <span className="block text-base">{talent.icon}</span>
                   {talent.name}
-                  {!unlocked ? <span className="block text-ink-soft">{talent.cost} 学点</span> : null}
+                  {!unlocked ? <span className="block text-ink-soft">{talent.cost} {L.points}</span> : null}
                 </button>
               );
             })}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold text-ink-soft uppercase">Tier</span>
+            <span className="text-sm font-bold text-ink-soft uppercase">Tier</span>
             {[1, 2, 3, 4, 5].map((value) => (
               <button
                 key={value}
@@ -731,24 +731,24 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
                 disabled={value > meta.bestTier}
                 onClick={() => setTier(value)}
                 className={cn(
-                  'h-7 w-7 rounded-full border-2 border-line text-xs font-bold disabled:opacity-30',
+                  'h-7 w-7 rounded-full border-2 border-line text-sm font-bold disabled:opacity-30',
                   tier === value ? 'bg-butter' : 'bg-paper text-ink-soft',
                 )}
               >
                 {value}
               </button>
             ))}
-            <span className="text-[0.65rem] text-ink-soft">{TIER_PRESSURE[tier - 1]}</span>
+            <span className="text-sm text-ink-soft">{TIER_PRESSURE[tier - 1]}</span>
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold text-ink-soft uppercase">Mode</span>
+            <span className="text-sm font-bold text-ink-soft uppercase">Mode</span>
             {(['free', 'daily', 'weekly'] as const).map((value) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => setMode(value)}
                 className={cn(
-                  'rounded-pill border-2 border-line px-2 py-0.5 text-xs font-semibold',
+                  'rounded-pill border-2 border-line px-2 py-0.5 text-sm font-semibold',
                   mode === value ? 'bg-butter' : 'bg-paper text-ink-soft',
                 )}
               >
@@ -758,7 +758,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
             <button
               type="button"
               onClick={() => setSoundOn((on) => !on)}
-              className="ml-auto rounded-pill border-2 border-line bg-paper px-2 py-0.5 text-xs"
+              className="ml-auto rounded-pill border-2 border-line bg-paper px-2 py-0.5 text-sm"
             >
               {soundOn ? '🔊' : '🔇'}
             </button>
@@ -785,7 +785,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
             >
               <span>
                 <span className="block font-display font-bold">{L[d.labelKey]}</span>
-                <span className="text-xs text-ink-soft">
+                <span className="text-sm text-ink-soft">
                   {L.hp} {DUNGEON_CONFIG.hp[d.id]} · {L.gold} {DUNGEON_CONFIG.gold[d.id]}
                 </span>
               </span>
@@ -822,7 +822,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
           {result ? (
             <div className="mt-3 rounded-lg border-2 border-line/30 bg-cream p-2 text-sm">
               <p className="font-bold">
-                Score {result.score} · +{result.points} 学点
+                Score {result.score} · +{result.points} {L.points}
               </p>
               <p className="text-ink-soft">
                 Streak best {maxStreak} · Flawless layers {flawlessLayers} · Tier {tier}
@@ -889,7 +889,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
               <p className="font-display text-lg font-bold">{battle.name}</p>
               {!battle.broken ? (
                 <div className="mt-1">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-ink-soft">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-ink-soft">
                     <Shield className="h-3 w-3" /> {L.confidence} {battle.confidence}/{battle.maxConfidence}
                   </div>
                   <div className="mt-1 flex gap-1">
@@ -913,13 +913,13 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
               )}
             </div>
             {battle.kind === 'boss' && timeLeft !== null ? (
-              <div className={cn('flex items-center gap-1 rounded-pill border-2 border-line px-2 py-1 text-xs font-bold', timeLeft <= 5 ? 'animate-pulse bg-coral-soft' : 'bg-cream')}>
+              <div className={cn('flex items-center gap-1 rounded-pill border-2 border-line px-2 py-1 text-sm font-bold', timeLeft <= 5 ? 'animate-pulse bg-coral-soft' : 'bg-cream')}>
                 <Timer className="h-3 w-3" /> {timeLeft}s
               </div>
             ) : null}
           </div>
           {battle.lines ? (
-            <p className="mt-2 text-xs text-ink-soft italic">
+            <p className="mt-2 text-sm text-ink-soft italic">
               “{!battle.broken ? battle.lines.hit : battle.lines.broken}”
             </p>
           ) : null}
@@ -930,7 +930,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
             <span className="text-sm font-bold text-ink-soft uppercase">
               {L.questionNumber} · {question.category}
             </span>
-            <span className="text-xs text-ink-soft">{L.attack}</span>
+            <span className="text-sm text-ink-soft">{L.attack}</span>
           </div>
           <p className="mt-1 font-display text-lg font-bold">{question.question}</p>
           <div className="mt-3 grid gap-2">
@@ -976,7 +976,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-bold text-ink-soft uppercase">{L.backpack}</span>
-          {items.length === 0 ? <span className="text-xs text-ink-soft">—</span> : null}
+          {items.length === 0 ? <span className="text-sm text-ink-soft">—</span> : null}
           {Array.from(new Set(items)).map((id) => {
             const item = copy.items.find((i) => i.id === id)!;
             return (
@@ -990,7 +990,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
                   <span>{item.icon}</span>
                   {item.name} ×{items.filter((x) => x === id).length}
                 </button>
-                <span className="pointer-events-none absolute bottom-full left-0 z-30 mb-1 hidden w-60 rounded-lg border-2 border-line bg-paper p-2 text-xs font-normal text-ink shadow-sticker-sm group-hover:block">
+                <span className="pointer-events-none absolute bottom-full left-0 z-30 mb-1 hidden w-60 rounded-lg border-2 border-line bg-paper p-2 text-sm font-normal text-ink shadow-sticker-sm group-hover:block">
                   {item.name}: {item.description}
                 </span>
               </span>
@@ -1059,7 +1059,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
       <div className="mx-auto flex max-w-xl flex-col gap-3">
         <div className="flex items-center justify-between rounded-blob border-2 border-line bg-ink px-4 py-2 text-cream shadow-sticker-sm">
           <span className="font-display font-bold">{L.shopTitle}</span>
-          <span className="text-xs">
+          <span className="text-sm">
             {L.gold} {gold}
           </span>
         </div>
@@ -1165,7 +1165,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
           {modifier ? (
             <span
               title={modifier.description}
-              className="rounded-pill border-2 border-cream/30 px-2 py-0.5 text-xs font-semibold"
+              className="rounded-pill border-2 border-cream/30 px-2 py-0.5 text-sm font-semibold"
             >
               {modifier.icon} {modifier.name}
             </span>
@@ -1212,7 +1212,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
                     {known ? roomIcon[room.type] : '?'}
                   </span>
                   {isCleared ? (
-                    <span className="absolute right-1 bottom-1 text-xs text-mint-deep">✓</span>
+                    <span className="absolute right-1 bottom-1 text-sm text-mint-deep">✓</span>
                   ) : null}
                   {reachable && !here ? (
                     <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-coral" aria-hidden />
@@ -1242,7 +1242,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
         <div className="rounded-blob border-2 border-line bg-paper p-3 shadow-sticker-sm">
           <p className="text-sm font-bold text-ink-soft uppercase">{L.buffs}</p>
           <div className="mt-2 flex flex-wrap gap-1">
-            {buffs.size === 0 ? <span className="text-xs text-ink-soft">—</span> : null}
+            {buffs.size === 0 ? <span className="text-sm text-ink-soft">—</span> : null}
             {[...buffs].map((id) => {
               const buff = copy.buffs.find((b) => b.id === id)!;
               return (
@@ -1251,7 +1251,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
                   className="group relative cursor-help rounded-pill border-2 border-line bg-butter-soft px-2.5 py-1.5 text-sm"
                 >
                   {buff.icon} {buff.name}
-                  <span className="pointer-events-none absolute bottom-full left-0 z-30 mb-1 hidden w-56 rounded-lg border-2 border-line bg-paper p-2 text-xs font-normal text-ink shadow-sticker-sm group-hover:block">
+                  <span className="pointer-events-none absolute bottom-full left-0 z-30 mb-1 hidden w-56 rounded-lg border-2 border-line bg-paper p-2 text-sm font-normal text-ink shadow-sticker-sm group-hover:block">
                     {buff.description}
                   </span>
                 </span>
@@ -1262,7 +1262,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
         <div className="rounded-blob border-2 border-line bg-paper p-3 shadow-sticker-sm">
           <p className="text-sm font-bold text-ink-soft uppercase">{L.backpack}</p>
           <div className="mt-2 flex flex-wrap gap-1">
-            {items.length === 0 ? <span className="text-xs text-ink-soft">—</span> : null}
+            {items.length === 0 ? <span className="text-sm text-ink-soft">—</span> : null}
             {Array.from(new Set(items)).map((id) => {
               const item = copy.items.find((i) => i.id === id)!;
               return (
@@ -1271,7 +1271,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
                   className="group relative cursor-help rounded-pill border-2 border-line bg-cream px-2.5 py-1.5 text-sm"
                 >
                   {item.icon} {items.filter((x) => x === id).length}
-                  <span className="pointer-events-none absolute bottom-full left-0 z-30 mb-1 hidden w-56 rounded-lg border-2 border-line bg-paper p-2 text-xs font-normal text-ink shadow-sticker-sm group-hover:block">
+                  <span className="pointer-events-none absolute bottom-full left-0 z-30 mb-1 hidden w-56 rounded-lg border-2 border-line bg-paper p-2 text-sm font-normal text-ink shadow-sticker-sm group-hover:block">
                     {item.name}: {item.description}
                   </span>
                 </span>
@@ -1279,7 +1279,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
             })}
           </div>
         </div>
-        {battle?.kind === 'boss' ? <p className="text-xs text-coral-deep">{L.bossLocked}</p> : null}
+        {battle?.kind === 'boss' ? <p className="text-sm text-coral-deep">{L.bossLocked}</p> : null}
       </aside>
     </div>
   );

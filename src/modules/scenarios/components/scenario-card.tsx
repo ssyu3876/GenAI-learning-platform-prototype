@@ -47,7 +47,7 @@ export async function ScenarioCard({ data }: { data: ScenarioCardData }) {
         </div>
 
         <div className="mt-auto pt-4">
-          <div className="mb-1 flex justify-between text-xs font-semibold text-ink-soft">
+          <div className="mb-1 flex justify-between text-sm font-semibold text-ink-soft">
             <span>{progress.label}</span>
             {progress.percent > 0 ? <span>{progress.percent}%</span> : null}
           </div>

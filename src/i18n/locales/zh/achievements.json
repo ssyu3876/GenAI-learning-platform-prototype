@@ -12,6 +12,17 @@
   "groupCount": "{earned} / {total}",
   "badgeProgress": "{name}的进度",
   "remainingToNext": "距离{next}还差 {xp} 经验值",
+  "map": {
+    "title": "徽章地图",
+    "subtitle": "三条路径，一个徽章一个节点。点节点跳到对应卡片。",
+    "earned": "已获得",
+    "open": "还没拿到",
+    "aria": "徽章地图。已获得 {earned} / {total}。{groups}。",
+    "ariaEarned": "{name}：已获得。",
+    "ariaOpen": "{name}：{have} / {need}。",
+    "tooltipEarned": "{name} — 已获得",
+    "tooltipOpen": "{name} — {have} / {need}"
+  },
   "groups": {
     "learning": "学习",
     "practice": "练习",

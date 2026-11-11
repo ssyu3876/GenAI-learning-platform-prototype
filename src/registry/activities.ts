@@ -4,8 +4,9 @@
 import type { ActivityDefinition } from '@/core/activity-types';
 import type { ActivitySpec } from '@/core/content/draft';
 import { coreActivityTypes } from '@/modules/activities';
+import { scenarioActivityTypes } from '@/modules/scenarios/activities';
 
-export const ACTIVITY_TYPES: ActivityDefinition[] = [...coreActivityTypes];
+export const ACTIVITY_TYPES: ActivityDefinition[] = [...coreActivityTypes, ...scenarioActivityTypes];
 
 const byType = new Map(ACTIVITY_TYPES.map((d) => [d.type, d]));
 

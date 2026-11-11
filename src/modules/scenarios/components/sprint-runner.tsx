@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -7,6 +7,7 @@ import { Badge, Button, Card, CardBody, CardHeader, ProgressBar, cn } from '@/co
 import { useT } from '@/i18n/client';
 import { fmt } from '@/i18n/format';
 import { sprintEnter, sprintGoOn, sprintLeaveWeekSummary, sprintPick, resetScenario } from '../actions';
+import { Radar } from './radar';
 
 export interface SprintRunnerProps {
   view: 'select' | 'week' | 'summary' | 'ending';
@@ -140,6 +141,25 @@ export function SprintRunner(props: SprintRunnerProps) {
         </Card>
         <Card>
           <CardHeader
+            title={t.scenarios.sprint.whereFinished}
+            subtitle={t.scenarios.sprint.fourNumbers}
+          />
+          <CardBody className="mx-auto w-full max-w-[360px]">
+            <Radar
+              axes={stats.map((s) => ({
+                key: s.key,
+                label: s.label,
+                value: s.value,
+                max: s.max,
+                danger: s.danger,
+              }))}
+              tone="sky"
+              label={t.scenarios.sprint.finalStats}
+            />
+          </CardBody>
+        </Card>
+        <Card>
+          <CardHeader
             title={t.scenarios.sprint.yourDecisions}
             subtitle={fmt(t.scenarios.sprint.recorded, { count: history.length })}
           />
@@ -207,6 +227,32 @@ export function SprintRunner(props: SprintRunnerProps) {
                 {t.scenarios.sprint.backToWeeks} <ArrowRight className="h-4 w-4" aria-hidden />
               </Button>
             </div>
+          </CardBody>
+        </Card>
+        <Card>
+          <CardHeader
+            title={t.scenarios.sprint.shapeOfWeek}
+            subtitle={t.scenarios.sprint.weekStartLine}
+          />
+          <CardBody className="mx-auto flex w-full max-w-[360px] flex-col gap-2">
+            <Radar
+              axes={stats.map((s) => ({
+                key: s.key,
+                label: s.label,
+                value: s.value,
+                max: s.max,
+                danger: s.danger,
+              }))}
+              compare={stats.map((s) => ({
+                key: s.key,
+                label: s.label,
+                value: summary.delta.find((d) => d.label === s.label)?.from ?? s.value,
+                max: s.max,
+              }))}
+              tone="sky"
+              label={t.scenarios.sprint.weekStats}
+            />
+            <p className="text-xs text-ink-soft">{t.scenarios.sprint.shapeHint}</p>
           </CardBody>
         </Card>
         <StatBars stats={stats} />
@@ -398,3 +444,5 @@ export function SprintRunner(props: SprintRunnerProps) {
     </div>
   );
 }
+
+

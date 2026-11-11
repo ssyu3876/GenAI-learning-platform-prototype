@@ -5,11 +5,24 @@
 // costs time but no quality, and repairing costs the most. Roughly a third of the turns are
 // correct as written: the lesson is calibration, not suspicion.
 import type { ShipScenario, ShipRepair, ShipTurn } from './types';
+import { SHIP_LINE_NOTES } from './ship-it-notes';
 
 const approvalNote = 'Correct as written. Not everything the agent produces is broken.';
 
 function repair(prompt: string, steps: ShipRepair['steps']): ShipRepair {
   return { prompt, steps };
+}
+
+/** Attach the per-line explanations, sorted by line so the runner can look them up in order. */
+function withRisks(turn: ShipTurn): ShipTurn {
+  const notes = SHIP_LINE_NOTES[turn.id];
+  if (!notes) return turn;
+  return {
+    ...turn,
+    risks: Object.entries(notes)
+      .map(([line, note]) => ({ line: Number(line), note }))
+      .sort((a, b) => a.line - b.line),
+  };
 }
 
 const TURNS: ShipTurn[] = [
@@ -740,5 +753,5 @@ export const SHIP_IT: ShipScenario = {
   weights: { quality: 0.65, time: 0.35 },
   drawCount: 9,
   drawMix: { approve: 3, reject: 3, repair: 3 },
-  turns: TURNS,
+  turns: TURNS.map(withRisks),
 };

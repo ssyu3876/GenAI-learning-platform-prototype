@@ -7,6 +7,11 @@ import { Badge, Button, Card, CardBody, CardHeader, ProgressBar, cn } from '@/co
 import { useT } from '@/i18n/client';
 import { fmt } from '@/i18n/format';
 import { resetScenario, shipAdvance, shipChoose, shipDecideAfterRepair, shipRepair } from '../actions';
+import type { ShipAlternative } from '../engine';
+import { DiffReview, type DiffRisk } from './diff-review';
+import { QualityTrendCard, type QualityPoint } from './quality-chart';
+import { SwipeDecide } from './swipe-decide';
+import { WhatIfPanel } from './what-if';
 
 export interface ShipRunnerProps {
   turnIndex: number;
@@ -17,9 +22,11 @@ export interface ShipRunnerProps {
   phase: 'decide' | 'repair' | 'verdict' | 'result' | 'done';
   evidenceShown: boolean;
   turn: {
+    id: string;
     title: string;
     claim: string;
     diff: string[];
+    risks: DiffRisk[];
     evidence: string;
     minutes: { approve: number; reject: number; repair: number; evidence: number };
     canRepair: boolean;
@@ -33,6 +40,10 @@ export interface ShipRunnerProps {
   pending: { delta: number; note: string } | null;
   ending: { title: string; body: string; insight: string; takeaway: string; score: number } | null;
   history: Array<{ title: string; action: string; note: string; delta: number }>;
+  /** Start plus one point per resolved turn, for the quality line. */
+  series: QualityPoint[];
+  /** What the other moves would have done on the turn just decided. Empty outside a result. */
+  alternatives: ShipAlternative[];
 }
 
 function Meters({ quality, minutes, budget }: { quality: number; minutes: number; budget: number }) {
@@ -125,6 +136,8 @@ export function ShipRunner(props: ShipRunnerProps) {
     pending,
     ending,
     history,
+    series,
+    alternatives,
   } = props;
   const t = useT();
   const [isPending, startTransition] = useTransition();
@@ -177,6 +190,12 @@ export function ShipRunner(props: ShipRunnerProps) {
             </div>
           </CardBody>
         </Card>
+
+        <QualityTrendCard
+          points={series}
+          total={total}
+          subtitle={t.scenarios.ship.damageLanded}
+        />
 
         <Card>
           <CardHeader
@@ -241,15 +260,22 @@ export function ShipRunner(props: ShipRunnerProps) {
 
       <Meters quality={quality} minutes={minutes} budget={budget} />
 
-      <Card tint="butter">
-        <CardHeader title={turn.title} subtitle={t.scenarios.ship.agentSays} />
-        <CardBody className="flex flex-col gap-3">
-          <p className="font-display text-lg leading-snug font-semibold">“{turn.claim}”</p>
-          <pre className="overflow-x-auto rounded-blob border-2 border-line bg-ink px-4 py-3 font-mono text-[0.8rem] leading-relaxed text-cream">
-            {turn.diff.join('\n')}
-          </pre>
-        </CardBody>
-      </Card>
+      <QualityTrendCard points={series} total={total} />
+
+      <SwipeDecide
+        key={turn.id}
+        enabled={phase === 'decide' && !isPending}
+        onApprove={() => run(() => shipChoose({ action: 'approve' }))}
+        onReject={() => run(() => shipChoose({ action: 'reject' }))}
+      >
+        <Card tint="butter">
+          <CardHeader title={turn.title} subtitle={t.scenarios.ship.agentSays} />
+          <CardBody className="flex flex-col gap-3">
+            <p className="font-display text-lg leading-snug font-semibold">“{turn.claim}”</p>
+            <DiffReview key={turn.id} lines={turn.diff} risks={turn.risks} title={turn.title} />
+          </CardBody>
+        </Card>
+      </SwipeDecide>
 
       {evidenceShown ? (
         <Card tint="lilac">
@@ -270,6 +296,12 @@ export function ShipRunner(props: ShipRunnerProps) {
           />
           <CardBody className="flex flex-col gap-3">
             <p>{pending.note}</p>
+            <WhatIfPanel
+              alternatives={alternatives}
+              quality={quality}
+              evidenceMinutes={turn.minutes.evidence}
+              evidenceShown={evidenceShown}
+            />
             <div>
               <Button variant="primary" onClick={() => run(() => shipAdvance())} disabled={isPending}>
                 {t.scenarios.ship.nextTurn} <ArrowRight className="h-4 w-4" aria-hidden />

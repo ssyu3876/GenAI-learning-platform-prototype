@@ -1,6 +1,7 @@
 {
   "title": "Scenarios",
   "subtitle": "Longer than an activity and shorter than a project. Your decisions stay with you, and the ending is built from them.",
+  "radarValue": "{label} {value} / {max}",
   "metadata": {
     "scenario": "Scenario",
     "interview": "Practice interview"
@@ -101,7 +102,29 @@
     "approveChange": "Approve the change",
     "rejectChange": "Reject and send it back",
     "repairThenDecide": "Repair it, then decide",
-    "decideHint": "Reading the tests costs time and no quality. Guessing costs quality and no time."
+    "decideHint": "Reading the tests costs time and no quality. Guessing costs quality and no time.",
+    "qualityByTurn": "Quality by turn",
+    "turnsReviewed": "{reviewed} of {total} turns reviewed",
+    "damageLanded": "Where the damage landed",
+    "qualityEmpty": "The line starts at 100. Finish a turn to add the first point.",
+    "qualityHeld": "Quality has held at {quality}. Nothing has cost you anything yet.",
+    "qualityDown": "Down {lost} since the start, to {quality}.",
+    "qualityDownWorst": "Down {lost} since the start, to {quality}. The biggest single drop was turn {turn} ({drop}).",
+    "qualityAria": "Project quality by turn",
+    "diffHint": "Rows marked note open a short explanation. The rest are context, and some of them are fine.",
+    "diffLine": "Line {line}",
+    "diffAria": "{title}, line by line",
+    "diffNote": "note",
+    "swipeHint": "Or drag the card right to approve, left to reject. The buttons still work.",
+    "whatIf": "What if",
+    "bestMove": "best",
+    "whatIfBest": "You finished on the best move, at {quality}.",
+    "whatIfRightMove": "{label} was the right move; done cleanly it keeps {best}. You finished at {quality}.",
+    "whatIfMissed": "You finished at {quality}. {label} would have kept {best}.",
+    "moveApprove": "Approve as written",
+    "moveReject": "Reject it",
+    "moveRepair": "Repair it first",
+    "evidenceCost": "Reading the tests first would have cost {minutes} min and no quality."
   },
   "sprint": {
     "secondsLeft": "{seconds}s left",
@@ -126,7 +149,14 @@
     "week": "Week {week}",
     "decisionOf": "Decision {current} of {total}",
     "weekProgress": "Week progress",
-    "decision": "Decision {number}"
+    "decision": "Decision {number}",
+    "whereFinished": "Where you finished",
+    "fourNumbers": "Four numbers, one shape",
+    "shapeOfWeek": "The shape of your week",
+    "weekStartLine": "Dashed line is where the week started",
+    "shapeHint": "A point that sits further in than the rest is the one to spend next week on.",
+    "finalStats": "Final stats",
+    "weekStats": "Stats at the end of the week"
   },
   "interview": {
     "practiceInterviews": "Practice interviews",
@@ -164,6 +194,16 @@
     "answeredSoFar": "Answered so far",
     "answeredCount": "{done} of {total}",
     "tryDifferent": "Try a different interview format",
-    "orReadRecommended": ", or read the recommended courses on your badges page."
+    "orReadRecommended": ", or read the recommended courses on your badges page.",
+    "fiveDimensions": "Five dimensions",
+    "dimensionsSubtitle": "Scored from the answers you gave, not from how polished they sounded",
+    "competencyScores": "Competency scores",
+    "listenFor": "What the interviewer listens for",
+    "signalExample": "A real example",
+    "signalNumbers": "A number or result",
+    "signalTradeoff": "A trade-off",
+    "signalStructure": "A clear order",
+    "signalVerification": "How you checked it",
+    "allSignals": "All five are in. Send it."
   }
 }

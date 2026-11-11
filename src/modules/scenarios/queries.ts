@@ -140,8 +140,8 @@ export function runProgress(key: string, run: StoredRun | undefined, zh = false)
         ? `最佳 ${run.bestScore}/100`
         : `Best ${run.bestScore}/100`
       : zh
-        ? `已做 ${done}/${total} 个决定`
-        : `${done} of ${total} decisions`,
+        ? `已做 ${Math.min(done, total)}/${total} 个决定`
+        : `${Math.min(done, total)} of ${total} decisions`,
     percent: Math.round((Math.min(done, total) / total) * 100),
     best: run.bestScore,
     completions: run.completions,

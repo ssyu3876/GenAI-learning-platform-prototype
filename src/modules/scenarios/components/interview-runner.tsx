@@ -2,13 +2,15 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Lightbulb, RotateCcw, SkipForward } from 'lucide-react';
+import { ArrowRight, Check, Lightbulb, Minus, RotateCcw, SkipForward } from 'lucide-react';
 import { Badge, Button, Card, CardBody, CardHeader, ProgressBar, cn } from '@/components/ui';
 import { useT } from '@/i18n/client';
 import { useLocale } from '@/i18n/client';
 import { fmt } from '@/i18n/format';
 import { answerInterview, skipInterviewQuestion, startInterviewRun } from '../actions';
+import { analyseAnswer, type AnswerSignals } from '../content/interview-engine';
 import type { InterviewReport } from '../content/interview-engine';
+import { Radar } from './radar';
 
 export interface InterviewRunnerProps {
   typeId: string;
@@ -27,6 +29,59 @@ function ScorePill({ score }: { score: number }) {
   const t = useT();
   const tint = score >= 4 ? 'mint' : score >= 3 ? 'butter' : 'coral';
   return <Badge tint={tint}>{fmt(t.scenarios.interview.scoreOutOf, { score: score.toFixed(1) })}</Badge>;
+}
+
+type SignalKey = 'example' | 'numbers' | 'tradeoff' | 'structure' | 'verification';
+
+/** Live checklist: the same signals the server scores on, shown while you type. */
+function AnswerChecklist({ text }: { text: string }) {
+  const t = useT();
+  const signals: AnswerSignals = analyseAnswer(text);
+  const items: Array<{ key: SignalKey; label: string }> = [
+    { key: 'example', label: t.scenarios.interview.signalExample },
+    { key: 'numbers', label: t.scenarios.interview.signalNumbers },
+    { key: 'tradeoff', label: t.scenarios.interview.signalTradeoff },
+    { key: 'structure', label: t.scenarios.interview.signalStructure },
+    { key: 'verification', label: t.scenarios.interview.signalVerification },
+  ];
+  const met = items.filter((s) => signals[s.key]).length;
+
+  return (
+    <div className="rounded-blob border-2 border-dashed border-line/60 bg-cream px-3 py-2">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-xs font-semibold tracking-wide text-ink-soft uppercase">
+          {t.scenarios.interview.listenFor}
+        </span>
+        <span className="text-xs font-semibold">
+          {met} / {items.length}
+        </span>
+      </div>
+      <ul className="mt-1.5 flex flex-wrap gap-1.5">
+        {items.map((s) => {
+          const on = signals[s.key];
+          return (
+            <li
+              key={s.key}
+              className={cn(
+                'flex items-center gap-1 rounded-pill border-2 px-2 py-0.5 text-xs font-semibold',
+                on ? 'border-mint-deep bg-mint-soft' : 'border-line/30 bg-paper text-ink-soft',
+              )}
+            >
+              {on ? (
+                <Check className="h-3 w-3 text-mint-deep" aria-hidden />
+              ) : (
+                <Minus className="h-3 w-3 text-ink-soft" aria-hidden />
+              )}
+              {s.label}
+            </li>
+          );
+        })}
+      </ul>
+      {met === items.length ? (
+        <p className="mt-1.5 text-xs font-semibold text-mint-deep">{t.scenarios.interview.allSignals}</p>
+      ) : null}
+    </div>
+  );
 }
 
 export function InterviewRunner(props: InterviewRunnerProps) {
@@ -110,6 +165,27 @@ export function InterviewRunner(props: InterviewRunnerProps) {
                 ))}
               </ol>
             </div>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader
+            title={t.scenarios.interview.fiveDimensions}
+            subtitle={t.scenarios.interview.dimensionsSubtitle}
+          />
+          <CardBody className="mx-auto w-full max-w-[360px]">
+            <Radar
+              axes={report.dimensions.map((d) => ({
+                key: d.competency,
+                label: d.competency,
+                value: d.score,
+                max: 5,
+                danger: 2,
+              }))}
+              decimals={1}
+              tone="lilac"
+              label={t.scenarios.interview.competencyScores}
+            />
           </CardBody>
         </Card>
 
@@ -250,6 +326,8 @@ export function InterviewRunner(props: InterviewRunnerProps) {
           <span>{t.scenarios.interview.answerHint}</span>
         </div>
       </div>
+
+      <AnswerChecklist text={answer} />
 
       <div className="flex flex-wrap gap-2">
         <Button variant="primary" onClick={submit} disabled={isPending || words < 5}>

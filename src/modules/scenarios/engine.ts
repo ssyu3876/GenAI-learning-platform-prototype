@@ -44,6 +44,12 @@ export interface ShipState {
   minutes: number;
   phase: ShipPhase;
   repairIndex: number;
+  /**
+   * Quality lost to wrong repair steps on the current turn. It is folded into the verdict's
+   * history entry, so every quality change reaches the history exactly once and the quality
+   * line can be rebuilt from it. Reset when the turn ends.
+   */
+  repairPenalty?: number;
   /** True once the tests or git log have been read on the current turn. */
   evidenceShown: boolean;
   pending: ShipPending | null;
@@ -58,6 +64,8 @@ export interface ShipState {
 }
 
 export const SHIP_TIME_BUDGET = SHIP_IT.minutes;
+/** Quality at the start of a run. It never goes back up from here. */
+export const SHIP_START_QUALITY = 100;
 
 /** Small deterministic PRNG so one run replays the same turns. */
 function mulberry32(seed: number) {
@@ -110,10 +118,11 @@ export function startShip(seed = Math.floor(Math.random() * 2 ** 31)): ShipState
     kind: 'ship',
     turnIndex: 0,
     drawn: drawShipTurns(seed),
-    quality: 100,
+    quality: SHIP_START_QUALITY,
     minutes: SHIP_IT.minutes,
     phase: 'decide',
     repairIndex: 0,
+    repairPenalty: 0,
     evidenceShown: false,
     pending: null,
     history: [],
@@ -136,6 +145,104 @@ export function shipTotalTurns(state: ShipState): number {
 /** Quality is clamped at zero: it can never be recovered. */
 function clampQuality(q: number): number {
   return Math.max(0, Math.round(q));
+}
+
+/** Quality after the first `upTo` history entries. Reading the tests changes no number. */
+function qualityAt(state: ShipState, upTo: number): number {
+  let quality = SHIP_START_QUALITY;
+  for (let i = 0; i < upTo; i++) {
+    const entry = state.history[i];
+    if (!entry || entry.action === 'evidence') continue;
+    quality = clampQuality(quality + entry.delta);
+  }
+  return quality;
+}
+
+/** One point on the quality line: the start of the run, then one per resolved turn. */
+export interface ShipQualityPoint {
+  /** 0 is the start of the run; 1..n are turn numbers in play order. */
+  turn: number;
+  quality: number;
+  /** The turn title, or "Start". */
+  label: string;
+}
+
+/**
+ * Rebuild the quality line from the history. History records every quality change once — the
+ * three verbs, the repair penalty folded into the verdict — so the last point always equals
+ * `state.quality`. Reading the tests is not a decision, so it adds no point: the line moves
+ * when a turn is actually settled.
+ */
+export function shipQualitySeries(state: ShipState): ShipQualityPoint[] {
+  const turnNumbers = new Map(state.drawn.map((id, i) => [id, i + 1] as const));
+  const byTurn = new Map<number, ShipQualityPoint>();
+  let quality = SHIP_START_QUALITY;
+
+  for (const entry of state.history) {
+    if (entry.action === 'evidence') continue;
+    const turn = turnNumbers.get(entry.turnId);
+    if (turn === undefined) continue;
+    quality = clampQuality(quality + entry.delta);
+    byTurn.set(turn, { turn, quality, label: entry.title });
+  }
+
+  return [
+    { turn: 0, quality: SHIP_START_QUALITY, label: 'Start' },
+    ...[...byTurn.values()].sort((a, b) => a.turn - b.turn),
+  ];
+}
+
+/** One move that was available on the turn just decided, and the quality it would leave. */
+export interface ShipAlternative {
+  key: 'approve' | 'reject' | 'repair';
+  label: string;
+  /** Quality at the end of the turn if the move is carried out well. */
+  quality: number;
+  /** Quality that move would have cost from the start of the turn. */
+  loss: number;
+  chosen: boolean;
+  best: boolean;
+}
+
+/**
+ * The counterfactual for the turn that was just decided: what each move would have done.
+ * Repair is measured at its ideal (every step right), so a learner whose repair steps missed
+ * still sees what the move was worth. Empty outside the result phase.
+ */
+export function shipAlternatives(state: ShipState): ShipAlternative[] {
+  if (state.phase !== 'result' || !state.pending) return [];
+
+  const turn = shipTurn(state);
+  const last = state.history[state.history.length - 1];
+  if (!turn || !last || last.turnId !== turn.id) return [];
+
+  const action = state.pending.action;
+  if (action === 'evidence') return [];
+  const chosenKey: ShipAlternative['key'] =
+    action === 'verdict' || action === 'repair' ? 'repair' : action === 'reject' ? 'reject' : 'approve';
+
+  const before = qualityAt(state, state.history.length - 1);
+  const options: Array<{ key: ShipAlternative['key']; label: string; delta: number }> = [
+    { key: 'approve', label: 'Approve as written', delta: turn.delta.approve },
+    { key: 'reject', label: 'Reject it', delta: turn.delta.reject },
+  ];
+  // Repairing well costs no quality at all, which is why it is usually the right move.
+  if (turn.repair && turn.repair.steps.length > 0) {
+    options.push({ key: 'repair', label: 'Repair it first', delta: 0 });
+  }
+
+  const bestQuality = Math.max(...options.map((o) => clampQuality(before + o.delta)));
+  return options.map((option) => {
+    const quality = clampQuality(before + option.delta);
+    return {
+      key: option.key,
+      label: option.label,
+      quality,
+      loss: before - quality,
+      chosen: option.key === chosenKey,
+      best: quality === bestQuality,
+    };
+  });
 }
 
 function spend(state: ShipState, minutes: number): number {
@@ -176,6 +283,7 @@ export function shipDecide(state: ShipState, action: ShipAction): ShipState {
       ...state,
       phase: 'repair',
       repairIndex: 0,
+      repairPenalty: 0,
       minutes: spend(state, turn.minutes.repair),
     };
   }
@@ -211,6 +319,7 @@ export function shipRepairPick(state: ShipState, optionId: string): ShipState {
     ...state,
     quality: clampQuality(state.quality + penalty),
     minutes: spend(state, extraTime),
+    repairPenalty: (state.repairPenalty ?? 0) + penalty,
     phase: nextIndex >= turn.repair.steps.length ? 'verdict' : 'repair',
     repairIndex: nextIndex,
   };
@@ -221,16 +330,23 @@ export function shipVerdict(state: ShipState, action: 'approve' | 'reject'): Shi
   const turn = shipTurn(state);
   if (!turn || state.phase !== 'verdict') return state;
 
-  const delta = action === 'approve' ? 0 : -10;
+  // The repair already took quality off step by step, so only the verdict itself moves the
+  // number here. The history entry records the whole cost of the turn, though: otherwise those
+  // repair losses would never show up on the turn-by-turn quality line.
+  const repairPenalty = state.repairPenalty ?? 0;
+  const verdictDelta = action === 'approve' ? 0 : -10;
+  const delta = verdictDelta + repairPenalty;
   const note =
-    action === 'approve'
+    (action === 'approve'
       ? 'Repaired, then shipped. This is the sequence a bad turn needs.'
-      : 'The repair worked and then you rejected it. The work is wasted.';
+      : 'The repair worked and then you rejected it. The work is wasted.') +
+    (repairPenalty < 0 ? ` The repair steps that missed cost another ${-repairPenalty}.` : '');
 
   return {
     ...state,
-    quality: clampQuality(state.quality + delta),
+    quality: clampQuality(state.quality + verdictDelta),
     minutes: spend(state, 1),
+    repairPenalty: 0,
     phase: 'result',
     pending: { action: 'verdict', delta, note },
     history: [...state.history, { turnId: turn.id, title: turn.title, action: 'verdict', note, delta }],
@@ -245,6 +361,7 @@ export function shipNext(state: ShipState): ShipState {
     turnIndex: nextIndex,
     phase: done ? 'done' : 'decide',
     repairIndex: 0,
+    repairPenalty: 0,
     evidenceShown: false,
     pending: null,
   };

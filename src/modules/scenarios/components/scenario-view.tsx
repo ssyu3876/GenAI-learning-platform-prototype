@@ -9,7 +9,9 @@ import { localizeShipEnding } from '@/i18n/content/ship-endings';
 import { getRun } from '../queries';
 import {
   SHIP_TIME_BUDGET,
+  shipAlternatives,
   shipEnding,
+  shipQualitySeries,
   shipScore,
   shipTotalTurns,
   shipTurn,
@@ -125,9 +127,11 @@ export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; s
           turn={
             turn
               ? {
+                  id: turn.id,
                   title: turn.title,
                   claim: turn.claim,
                   diff: turn.diff,
+                  risks: turn.risks ?? [],
                   evidence: turn.evidence,
                   minutes: turn.minutes,
                   canRepair: Boolean(turn.repair && turn.repair.steps.length > 0),
@@ -146,6 +150,8 @@ export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; s
           }
           pending={ship.pending ? { delta: ship.pending.delta, note: ship.pending.note } : null}
           ending={endingNow}
+          series={shipQualitySeries(ship)}
+          alternatives={shipAlternatives(ship)}
           history={ship.history.map((h) => ({
             title: localizeContent(h.title, locale),
             action: String(h.action),

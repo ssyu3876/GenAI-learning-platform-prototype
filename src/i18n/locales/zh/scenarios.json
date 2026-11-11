@@ -1,6 +1,7 @@
 {
   "title": "场景",
   "subtitle": "比一次活动长，比一个项目短。你的每个决定都会留下来，结局也由它们写成。",
+  "radarValue": "{label} {value} / {max}",
   "metadata": {
     "scenario": "场景",
     "interview": "模拟面试"
@@ -101,7 +102,29 @@
     "approveChange": "通过这次改动",
     "rejectChange": "退回，让它重做",
     "repairThenDecide": "先修复，再做决定",
-    "decideHint": "读测试会花时间，但不损失质量。靠猜会损失质量，但不花时间。"
+    "decideHint": "读测试会花时间，但不损失质量。靠猜会损失质量，但不花时间。",
+    "qualityByTurn": "每回合的质量",
+    "turnsReviewed": "已复盘 {reviewed} / {total} 回合",
+    "damageLanded": "损伤落在哪里",
+    "qualityEmpty": "曲线从 100 开始。完成一个回合就会多一个点。",
+    "qualityHeld": "质量一直保持在 {quality}，还没有付出代价。",
+    "qualityDown": "从开局到现在掉了 {lost}，剩 {quality}。",
+    "qualityDownWorst": "从开局到现在掉了 {lost}，剩 {quality}。最大的一次下滑在第 {turn} 回合（{drop}）。",
+    "qualityAria": "每回合的项目质量",
+    "diffHint": "标有「说明」的行可以点开看原因，其余只是上下文，有些本来就没问题。",
+    "diffLine": "第 {line} 行",
+    "diffAria": "{title}，逐行查看",
+    "diffNote": "说明",
+    "swipeHint": "也可以拖动卡片：向右批准，向左退回。下面的按钮同样有效。",
+    "whatIf": "如果当时",
+    "bestMove": "最优",
+    "whatIfBest": "你选了最优解，最终 {quality}。",
+    "whatIfRightMove": "{label}是对的；干净地做完能保住 {best}。你最终是 {quality}。",
+    "whatIfMissed": "你最终是 {quality}。{label}能保住 {best}。",
+    "moveApprove": "照原样批准",
+    "moveReject": "退回重做",
+    "moveRepair": "先修复",
+    "evidenceCost": "先读测试只会花 {minutes} 分钟，不掉质量。"
   },
   "sprint": {
     "secondsLeft": "{seconds} 秒",
@@ -126,7 +149,14 @@
     "week": "第 {week} 周",
     "decisionOf": "第 {current} / {total} 个决策",
     "weekProgress": "本周进度",
-    "decision": "第 {number} 个决策"
+    "decision": "第 {number} 个决策",
+    "whereFinished": "你最后停在这里",
+    "fourNumbers": "四个数字，一个形状",
+    "shapeOfWeek": "这一周的形状",
+    "weekStartLine": "虚线是周初的位置",
+    "shapeHint": "哪个点比其他的更靠内，下周就补哪里。",
+    "finalStats": "最终四项指标",
+    "weekStats": "周末的四项指标"
   },
   "interview": {
     "practiceInterviews": "模拟面试",
@@ -164,6 +194,16 @@
     "answeredSoFar": "已回答的题目",
     "answeredCount": "{done} / {total}",
     "tryDifferent": "换一种面试形式",
-    "orReadRecommended": "，或者去徽章页面看看推荐的课程。"
+    "orReadRecommended": "，或者去徽章页面看看推荐的课程。",
+    "fiveDimensions": "五个维度",
+    "dimensionsSubtitle": "按你实际说的内容打分，不看表达是否漂亮",
+    "competencyScores": "能力维度得分",
+    "listenFor": "面试官在听什么",
+    "signalExample": "一个真实的例子",
+    "signalNumbers": "一个数字或结果",
+    "signalTradeoff": "一个取舍",
+    "signalStructure": "清楚的顺序",
+    "signalVerification": "你怎么验证的",
+    "allSignals": "五项都齐了，可以提交。"
   }
 }

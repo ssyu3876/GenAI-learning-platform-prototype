@@ -7,13 +7,13 @@ export const basicsCourse: CourseDraft = {
   subject: 'Software Engineering',
   level: 'beginner',
   audience: 'everyone',
-  tags: ['fundamentals', 'sdlc', 'requirements', 'teamwork'],
+  tags: ['fundamentals', 'sdlc', 'requirements', 'teamwork', 'testing'],
   emoji: '🛠️',
   color: 'coral',
   lessons: [
     {
       title: 'From idea to app: the life of a feature',
-      estimatedMinutes: 10,
+      estimatedMinutes: 18,
       content: `Meet **CampusEats**: four students who want to let classmates pre-order lunch from the canteen so they can skip the queue.
 
 Nobody starts by typing code. Before a single line is written, the team goes through a loop that almost every software project shares:
@@ -27,6 +27,10 @@ Nobody starts by typing code. Before a single line is written, the team goes thr
 | Test | Does it really work? | Try 30 fake orders at once |
 | Release | Get it to real users | Launch for one canteen |
 | Learn | What did users actually do? | People want "order again" |
+
+A university lecture walks through the same stages. It calls them the phases of the *software development life cycle* (SDLC):
+
+[Video: SDLC Part 1 · K-State Computational Core (10 min, CC BY-NC-SA 4.0)](https://youtu.be/KXHfIKWltGc)
 
 ### It is a loop, not a line
 
@@ -64,11 +68,53 @@ After "Learn", the team goes back to "Understand" with new information. Each tri
             ],
           },
         },
+        {
+          type: 'quiz',
+          title: 'Where do they go next?',
+          xpReward: 20,
+          config: {
+            questions: [
+              {
+                prompt: 'After launch, many students leave the app on the payment screen. What should the CampusEats team do first?',
+                options: [
+                  'Go back to Understand: ask a few students why they gave up',
+                  'Rebuild the payment screen straight away',
+                  'Release the same version to more canteens',
+                  'Add more fake orders to the tests',
+                ],
+                answerIndex: 0,
+                explanation: 'They do not know the cause yet. Asking a few students is cheaper than guessing and rebuilding.',
+              },
+              {
+                prompt: 'In testing, orders with more than 10 items crash the app. What happens next?',
+                options: [
+                  'Release anyway and fix it later',
+                  'Delete the test that failed',
+                  'Fix it in Build, then run the tests again',
+                  'Start the whole project again from Understand',
+                ],
+                answerIndex: 2,
+                explanation: 'A failed test sends that one problem back to Build. Once it is fixed, the team tests again.',
+              },
+              {
+                prompt: 'Why is a two-week loop safer than one big six-month plan?',
+                options: [
+                  'Two weeks is the usual legal minimum for a project',
+                  'Mistakes show up while they are still cheap to fix',
+                  'Users cannot give feedback during long projects',
+                  'Short loops do not need testing',
+                ],
+                answerIndex: 1,
+                explanation: 'Every loop ends with real feedback, so the team never builds the wrong thing for long.',
+              },
+            ],
+          },
+        },
       ],
     },
     {
       title: 'Requirements: what are we actually building?',
-      estimatedMinutes: 12,
+      estimatedMinutes: 22,
       content: `A **requirement** is something the software must do or be. Vague requirements are the number one reason projects go wrong: "make it easy to use" means something different to everyone.
 
 ### User stories
@@ -79,6 +125,10 @@ Teams often write requirements as short **user stories**:
 
 Three parts: *who* wants it, *what* they want, and *why*. The "why" is the part people skip, and it is the most useful: it tells the team what problem they are really solving.
 
+Mike Cohn, one of the people who made user stories popular, shows how teams write them in practice:
+
+[Video: What Is a User Story in Agile? · Mountain Goat Software (9 min)](https://youtu.be/kkihaNjwRik)
+
 ### Acceptance criteria
 
 A story is not finished until everyone agrees how to check it. Acceptance criteria make that concrete:
@@ -86,6 +136,17 @@ A story is not finished until everyone agrees how to check it. Acceptance criter
 - Given I have ordered before, when I open the app, I see "Order again"
 - Tapping it fills the cart with my last order
 - I can still change items before paying
+
+### From vague to testable
+
+A requirement is testable when two people would agree on whether it is met. Replace adjectives with numbers, people and situations:
+
+| Vague | Testable |
+|---|---|
+| "The app should be fast" | "The menu loads in under 2 seconds on 4G" |
+| "Easy to use" | "A first-time user can place an order in under 1 minute without help" |
+| "Secure payments" | "Card details are handled by the payment provider and never stored on our server" |
+| "Works for everyone" | "Every button can be reached with a phone screen reader" |
 
 ### Functional vs non-functional
 
@@ -145,12 +206,35 @@ Non-functional requirements are easy to forget and painful to add later. Ask abo
             ],
           },
         },
+        {
+          type: 'sort',
+          title: 'Testable or too vague?',
+          xpReward: 20,
+          config: {
+            instructions: 'Could the CampusEats team check each requirement with a clear yes or no?',
+            buckets: ['Testable', 'Too vague'],
+            items: [
+              { text: 'Orders placed after 11:30 are rejected with a message', bucket: 'Testable' },
+              { text: 'The app should feel modern', bucket: 'Too vague' },
+              { text: 'A receipt email arrives within 1 minute of paying', bucket: 'Testable' },
+              { text: 'The menu is easy to browse', bucket: 'Too vague' },
+              { text: 'Staff can mark an order as ready in one tap', bucket: 'Testable' },
+              { text: 'The system must be very reliable', bucket: 'Too vague' },
+              { text: 'The app is available 99% of the time between 11:00 and 14:00', bucket: 'Testable' },
+              { text: 'Users should like the design', bucket: 'Too vague' },
+            ],
+          },
+        },
       ],
     },
     {
       title: 'Talking to your first client',
-      estimatedMinutes: 15,
+      estimatedMinutes: 25,
       content: `Clients rarely know exactly what they need. They know what *hurts*. Your job in a requirements conversation is to find the pain behind the request.
+
+Watch a business analyst go through the questions worth asking in a first requirements meeting:
+
+[Video: Requirements Elicitation – What Questions to Ask · Bridging the Gap (9 min)](https://youtu.be/eTcTl_LrQGY)
 
 ### Habits that work
 
@@ -166,8 +250,27 @@ Non-functional requirements are easy to forget and painful to add later. Ask abo
 - Using jargon ("we'll spin up a backend") that makes the client nod without understanding
 - Forgetting to ask who the *users* are, which may not be the client
 
-> In the role-play below, Mrs. Lau will only tell you the useful details if you ask good questions.`,
+> In the role-play below, Mrs. Lau will only tell you the useful details if you ask good questions. Warm up first by sorting questions into open and closed ones.`,
       activities: [
+        {
+          type: 'sort',
+          title: 'Open or closed question?',
+          xpReward: 15,
+          config: {
+            instructions: 'Open questions invite a story. Closed questions get a yes, a no or a number. Sort these questions for Mrs. Lau.',
+            buckets: ['Open', 'Closed'],
+            items: [
+              { text: 'What happens at the counter at lunchtime?', bucket: 'Open' },
+              { text: 'Do you want an app?', bucket: 'Closed' },
+              { text: 'Why does the queue matter to you?', bucket: 'Open' },
+              { text: 'Is your budget HK$30,000?', bucket: 'Closed' },
+              { text: 'How do customers order today?', bucket: 'Open' },
+              { text: 'Can it be ready by July?', bucket: 'Closed' },
+              { text: 'Who would use this most?', bucket: 'Open' },
+              { text: 'Should the button be green?', bucket: 'Closed' },
+            ],
+          },
+        },
         {
           type: 'roleplay',
           title: 'Requirements meeting with Mrs. Lau',
@@ -201,7 +304,7 @@ Non-functional requirements are easy to forget and painful to add later. Ask abo
     },
     {
       title: 'Agile in one page: sprints, stand-ups and retros',
-      estimatedMinutes: 10,
+      estimatedMinutes: 18,
       content: `Most teams today work in an **agile** way: plan a little, build a little, show it, adjust. The most common recipe is **Scrum**. You only need five words to follow along in any tech team:
 
 - **Backlog** – the to-do list of user stories, most important at the top.
@@ -212,9 +315,19 @@ Non-functional requirements are easy to forget and painful to add later. Ask abo
 
 There is also a **sprint review**, where the team shows working software to stakeholders and gets feedback.
 
+### Who is in a Scrum team?
+
+- **Product Owner** – decides what is most valuable and keeps the backlog in order.
+- **Scrum Master** – helps the team follow the process and clears blockers.
+- **Developers** – everyone who builds and tests the product, not only programmers.
+
+This short animation shows how the pieces fit together in one sprint:
+
+[Video: What Is Scrum in Under 7 Minutes · Joshua Partogi (8 min)](https://youtu.be/9l2o9kISio0)
+
 ### A board makes it visible
 
-Teams track work on a board with columns like **To do → In progress → Review → Done**. In our own project, that board lives in GitHub Projects, and every card links to an issue.
+Teams track work on a board with columns like **To do → In progress → Review → Done**. Teams usually keep it in a tool such as GitHub Projects or Jira, where every card links to the work behind it.
 
 > Agile is not about meetings. It is about getting feedback often enough that you never drift far from what people need.`,
       activities: [
@@ -252,6 +365,126 @@ Teams track work on a board with columns like **To do → In progress → Review
                 options: ['The most important stories', 'The easiest stories', 'The oldest stories', 'Bug reports only'],
                 answerIndex: 0,
                 explanation: 'The backlog is ordered by value, so the team always works on what matters most.',
+              },
+            ],
+          },
+        },
+        {
+          type: 'sequence',
+          title: 'Order a sprint',
+          xpReward: 20,
+          config: {
+            instructions: 'Put one CampusEats sprint in order, from preparing the backlog to looking back.',
+            steps: [
+              'Order the backlog by value',
+              'Sprint planning: choose the stories for this sprint',
+              'Build, with a short stand-up every morning',
+              'Sprint review: show the working software',
+              'Retrospective: agree one thing to improve',
+            ],
+          },
+        },
+      ],
+    },
+    {
+      title: 'Testing and release: is it really done?',
+      estimatedMinutes: 18,
+      content: `CampusEats now has a working order form. Is it *done*? Not yet. Good teams agree in advance what "done" means, check it with tests, and release carefully.
+
+### The Definition of Done
+
+A **Definition of Done** is the team's shared checklist for every story. For CampusEats it could be:
+
+- The acceptance criteria pass
+- Automated tests cover the new code, and every test passes
+- Someone else has reviewed the code
+- It works with a phone screen reader
+- It is released to at least one canteen
+
+### Testing at different levels
+
+| Level | What it checks | CampusEats example |
+|---|---|---|
+| Unit test | One small piece of code on its own | The price total adds up, discounts included |
+| Integration test | Pieces working together | A new order is saved and shows up on the staff tablet |
+| End-to-end test | A whole journey through the real app | A student logs in, orders, pays and sees "ready" |
+| Acceptance test | The story does what was agreed | The canteen manager tries "order again" and agrees it works |
+
+Keep many small, fast unit tests, and a few slower end-to-end tests for the journeys that matter most.
+
+[Video: Software Testing Explained in 100 Seconds · Fireship (2 min)](https://youtu.be/u6QfIXgjwGQ)
+
+### Continuous integration
+
+With **continuous integration** (CI), everyone merges small changes often and the tests run automatically on each one. A change that breaks something is caught within minutes, not at the end of the month. In the Sprout project, \`npm run check\` runs the type checker, the linter and the tests, and every pull request gets a preview deployment to try before it is merged.
+
+[Video: What is Continuous Integration? · IBM Technology (6 min)](https://youtu.be/1er2cjUq1UI)
+
+### Releasing safely
+
+- **Start small:** launch at one canteen before all of them.
+- **Watch what happens:** errors, slow pages, orders that never finish.
+- **Have a way back:** if something breaks, roll back to the last version that worked.
+
+> **Takeaway:** "done" means tested, reviewed and in front of real users, not "it works on my laptop".
+
+Want to practise? The [Sprint Zero scenario](/scenarios/sprint-zero) lets you lead a student team through three weeks of these decisions.`,
+      activities: [
+        {
+          type: 'sort',
+          title: 'Which test would catch this?',
+          xpReward: 20,
+          config: {
+            instructions: 'Each line is a bug or a problem in CampusEats. Which kind of test would catch it first?',
+            buckets: ['Unit test', 'Integration test', 'Acceptance test'],
+            items: [
+              { text: 'Two HK$20 meals add up to HK$30 in the cart', bucket: 'Unit test' },
+              { text: 'The 10% student discount is applied twice', bucket: 'Unit test' },
+              { text: 'Orders are saved but never appear on the staff tablet', bucket: 'Integration test' },
+              { text: 'The payment provider confirms a payment, but the order stays "unpaid"', bucket: 'Integration test' },
+              { text: 'The daily summary leaves out the drinks the canteen manager needs to prepare', bucket: 'Acceptance test' },
+              { text: 'Students can reorder, but nobody finds the "order again" button', bucket: 'Acceptance test' },
+            ],
+          },
+        },
+        {
+          type: 'quiz',
+          title: 'Done or not done?',
+          xpReward: 20,
+          config: {
+            questions: [
+              {
+                prompt: 'The order form works on the developer\'s laptop, but it has no tests and nobody has reviewed it. Is the story done?',
+                options: [
+                  'Yes: it works',
+                  'No: it does not meet the Definition of Done yet',
+                  'Yes, if the deadline is close',
+                  'Only if the client is happy with the colours',
+                ],
+                answerIndex: 1,
+                explanation: 'Working once on one laptop is not done. The team agreed on tests and a review for every story.',
+              },
+              {
+                prompt: 'What does continuous integration give the team?',
+                options: [
+                  'Code that never has bugs',
+                  'No more need for code review',
+                  'A new release every day',
+                  'Broken changes are caught within minutes by automatic tests',
+                ],
+                answerIndex: 3,
+                explanation: 'CI does not prevent mistakes. It finds them quickly, while the change is small and fresh in mind.',
+              },
+              {
+                prompt: 'A new version makes ordering slow at the first canteen. What is the safest move?',
+                options: [
+                  'Roll back to the last version that worked, then investigate',
+                  'Release it to every canteen to collect more data',
+                  'Ask students to wait longer',
+                  'Delete the tests for the slow feature',
+                ],
+                answerIndex: 0,
+                explanation: 'Rolling back protects users right away. The team can then find the cause without time pressure.',
               },
             ],
           },

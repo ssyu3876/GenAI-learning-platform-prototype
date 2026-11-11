@@ -1,15 +1,9 @@
-// Release Week: the third long scenario. Same shape as Sprint Zero (three weeks, a bank per
-// week, four stats), but the stats are time, trust, early testers and quality, and the story
-// is one release from kickoff to launch day.
+// Release Week: the content behind the course game. Three weeks of release decisions with
+// four stats (time, trust, early testers, quality). The game takes six of the decisions and
+// runs them as an activity inside the People course; the rest stay in the bank.
 //
-// Reusing the sprint state machine keeps one engine for both. Text that the engine composes
-// lives in RELEASE_COPY so the i18n dictionary can pair it with the Chinese copy.
-import type {
-  SprintEnding,
-  SprintScenario,
-  SprintWeek,
-  Stats,
-} from './types';
+// Text lives in RELEASE_COPY so the i18n dictionary can pair it with the Chinese copy.
+import type { SprintEnding, SprintScenario, SprintWeek } from './types';
 
 export interface ReleaseCopy {
   key: string;
@@ -348,46 +342,6 @@ export const RELEASE_COPY: ReleaseCopy = {
     time: 'Time is the constraint. Every decision should either cut scope or buy a day.',
     testers: 'Almost nobody has tried it. The team is guessing at what users need.',
     calm: 'Nothing is on fire. That is the moment to fix the thing you keep postponing.',
-  },
-};
-
-const { endings, advice, ...copy } = RELEASE_COPY;
-
-function scoreOf(stats: Stats): number {
-  return Math.max(
-    0,
-    Math.min(
-      100,
-      Math.round(
-        Math.min(100, stats.morale) * 0.3 +
-          Math.min(100, stats.quality) * 0.3 +
-          Math.max(0, Math.min(100, stats.budget)) * 0.2 +
-          Math.min(100, stats.users) * 0.2,
-      ),
-    ),
-  );
-}
-
-export const RELEASE_WEEK: SprintScenario = {
-  ...copy,
-  start: (): Stats => ({ budget: 80, morale: 65, users: 30, quality: 75 }),
-  score: (stats) => scoreOf(stats),
-  ending: (stats) => {
-    const score = scoreOf(stats);
-    const key =
-      stats.morale < 30 || stats.quality < 30 || stats.budget <= 0
-        ? ('burned' as const)
-        : score >= 75 && stats.morale >= 50 && stats.quality >= 55
-          ? ('clean' as const)
-          : ('bruised' as const);
-    return { key, ...endings[key] };
-  },
-  advice: (stats) => {
-    if (stats.morale < 35) return advice.trust;
-    if (stats.quality < 40) return advice.quality;
-    if (stats.budget < 30) return advice.time;
-    if (stats.users < 40) return advice.testers;
-    return advice.calm;
   },
 };
 

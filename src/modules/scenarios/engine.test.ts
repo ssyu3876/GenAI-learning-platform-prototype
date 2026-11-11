@@ -12,18 +12,9 @@ import {
   shipRepairPick,
   shipTurn,
   shipVerdict,
-  sprintAdvance,
-  sprintChoose,
-  sprintEnding,
-  sprintEnterWeek,
-  sprintLeaveSummary,
-  sprintScore,
-  sprintStep,
   startShip,
-  startSprint,
   type ShipState,
 } from './engine';
-import { RELEASE_WEEK } from './content/release-week';
 
 describe('shipQualitySeries', () => {
   it('starts with one point at 100', () => {
@@ -169,41 +160,5 @@ describe('shipAlternatives', () => {
       chosen: true,
       best: true,
     });
-  });
-});
-
-describe('Release Week on the sprint engine', () => {
-  it('starts with its own stats and three weeks', () => {
-    const state = startSprint(RELEASE_WEEK);
-    expect(state.stats).toEqual({ budget: 80, morale: 65, users: 30, quality: 75 });
-    expect(state.completed).toHaveLength(3);
-  });
-
-  it('plays through every week and ends with the release ending', () => {
-    let state = startSprint(RELEASE_WEEK);
-
-    for (let week = 0; week < RELEASE_WEEK.weeks.length; week++) {
-      state = sprintEnterWeek(state, week, 7, RELEASE_WEEK);
-      expect(state.drawn).toHaveLength(3);
-
-      while (state.view === 'week') {
-        const step = sprintStep(state, RELEASE_WEEK);
-        expect(step).not.toBeNull();
-        state = sprintChoose(state, step!.choices[0]!.id, false, RELEASE_WEEK);
-        state = sprintAdvance(state, RELEASE_WEEK);
-        if (state.view === 'summary') state = sprintLeaveSummary(state);
-      }
-    }
-
-    expect(state.view).toBe('ending');
-    expect(sprintEnding(state, RELEASE_WEEK).title.length).toBeGreaterThan(0);
-    const score = sprintScore(state, RELEASE_WEEK);
-    expect(score).toBeGreaterThanOrEqual(0);
-    expect(score).toBeLessThanOrEqual(100);
-  });
-
-  it('keeps Sprint Zero as the default scenario', () => {
-    expect(startSprint().stats.budget).toBe(100);
-    expect(startSprint().completed).toHaveLength(3);
   });
 });

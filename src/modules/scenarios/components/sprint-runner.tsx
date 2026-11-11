@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -6,22 +6,10 @@ import { ArrowRight, Check, Clock, Lock, Play, RotateCcw } from 'lucide-react';
 import { Badge, Button, Card, CardBody, CardHeader, ProgressBar, cn } from '@/components/ui';
 import { useT } from '@/i18n/client';
 import { fmt } from '@/i18n/format';
-import {
-  releaseEnter,
-  releaseGoOn,
-  releaseLeaveWeekSummary,
-  releasePick,
-  sprintEnter,
-  sprintGoOn,
-  sprintLeaveWeekSummary,
-  sprintPick,
-  resetScenario,
-} from '../actions';
+import { sprintEnter, sprintGoOn, sprintLeaveWeekSummary, sprintPick, resetScenario } from '../actions';
 import { Radar } from './radar';
 
 export interface SprintRunnerProps {
-  /** Which long scenario these numbers belong to: sprint-zero or release-week. */
-  scenarioKey: string;
   view: 'select' | 'week' | 'summary' | 'ending';
   week: number;
   stats: Array<{ key: string; label: string; value: number; max: number; danger: number }>;
@@ -100,11 +88,7 @@ function Countdown({ seconds, onTimeout }: { seconds: number; onTimeout: () => v
 }
 
 export function SprintRunner(props: SprintRunnerProps) {
-  const { view, week, stats, weeks, step, pending, summary, ending, history, scenarioKey } = props;
-  const actions =
-    scenarioKey === 'release-week'
-      ? { enter: releaseEnter, pick: releasePick, goOn: releaseGoOn, leave: releaseLeaveWeekSummary }
-      : { enter: sprintEnter, pick: sprintPick, goOn: sprintGoOn, leave: sprintLeaveWeekSummary };
+  const { view, week, stats, weeks, step, pending, summary, ending, history } = props;
   const t = useT();
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -144,7 +128,7 @@ export function SprintRunner(props: SprintRunnerProps) {
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="primary"
-                onClick={() => act(() => resetScenario({ key: scenarioKey }))}
+                onClick={() => act(() => resetScenario({ key: 'sprint-zero' }))}
                 disabled={isPending}
               >
                 <RotateCcw className="h-4 w-4" aria-hidden /> {t.scenarios.common.playAgain}
@@ -239,7 +223,7 @@ export function SprintRunner(props: SprintRunnerProps) {
               ) : null}
             </div>
             <div>
-              <Button variant="primary" onClick={() => act(() => actions.leave())} disabled={isPending}>
+              <Button variant="primary" onClick={() => act(() => sprintLeaveWeekSummary())} disabled={isPending}>
                 {t.scenarios.sprint.backToWeeks} <ArrowRight className="h-4 w-4" aria-hidden />
               </Button>
             </div>
@@ -322,7 +306,7 @@ export function SprintRunner(props: SprintRunnerProps) {
                         variant={w.complete ? 'secondary' : 'primary'}
                         size="sm"
                         disabled={isPending}
-                        onClick={() => act(() => actions.enter({ week: w.index }))}
+                        onClick={() => act(() => sprintEnter({ week: w.index }))}
                       >
                         <Play className="h-3.5 w-3.5" aria-hidden />
                         {w.complete
@@ -393,7 +377,7 @@ export function SprintRunner(props: SprintRunnerProps) {
               )}
             </div>
             <div>
-              <Button variant="primary" onClick={() => act(() => actions.goOn())} disabled={isPending}>
+              <Button variant="primary" onClick={() => act(() => sprintGoOn())} disabled={isPending}>
                 {t.scenarios.common.next} <ArrowRight className="h-4 w-4" aria-hidden />
               </Button>
             </div>
@@ -417,7 +401,7 @@ export function SprintRunner(props: SprintRunnerProps) {
             key={step.index}
             seconds={step.seconds}
             onTimeout={() =>
-              act(() => actions.pick({ choiceId: step.choices[step.timeoutChoice]?.id ?? step.choices[0]!.id, timedOut: true }))
+              act(() => sprintPick({ choiceId: step.choices[step.timeoutChoice]?.id ?? step.choices[0]!.id, timedOut: true }))
             }
           />
         ) : null}
@@ -445,7 +429,7 @@ export function SprintRunner(props: SprintRunnerProps) {
           <li key={choice.id}>
             <button
               type="button"
-              onClick={() => act(() => actions.pick({ choiceId: choice.id }))}
+              onClick={() => act(() => sprintPick({ choiceId: choice.id }))}
               disabled={isPending}
               className="flex w-full items-center justify-between gap-3 rounded-blob border-2 border-line bg-paper px-4 py-3 text-left shadow-sticker-sm transition-transform hover:-translate-y-0.5 hover:shadow-sticker disabled:pointer-events-none disabled:opacity-60"
             >
@@ -460,4 +444,5 @@ export function SprintRunner(props: SprintRunnerProps) {
     </div>
   );
 }
+
 

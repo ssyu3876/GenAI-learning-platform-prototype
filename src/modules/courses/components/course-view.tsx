@@ -17,6 +17,7 @@ const ACTIVITY_LABEL_KEY: Record<string, keyof Translations['activities']['types
   quiz: 'quiz',
   roleplay: 'roleplay',
   coding: 'coding',
+  'release-run': 'releaseRun',
 };
 
 export async function CourseView({ user, slug }: { user: SessionUser; slug: string }) {

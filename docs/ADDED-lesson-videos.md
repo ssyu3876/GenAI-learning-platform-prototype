@@ -75,15 +75,18 @@ Applies to every narrated-slides activity in every course (`src/modules/activiti
 
 ## Getting the new course onto the live site
 
-The seed script skips a database that already has demo data, so **merging this does not change
-the course on the live site**. The deployed database keeps the old four lessons until someone
-either resets it (demo data starts over) or the team adds a way to update seeded courses in place.
-This needs a team decision.
+`scripts/seed/run.ts` now **refreshes the three preset courses in place** on every
+`npm run db:seed`, even when the demo accounts already exist. Vercel runs that seed as part of
+`vercel-build`, so richer preset content reaches the live demo database without a manual
+reset. Course, lesson and activity IDs stay stable by position; accounts, history and the
+extra demo courses are untouched. See `ADDED-course-agents-deep-dive.md` for details.
+
+`npm run db:reset` remains the clean-slate option for local development.
 
 ## Testing
 
-- `npm run check` passes: 11 test files, 78 tests (incl. `video-embed.test.ts` and the content
-  localisation tests).
+- `npm run check` passes: 19 test files, 116 tests (incl. `video-embed.test.ts`, the agents
+  course test and the content localisation tests).
 - In the browser after `npm run db:reset`: every lesson shows its player and caption at 16:9;
   the new quiz and sort activities score on the server (100% and +24 XP when all right); in
   Chinese every new heading, activity and caption is translated and the videos stay.

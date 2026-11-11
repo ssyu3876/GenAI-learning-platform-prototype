@@ -152,6 +152,40 @@ export const peopleCourseZh: CourseDraft = {
 先假定对方是好意，不清楚就直接问，并且记住：针对代码的评论，不是针对你。在借助 AI 的团队里，很多评论针对的是 agent 写的代码。一起把它看清楚，这件事本身就是目的。`,
       activities: [
         {
+          type: 'slides',
+          title: '一句能落地的评论',
+          xpReward: 15,
+          config: {
+            slides: [
+              {
+                heading: '评论是有温度的',
+                bullets: ['你想表达什么', '对方听到什么'],
+                narration:
+                  '一条评审评论其实带了两条信息：你想让他改什么，以及你有多尊重这个人。后一条往往更响。',
+                visual: 'tone-meter',
+              },
+              {
+                heading: '指到那一行',
+                bullets: ['具体胜过抖机灵', '说清可能坏在哪'],
+                narration:
+                  '指到那一行，说清会怎么坏。购物车为空时，第 12 行会除零。作者不用猜就能动手。',
+              },
+              {
+                heading: '把必须改和顺便改分开',
+                bullets: ['一个卡住合并', '一个可以等等'],
+                narration:
+                  '说清哪些评论卡住合并，哪些只是 nit。如果每条都紧急，就等于没有优先级。',
+              },
+              {
+                heading: '轮到你了',
+                bullets: ['先分一分评论', '再选出最好的评审'],
+                narration:
+                  '接下来做两个分类活动和礼仪小测。留意哪些评论是你自己也想收到的。',
+              },
+            ],
+          },
+        },
+        {
           type: 'sort',
           title: '这条评审评论有用，还是没用？',
           xpReward: 20,
@@ -230,6 +264,40 @@ export const peopleCourseZh: CourseDraft = {
 
 想完整练一遍？[模拟面试](/scenarios/interview) 会连问五个问题，最后给一份复盘，讲结构、细节和你怎么检查 AI 的产出。`,
       activities: [
+        {
+          type: 'slides',
+          title: '一个故事，四个格子',
+          xpReward: 15,
+          config: {
+            slides: [
+              {
+                heading: '讲一个故事，不是做总结',
+                bullets: ['什么时间、什么场合', '你负责什么'],
+                narration:
+                  '行为面试的回答是故事。先用一句话说清时间场合，再说你负责的部分。',
+                visual: 'star-stack',
+              },
+              {
+                heading: '你做了什么',
+                bullets: ['说我，不只说我们', '具体的步骤'],
+                narration:
+                  '面试官打分的是行动。按顺序说你做了什么，不要躲在团队后面。',
+              },
+              {
+                heading: '结果要有证据',
+                bullets: ['最后发生了什么', '能带数字就带'],
+                narration:
+                  '最后说清变化：按时上线、把排队时间砍半、拿了全班最高分。没有证据的结果听起来只是希望。',
+              },
+              {
+                heading: '轮到你了',
+                bullets: ['先拼出 STAR 回答', '再和 Jordan 练一次'],
+                narration:
+                  '把句子排好，然后跑一遍模拟面试。整个回答控制在两分钟以内。',
+              },
+            ],
+          },
+        },
         {
           type: 'sequence',
           title: '拼出一个 STAR 回答',

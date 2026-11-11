@@ -151,6 +151,40 @@ This talk walks through the same problem from a practitioner's side:
 Assume good intent, ask questions when unclear, and remember: comments on your code are not comments on you. On an AI-assisted team, many comments will be about code an agent wrote. Reviewing it together is the point.`,
       activities: [
         {
+          type: 'slides',
+          title: 'The comment that lands',
+          xpReward: 15,
+          config: {
+            slides: [
+              {
+                heading: 'A comment has a temperature',
+                bullets: ['What you mean', 'What they hear'],
+                narration:
+                  'A review comment carries two messages: the fix you want, and how much you respect the person. The second one is usually louder.',
+                visual: 'tone-meter',
+              },
+              {
+                heading: 'Point at the line',
+                bullets: ['Specific beats clever', 'Say what could go wrong'],
+                narration:
+                  'Point at the line and describe the failure. If the cart is empty, line 12 divides by zero. The author can act on that without guessing.',
+              },
+              {
+                heading: 'Separate must-fix from nit',
+                bullets: ['One blocks the merge', 'One can wait'],
+                narration:
+                  'Say which comments block the merge and which are nits. A review where everything is urgent is a review with no priorities.',
+              },
+              {
+                heading: 'Your turn',
+                bullets: ['Sort the comments', 'Then pick the best review'],
+                narration:
+                  'Now try the two sorting activities and the etiquette quiz. Notice which comments you would be glad to receive.',
+              },
+            ],
+          },
+        },
+        {
           type: 'sort',
           title: 'Helpful or unhelpful review comment?',
           xpReward: 20,
@@ -229,6 +263,40 @@ Assume good intent, ask questions when unclear, and remember: comments on your c
 
 Want a full run? The [practice interviews](/scenarios/interview) ask five questions and end with a debrief on structure, specifics and how you check AI output.`,
       activities: [
+        {
+          type: 'slides',
+          title: 'One story, four boxes',
+          xpReward: 15,
+          config: {
+            slides: [
+              {
+                heading: 'A story, not a summary',
+                bullets: ['Where and when', 'What you owned'],
+                narration:
+                  'Behavioural answers are stories. Start with where and when, in one sentence, then say what you were responsible for.',
+                visual: 'star-stack',
+              },
+              {
+                heading: 'What you did',
+                bullets: ['Say I, not we', 'Concrete steps'],
+                narration:
+                  'The action is the part interviewers score. Say what you did, in order, without hiding behind the team.',
+              },
+              {
+                heading: 'The result needs evidence',
+                bullets: ['Outcome', 'A number if you have one'],
+                narration:
+                  'End with what changed: shipped on time, cut the queue in half, top grade in the class. A result without evidence sounds like a hope.',
+              },
+              {
+                heading: 'Your turn',
+                bullets: ['Build the STAR answer', 'Then practise with Jordan'],
+                narration:
+                  'Put the sentences in order, then run the mock interview. Keep the whole answer under two minutes.',
+              },
+            ],
+          },
+        },
         {
           type: 'sequence',
           title: 'Build a STAR answer',

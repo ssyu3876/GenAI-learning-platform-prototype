@@ -21,6 +21,18 @@
 }
 .animate-damage { animation: damage-flash 0.45s ease-out; }
 
+@keyframes hero-glow {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.18); }
+}
+.animate-hero-glow { animation: hero-glow 6s ease-in-out infinite; }
+
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.animate-float-soft { animation: float-soft 3.6s ease-in-out infinite; }
+
 /*
   Sprout design tokens. Use these through Tailwind classes (bg-coral, text-ink, shadow-sticker...)
   and never hard-code hex colours in components. See docs/standards/UI_GUIDELINES.md.

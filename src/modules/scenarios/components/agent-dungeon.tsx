@@ -100,6 +100,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
   const [damageFlash, setDamageFlash] = useState(false);
   const [shielded, setShielded] = useState(false);
   const [reviveUsed, setReviveUsed] = useState(false);
+  const [revive2Used, setRevive2Used] = useState(false);
 
   const map = maps[layer];
   const currentRoom: Room | undefined = map?.rooms.find((r) => r.id === roomId);
@@ -210,7 +211,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     const idx = layer;
     if (room.type === 'boss') {
       const boss = bossCopy!;
-      const seconds = boss.seconds + (buffs.has('time') ? 10 : 0);
+      const seconds = boss.seconds + (buffs.has('time') ? 10 : 0) + (buffs.has('time2') ? 15 : 0);
       setBattle({
         kind: 'boss',
         name: boss.name,
@@ -264,7 +265,8 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     setFeedback({ correct, explain: question.explain });
     if (correct) {
       setStats((s) => ({ ...s, correct: s.correct + 1 }));
-      if (buffs.has('leech')) setHp((v) => Math.min(maxHp, v + 5));
+      if (buffs.has('leech2')) setHp((v) => Math.min(maxHp, v + 10));
+      else if (buffs.has('leech')) setHp((v) => Math.min(maxHp, v + 5));
       const next = { ...battle };
       if (!next.broken && next.confidence > 0) {
         next.confidence -= 1;
@@ -272,6 +274,9 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
       } else {
         let damage = triple ? 3 : 1;
         if (buffs.has('precision') && (next.kind === 'boss' || next.elite)) damage += 1;
+        if (buffs.has('precision2') && (next.kind === 'boss' || next.elite)) damage += 2;
+        if (buffs.has('crit2') && (next.kind === 'boss' || next.elite)) damage += 2;
+        if (buffs.has('berserk') && hp < maxHp * 0.3) damage += 2;
         if (buffs.has('crit') && (next.kind === 'boss' || next.elite)) damage += 1;
         next.hp = Math.max(0, next.hp - damage);
       }
@@ -282,7 +287,8 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     } else {
       setStats((s) => ({ ...s, wrong: s.wrong + 1 }));
       let damage: number = battle.kind === 'boss' ? DUNGEON_CONFIG.bossDamage[difficulty] : battle.elite ? DUNGEON_CONFIG.eliteDamage[difficulty] : DUNGEON_CONFIG.monsterDamage[difficulty];
-      if (buffs.has('armor')) damage = Math.floor(damage / 2);
+      if (buffs.has('armor2')) damage = Math.floor(damage * 0.25);
+      else if (buffs.has('armor')) damage = Math.floor(damage / 2);
       if (shielded) {
         damage = 0;
         setShielded(false);
@@ -293,6 +299,13 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
       setDamageFlash(true);
       window.setTimeout(() => setDamageFlash(false), 460);
       if (nextHp <= 0) {
+        if (buffs.has('revive2') && !revive2Used) {
+          setRevive2Used(true);
+          setHp(30);
+          setBattle({ ...battle, confidence: battle.maxConfidence, broken: battle.kind === 'monster' ? battle.broken : false });
+          setTriple(false);
+          return;
+        }
         if (buffs.has('revive') && !reviveUsed) {
           setReviveUsed(true);
           setHp(30);
@@ -336,7 +349,11 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
 
   function winBattle() {
     if (!battle || !map) return;
-    const earned = Math.round(battle.gold * (buffs.has('gold') ? 1.5 : 1));
+    const earned = Math.round(
+      battle.gold *
+        (buffs.has('gold') ? 1.5 : 1) *
+        (buffs.has('gold2') ? 2 : 1),
+    );
     setGold((g) => g + earned);
     setStats((s) => ({ ...s, gold: s.gold + earned, kills: s.kills + 1 }));
     setCleared((prev) => new Set(prev).add(battleRoomId));
@@ -373,16 +390,22 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     setPhase('map');
   }
 
+  function grantBuff(id: string) {
+    setBuffs((prev) => new Set(prev).add(id));
+    if (id === 'tough' || id === 'tough2') {
+      const bonus = id === 'tough' ? 30 : 40;
+      setMaxHp((m) => m + bonus);
+      setHp((h) => h + bonus);
+    }
+    if (id === 'pack' || id === 'pack2') {
+      const count = id === 'pack' ? 2 : 3;
+      const extra = [...copy.items].sort(() => Math.random() - 0.5).slice(0, count);
+      setItems((prev) => [...prev, ...extra.map((i) => i.id)].slice(0, DUNGEON_CONFIG.maxItems + 3));
+    }
+  }
+
   function chooseBuff(buff: Copy['buffs'][number]) {
-    setBuffs((prev) => new Set(prev).add(buff.id));
-    if (buff.id === 'tough') {
-      setMaxHp((m) => m + 30);
-      setHp((h) => h + 30);
-    }
-    if (buff.id === 'pack') {
-      const extra = [...copy.items].sort(() => Math.random() - 0.5).slice(0, 2);
-      setItems((prev) => [...prev, ...extra.map((i) => i.id)].slice(0, DUNGEON_CONFIG.maxItems + 2));
-    }
+    grantBuff(buff.id);
     setBuffChoices([]);
     nextLayer();
   }
@@ -402,9 +425,39 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
       setEliminated(wrongs);
     }
     if (id === 'triple') setTriple(true);
-    if (id === 'shield') setShielded(true);
+    if (id === 'shield' || id === 'ward') setShielded(true);
     if (id === 'hourglass' && battle?.kind === 'boss') {
       setTimeLeft((t) => (t ?? 0) + 15);
+    }
+    if (id === 'freeze' && battle?.kind === 'boss') {
+      setTimeLeft((t) => (t ?? 0) + 30);
+    }
+    if (id === 'gold') {
+      setGold((g) => g + 60);
+      setStats((s) => ({ ...s, gold: s.gold + 60 }));
+    }
+    if (id === 'reroll') {
+      const draw = drawQuestion(copy.questions, difficulty, used);
+      if (draw) {
+        setQuestion(draw.question);
+        setUsed(draw.used);
+        setChoice(null);
+        setFeedback(null);
+        setEliminated([]);
+        setTriple(false);
+        setTimeLeft(battle?.kind === 'boss' ? battle.seconds : null);
+      }
+    }
+    if (id === 'bomb' && battle) {
+      if (!battle.broken && battle.confidence > 0) {
+        const confidence = battle.confidence - 1;
+        setBattle({ ...battle, confidence, broken: confidence === 0 });
+      } else {
+        setBattle({ ...battle, hp: Math.max(0, battle.hp - 2) });
+      }
+      setEnemyHit(true);
+      blip(440, 120, 'triangle');
+      window.setTimeout(() => setEnemyHit(false), 360);
     }
     setItems((prev) => {
       const index = prev.indexOf(id);
@@ -605,16 +658,20 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
           {Array.from(new Set(items)).map((id) => {
             const item = copy.items.find((i) => i.id === id)!;
             return (
-              <button
-                key={id}
-                type="button"
-                disabled={usedItemThisQuestion || feedback !== null}
-                onClick={() => applyItem(id)}
-                className="flex items-center gap-1 rounded-pill border-2 border-line bg-butter-soft px-2 py-1 text-xs font-semibold disabled:opacity-40"
-              >
-                <span>{item.icon}</span>
-                {item.name} ×{items.filter((x) => x === id).length}
-              </button>
+              <span key={id} className="group relative">
+                <button
+                  type="button"
+                  disabled={usedItemThisQuestion || feedback !== null}
+                  onClick={() => applyItem(id)}
+                  className="flex items-center gap-1 rounded-pill border-2 border-line bg-butter-soft px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
+                >
+                  <span>{item.icon}</span>
+                  {item.name} ×{items.filter((x) => x === id).length}
+                </button>
+                <span className="pointer-events-none absolute bottom-full left-0 z-30 mb-1 hidden w-60 rounded-lg border-2 border-line bg-paper p-2 text-xs font-normal text-ink shadow-sticker-sm group-hover:block">
+                  {item.name}: {item.description}
+                </span>
+              </span>
             );
           })}
         </div>
@@ -626,21 +683,17 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     return (
       <div className="mx-auto flex max-w-md flex-col gap-4 rounded-blob border-2 border-line bg-paper p-5 shadow-sticker">
         <p className="font-display text-xl font-bold">{L.chestTitle}</p>
-        <p className="text-sm text-ink-soft">{L.chestBody}</p>
+        <p className="text-base text-ink-soft">{L.chestBody}</p>
         <div className="rounded-blob border-2 border-line bg-butter-soft p-3">
           <p className="font-display font-bold">
             {chestBuff.icon} {chestBuff.name}
           </p>
-          <p className="text-xs text-ink-soft">{chestBuff.description}</p>
+          <p className="text-sm text-ink-soft">{chestBuff.description}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
             onClick={() => {
-              setBuffs((prev) => new Set(prev).add(chestBuff.id));
-              if (chestBuff.id === 'tough') {
-                setMaxHp((m) => m + 30);
-                setHp((h) => h + 30);
-              }
+              grantBuff(chestBuff.id);
               setCleared((prev) => new Set(prev).add(roomId));
               setChestBuff(null);
               setPhase('map');
@@ -674,7 +727,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
   }
 
   if (phase === 'shop') {
-    const price = DUNGEON_CONFIG.buffPrice[difficulty];
+    const price = Math.round(DUNGEON_CONFIG.buffPrice[difficulty] * (buffs.has('discount') ? 0.7 : 1));
     return (
       <div className="mx-auto flex max-w-xl flex-col gap-3">
         <div className="flex items-center justify-between rounded-blob border-2 border-line bg-ink px-4 py-2 text-cream shadow-sticker-sm">
@@ -690,7 +743,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
                 <p className="font-display font-bold">
                   {shopStock.buff.icon} {shopStock.buff.name}
                 </p>
-                <p className="text-xs text-ink-soft">{shopStock.buff.description}</p>
+                <p className="text-sm text-ink-soft">{shopStock.buff.description}</p>
               </div>
               <Button
                 size="sm"
@@ -698,7 +751,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
                 onClick={() => {
                   if (gold < price) return;
                   setGold((g) => g - price);
-                  setBuffs((prev) => new Set(prev).add(shopStock.buff!.id));
+                  grantBuff(shopStock.buff!.id);
                   if (shopStock.buff!.id === 'tough') {
                     setMaxHp((m) => m + 30);
                     setHp((h) => h + 30);
@@ -716,7 +769,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
                 <p className="font-display font-bold">
                   {item.icon} {item.name}
                 </p>
-                <p className="text-xs text-ink-soft">{item.description}</p>
+                <p className="text-sm text-ink-soft">{item.description}</p>
               </div>
               <Button
                 size="sm"
@@ -752,7 +805,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
       <div className="mx-auto flex max-w-xl flex-col gap-3">
         <div className="rounded-blob border-2 border-line bg-butter-soft p-4 shadow-sticker-sm">
           <p className="font-display text-xl font-bold">{L.buffTitle}</p>
-          <p className="text-sm text-ink-soft">{L.buffBody}</p>
+          <p className="text-base text-ink-soft">{L.buffBody}</p>
         </div>
         <div className="grid gap-2 sm:grid-cols-3">
           {buffChoices.map((buff) => (
@@ -764,7 +817,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
             >
               <p className="text-2xl">{buff.icon}</p>
               <p className="mt-1 font-display font-bold">{buff.name}</p>
-              <p className="text-xs text-ink-soft">{buff.description}</p>
+              <p className="text-sm text-ink-soft">{buff.description}</p>
             </button>
           ))}
         </div>
@@ -810,10 +863,14 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
                   type="button"
                   disabled={!reachable && !here}
                   onClick={() => moveTo(room)}
+                  style={{
+                    boxShadow:
+                      '0 5px 0 0 var(--color-line), inset 0 2px 0 0 rgba(255,255,255,.55)',
+                  }}
                   className={cn(
-                    'relative grid aspect-square place-items-center rounded-lg border-2 text-2xl transition-transform',
-                    here ? 'border-coral bg-paper shadow-sticker' : wasVisited ? 'border-line bg-paper' : 'border-line/40 bg-paper/60',
-                    reachable && !here && 'animate-pulse border-butter bg-butter-soft',
+                    'relative grid aspect-square place-items-center rounded-lg border-2 border-line bg-gradient-to-b from-paper to-cream text-2xl transition-all duration-150 hover:-translate-y-0.5',
+                    here ? 'border-coral from-coral-soft to-paper shadow-sticker' : '',
+                    reachable && !here && 'animate-pulse border-butter from-butter-soft to-paper',
                     isCleared && 'opacity-60',
                   )}
                 >
@@ -832,7 +889,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
           </div>
         </div>
 
-        <p className="text-xs text-ink-soft">{L.move}</p>
+        <p className="text-sm text-ink-soft">{L.move}</p>
 
         <div className="flex flex-wrap gap-2">
           {currentRoom?.connections.map((id) => {

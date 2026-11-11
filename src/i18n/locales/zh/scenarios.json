@@ -20,7 +20,9 @@
     "interviewsSubtitle": "七种形式。一次一道题，卡住时会给你提示。",
     "coach": "教练",
     "footer": "场景得分也会计入经验值，所以 Pip 也会跟着你成长。这不是招聘工具：这里不评判你这个人，只看这一次尝试。",
-    "formats": "{count} 种形式"
+    "formats": "{count} 种形式",
+    "featured": "精选 · Roguelike",
+    "moreWays": "更多练习方式"
   },
   "widget": {
     "subtitle": "在这里练习，让每一个选择一路延续",

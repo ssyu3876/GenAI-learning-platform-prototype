@@ -7,6 +7,7 @@ import type { InterviewRunState, ShipState, SprintState } from './engine';
 import { INTERVIEW_TYPES } from './content/interview';
 import { SHIP_IT } from './content/ship-it';
 import { SPRINT_ZERO } from './content/sprint-zero';
+import { RELEASE_WEEK } from './content/release-week';
 import { getLocale } from '@/i18n';
 import { localizeContent } from '@/i18n/content';
 
@@ -34,7 +35,9 @@ function isCompatible(key: string, state: unknown): boolean {
   // The version alone was not enough: an earlier build also used 2 but had no `drawn`.
   // Check the fields the page actually reads, so a shape change can never crash a render.
   if (key === 'ship-it') return s.kind === 'ship' && Array.isArray(s.drawn);
-  if (key === 'sprint-zero') return s.kind === 'sprint' && Array.isArray(s.drawn) && Array.isArray(s.allHistory);
+  if (key === 'sprint-zero' || key === 'release-week') {
+    return s.kind === 'sprint' && Array.isArray(s.drawn) && Array.isArray(s.allHistory);
+  }
   return s.kind === 'interview' && typeof s.interview === 'object' && s.interview !== null;
 }
 
@@ -130,7 +133,7 @@ export function runProgress(key: string, run: StoredRun | undefined, zh = false)
     };
   }
 
-  const total = 24;
+  const total = key === 'release-week' ? 9 : 24;
   const done = run.state.kind === 'sprint' ? run.state.allHistory.length : 0;
   const finished = run.completions > 0 && done === 0;
   return {
@@ -140,8 +143,8 @@ export function runProgress(key: string, run: StoredRun | undefined, zh = false)
         ? `最佳 ${run.bestScore}/100`
         : `Best ${run.bestScore}/100`
       : zh
-        ? `已做 ${done}/${total} 个决定`
-        : `${done} of ${total} decisions`,
+        ? `已做 ${Math.min(done, total)}/${total} 个决定`
+        : `${Math.min(done, total)} of ${total} decisions`,
     percent: Math.round((Math.min(done, total) / total) * 100),
     best: run.bestScore,
     completions: run.completions,
@@ -165,6 +168,7 @@ export async function getScenarioCards(userId: string): Promise<ScenarioCardData
   const runs = await getAllRuns(userId);
   const ship = localizeContent(SHIP_IT, locale);
   const sprint = localizeContent(SPRINT_ZERO, locale);
+  const release = localizeContent(RELEASE_WEEK, locale);
   const interviewsCopy = localizeContent(INTERVIEW_TYPES, locale);
 
   const main: ScenarioCardData[] = [
@@ -187,6 +191,16 @@ export async function getScenarioCards(userId: string): Promise<ScenarioCardData
       minutes: sprint.minutes,
       href: '/scenarios/sprint-zero',
       progress: runProgress('sprint-zero', runs.get('sprint-zero'), zh),
+    },
+    {
+      key: 'release-week',
+      title: release.title,
+      tagline: release.tagline,
+      summary: release.summary,
+      meta: release.meta,
+      minutes: release.minutes,
+      href: '/scenarios/release-week',
+      progress: runProgress('release-week', runs.get('release-week'), zh),
     },
   ];
 

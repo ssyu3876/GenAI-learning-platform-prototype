@@ -41,6 +41,7 @@ import {
 import { scenarioRuns } from './schema';
 import { getRun } from './queries';
 import { SPRINT_ZERO } from './content/sprint-zero';
+import { RELEASE_WEEK } from './content/release-week';
 import { SHIP_IT } from './content/ship-it';
 
 export type AnyState = ShipState | SprintState | InterviewRunState;
@@ -98,7 +99,7 @@ async function awardIfFinished(userId: string, key: string, state: AnyState): Pr
     if (finished) score = shipScore(state);
   } else if (state.kind === 'sprint') {
     finished = state.view === 'ending';
-    if (finished) score = sprintScore(state);
+    if (finished) score = sprintScore(state, key === RELEASE_WEEK.key ? RELEASE_WEEK : SPRINT_ZERO);
   } else if (state.interview) {
     const { locale } = await getT();
     const rawType = interviewType(state.interview.typeId);
@@ -145,16 +146,25 @@ async function persist(userId: string, key: string, next: AnyState): Promise<Act
 
 const startSchema = z.object({ key: keySchema });
 
+/** Both long scenarios share the sprint state machine; only the content differs. */
+function sprintScenarioFor(key: string) {
+  return key === RELEASE_WEEK.key ? RELEASE_WEEK : SPRINT_ZERO;
+}
+
+function isSprintScenarioKey(key: string): boolean {
+  return key === SPRINT_ZERO.key || key === RELEASE_WEEK.key;
+}
+
 export async function startScenario(input: z.infer<typeof startSchema>): Promise<ActionResult> {
   const user = await requireUser();
   const { key } = startSchema.parse(input);
-  if (key !== SHIP_IT.key && key !== SPRINT_ZERO.key) {
+  if (key !== SHIP_IT.key && !isSprintScenarioKey(key)) {
     return { ok: false, error: 'Unknown scenario.' };
   }
   const existing = await getRun(user.id, key);
   if (existing && existing.status === 'active') return { ok: true, message: 'Resumed.' };
 
-  const fresh = key === SHIP_IT.key ? startShip() : startSprint();
+  const fresh = key === SHIP_IT.key ? startShip() : startSprint(sprintScenarioFor(key));
   await saveState(user.id, key, fresh, { status: 'active' });
   revalidatePath('/scenarios');
   revalidatePath(`/scenarios/${key}`);
@@ -164,10 +174,10 @@ export async function startScenario(input: z.infer<typeof startSchema>): Promise
 export async function resetScenario(input: z.infer<typeof startSchema>): Promise<ActionResult> {
   const user = await requireUser();
   const { key } = startSchema.parse(input);
-  if (key !== SHIP_IT.key && key !== SPRINT_ZERO.key) {
+  if (key !== SHIP_IT.key && !isSprintScenarioKey(key)) {
     return { ok: false, error: 'Unknown scenario.' };
   }
-  const fresh = key === SHIP_IT.key ? startShip() : startSprint();
+  const fresh = key === SHIP_IT.key ? startShip() : startSprint(sprintScenarioFor(key));
   await saveState(user.id, key, fresh, { status: 'active' });
   revalidatePath(`/scenarios/${key}`);
   return { ok: true, message: 'Reset.' };
@@ -260,6 +270,43 @@ export async function sprintLeaveWeekSummary(): Promise<ActionResult> {
   const state = await loadState<SprintState>(user.id, SPRINT_ZERO.key);
   if (!state || state.kind !== 'sprint') return { ok: false, error: 'Nothing in progress.' };
   return persist(user.id, SPRINT_ZERO.key, sprintLeaveSummary(state));
+}
+
+// ---------------------------------------------------------------------------
+// Release Week
+// ---------------------------------------------------------------------------
+
+export async function releaseEnter(input: z.infer<typeof enterWeekSchema>): Promise<ActionResult> {
+  const user = await requireUser();
+  const { week } = enterWeekSchema.parse(input);
+  const state = await loadState<SprintState>(user.id, RELEASE_WEEK.key);
+  if (!state || state.kind !== 'sprint') return { ok: false, error: 'Start the scenario first.' };
+
+  // A fresh seed each time you enter, so two runs of the same week differ.
+  const seed = Math.floor(Math.random() * 2 ** 31);
+  return persist(user.id, RELEASE_WEEK.key, sprintEnterWeek(state, week, seed, RELEASE_WEEK));
+}
+
+export async function releasePick(input: z.infer<typeof sprintChooseSchema>): Promise<ActionResult> {
+  const user = await requireUser();
+  const data = sprintChooseSchema.parse(input);
+  const state = await loadState<SprintState>(user.id, RELEASE_WEEK.key);
+  if (!state || state.kind !== 'sprint') return { ok: false, error: 'Start the scenario first.' };
+  return persist(user.id, RELEASE_WEEK.key, sprintChoose(state, data.choiceId, data.timedOut, RELEASE_WEEK));
+}
+
+export async function releaseGoOn(): Promise<ActionResult> {
+  const user = await requireUser();
+  const state = await loadState<SprintState>(user.id, RELEASE_WEEK.key);
+  if (!state || state.kind !== 'sprint') return { ok: false, error: 'Nothing in progress.' };
+  return persist(user.id, RELEASE_WEEK.key, sprintAdvance(state, RELEASE_WEEK));
+}
+
+export async function releaseLeaveWeekSummary(): Promise<ActionResult> {
+  const user = await requireUser();
+  const state = await loadState<SprintState>(user.id, RELEASE_WEEK.key);
+  if (!state || state.kind !== 'sprint') return { ok: false, error: 'Nothing in progress.' };
+  return persist(user.id, RELEASE_WEEK.key, sprintLeaveSummary(state));
 }
 
 // ---------------------------------------------------------------------------

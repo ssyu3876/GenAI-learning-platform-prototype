@@ -150,4 +150,6 @@ export interface SprintScenario {
   weeks: SprintWeek[];
   ending: (stats: Stats, history: HistoryEntry[]) => SprintEnding;
   score: (stats: Stats, history: HistoryEntry[]) => number;
+  /** Optional week-summary advice for a scenario whose stats need different wording. */
+  advice?: (stats: Stats) => string;
 }

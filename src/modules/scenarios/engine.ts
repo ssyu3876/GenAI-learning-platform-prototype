@@ -478,8 +478,8 @@ export function drawWeek(
   return picked.sort((a, b) => a.index - b.index).map((p) => p.id);
 }
 
-export function startSprint(): SprintState {
-  const stats = SPRINT_ZERO.start();
+export function startSprint(scenario: SprintScenario = SPRINT_ZERO): SprintState {
+  const stats = scenario.start();
   return {
     version: 3,
     kind: 'sprint',
@@ -491,19 +491,19 @@ export function startSprint(): SprintState {
     weekStart: stats,
     weekHistory: [],
     allHistory: [],
-    completed: SPRINT_ZERO.weeks.map(() => false),
-    weekStarts: SPRINT_ZERO.weeks.map(() => null),
+    completed: scenario.weeks.map(() => false),
+    weekStarts: scenario.weeks.map(() => null),
     pending: null,
     fatal: null,
   };
 }
 
-export function sprintWeekDef(week: number) {
-  return SPRINT_ZERO.weeks[week] ?? null;
+export function sprintWeekDef(week: number, scenario: SprintScenario = SPRINT_ZERO) {
+  return scenario.weeks[week] ?? null;
 }
 
-export function sprintStep(state: SprintState): SprintStep | null {
-  const week = sprintWeekDef(state.week);
+export function sprintStep(state: SprintState, scenario: SprintScenario = SPRINT_ZERO): SprintStep | null {
+  const week = sprintWeekDef(state.week, scenario);
   if (!week) return null;
   const id = state.drawn[state.stepIndex];
   return week.bank.find((s) => s.id === id) ?? null;
@@ -519,8 +519,13 @@ function clampStats(stats: Stats): Stats {
 }
 
 /** Open a week: draw its questions and remember the stats it starts on. */
-export function sprintEnterWeek(state: SprintState, week: number, seed: number): SprintState {
-  const def = sprintWeekDef(week);
+export function sprintEnterWeek(
+  state: SprintState,
+  week: number,
+  seed: number,
+  scenario: SprintScenario = SPRINT_ZERO,
+): SprintState {
+  const def = sprintWeekDef(week, scenario);
   if (!def) return state;
 
   const completed = [...state.completed];
@@ -546,8 +551,13 @@ export function sprintEnterWeek(state: SprintState, week: number, seed: number):
   };
 }
 
-export function sprintChoose(state: SprintState, choiceId: string, timedOut = false): SprintState {
-  const step = sprintStep(state);
+export function sprintChoose(
+  state: SprintState,
+  choiceId: string,
+  timedOut = false,
+  scenario: SprintScenario = SPRINT_ZERO,
+): SprintState {
+  const step = sprintStep(state, scenario);
   if (!step || state.pending || state.view !== 'week') return state;
 
   const choice = step.choices.find((c) => c.id === choiceId) ?? step.choices[0]!;
@@ -591,8 +601,8 @@ export function sprintChoose(state: SprintState, choiceId: string, timedOut = fa
 }
 
 /** Close the result panel and either ask the next question or end the week. */
-export function sprintAdvance(state: SprintState): SprintState {
-  const week = sprintWeekDef(state.week);
+export function sprintAdvance(state: SprintState, scenario: SprintScenario = SPRINT_ZERO): SprintState {
+  const week = sprintWeekDef(state.week, scenario);
   if (!week) return state;
 
   const next = state.stepIndex + 1;
@@ -601,7 +611,7 @@ export function sprintAdvance(state: SprintState): SprintState {
     completed[state.week] = true;
     const weekStarts = [...state.weekStarts];
     weekStarts[state.week + 1] = { ...state.stats };
-    const last = state.week >= SPRINT_ZERO.weeks.length - 1;
+    const last = state.week >= scenario.weeks.length - 1;
     return {
       ...state,
       stepIndex: next,
@@ -620,7 +630,7 @@ export function sprintLeaveSummary(state: SprintState): SprintState {
 }
 
 /** What changed during the week, and one sentence about what to watch. */
-export function sprintWeekSummary(state: SprintState) {
+export function sprintWeekSummary(state: SprintState, scenario: SprintScenario = SPRINT_ZERO) {
   const keys: StatKey[] = ['budget', 'morale', 'users', 'quality'];
   const delta = keys.map((key) => ({
     key,
@@ -633,7 +643,9 @@ export function sprintWeekSummary(state: SprintState) {
   const best = [...delta].sort((a, b) => b.change - a.change)[0];
 
   let advice: string;
-  if (state.stats.morale <= 30) {
+  if (scenario.advice) {
+    advice = scenario.advice(state.stats);
+  } else if (state.stats.morale <= 30) {
     advice = 'Morale is close to breaking. Anything that buys the team a day is worth more than a feature this week.';
   } else if (state.stats.quality <= 30) {
     advice = 'Quality is low enough that the next bug will be expensive. Spend a decision on it rather than on scope.';
@@ -648,7 +660,7 @@ export function sprintWeekSummary(state: SprintState) {
   return { delta, worst, best, advice };
 }
 
-export function sprintEnding(state: SprintState): SprintEnding {
+export function sprintEnding(state: SprintState, scenario: SprintScenario = SPRINT_ZERO): SprintEnding {
   if (state.fatal) {
     return {
       key: 'fatal',
@@ -659,12 +671,12 @@ export function sprintEnding(state: SprintState): SprintEnding {
       takeaway: 'Some options are survivable and some are not. Reversibility is the question to ask first.',
     };
   }
-  return SPRINT_ZERO.ending(state.stats, state.allHistory);
+  return scenario.ending(state.stats, state.allHistory);
 }
 
-export function sprintScore(state: SprintState): number {
+export function sprintScore(state: SprintState, scenario: SprintScenario = SPRINT_ZERO): number {
   if (state.fatal) return 0;
-  return SPRINT_ZERO.score(state.stats, state.allHistory);
+  return scenario.score(state.stats, state.allHistory);
 }
 
 // ---------------------------------------------------------------------------

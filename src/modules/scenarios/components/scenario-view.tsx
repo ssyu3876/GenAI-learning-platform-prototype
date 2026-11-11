@@ -27,6 +27,7 @@ import {
 } from '../engine';
 import { SHIP_IT } from '../content/ship-it';
 import { SPRINT_ZERO } from '../content/sprint-zero';
+import { RELEASE_WEEK } from '../content/release-week';
 import { StartPanel } from './start-panel';
 import { ShipRunner } from './ship-runner';
 import { SprintRunner } from './sprint-runner';
@@ -66,11 +67,14 @@ function Intro({
 }
 
 export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; scenarioKey: string }) {
-  if (scenarioKey !== SHIP_IT.key && scenarioKey !== SPRINT_ZERO.key) notFound();
+  if (scenarioKey !== SHIP_IT.key && scenarioKey !== SPRINT_ZERO.key && scenarioKey !== RELEASE_WEEK.key) {
+    notFound();
+  }
 
   const { locale, t } = await getT();
   const shipCopy = localizeContent(SHIP_IT, locale);
   const sprintCopy = localizeContent(SPRINT_ZERO, locale);
+  const releaseCopy = localizeContent(RELEASE_WEEK, locale);
   const statLabels: Record<string, string> = {
     budget: t.scenarios.stats.budget,
     morale: t.scenarios.stats.morale,
@@ -84,11 +88,13 @@ export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; s
   const started = run !== null && (run.status === 'active' || !!state);
 
   const isShip = scenarioKey === SHIP_IT.key;
+  const isRelease = scenarioKey === RELEASE_WEEK.key;
+  const longCopy = isRelease ? releaseCopy : sprintCopy;
   const header = (
     <PageHeader
-      eyebrow={isShip ? shipCopy.meta : sprintCopy.meta}
-      title={isShip ? shipCopy.title : sprintCopy.title}
-      subtitle={isShip ? shipCopy.tagline : sprintCopy.tagline}
+      eyebrow={isShip ? shipCopy.meta : longCopy.meta}
+      title={isShip ? shipCopy.title : longCopy.title}
+      subtitle={isShip ? shipCopy.tagline : longCopy.tagline}
     />
   );
 
@@ -163,29 +169,35 @@ export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; s
     );
   }
 
-  // ---- Sprint Zero ----
-  const sprint = (state ?? startSprint()) as SprintState;
-  const rawStep = sprintStep(sprint);
+  // ---- Sprint Zero / Release Week ----
+  const scenarioDef = isRelease ? RELEASE_WEEK : SPRINT_ZERO;
+  const sprint = (state ?? startSprint(scenarioDef)) as SprintState;
+  const rawStep = sprintStep(sprint, scenarioDef);
   const step = rawStep ? localizeContent(rawStep, locale) : null;
-  const weekDef = sprintWeekDef(sprint.week);
-  const localizedWeeks = localizeContent(sprintCopy.weeks, locale);
+  const weekDef = sprintWeekDef(sprint.week, scenarioDef);
+  const localizedWeeks = localizeContent(longCopy.weeks, locale);
   const drawnCount = sprint.drawn.length || (weekDef ? weekDef.draw[0] + weekDef.draw[1] + weekDef.draw[2] : 8);
+  const statLabel = (key: string) =>
+    isRelease
+      ? (longCopy.stats.find((s) => s.key === key)?.label ?? key)
+      : (statLabels[key] ?? key);
 
   if (!started && sprint.view === 'select' && sprint.allHistory.length === 0) {
     return (
       <div className="flex flex-col gap-6">
         {header}
-        <Intro title={sprintCopy.title} summary={sprintCopy.summary} scenarioKey={SPRINT_ZERO.key} stage={stage} t={t} />
+        <Intro title={longCopy.title} summary={longCopy.summary} scenarioKey={scenarioDef.key} stage={stage} t={t} />
       </div>
     );
   }
 
-  const summary = sprint.view === 'summary' ? localizeContent(sprintWeekSummary(sprint), locale) : null;
+  const summary =
+    sprint.view === 'summary' ? localizeContent(sprintWeekSummary(sprint, scenarioDef), locale) : null;
   const endingNow =
     sprint.view === 'ending'
       ? {
-          ...localizeContent(sprintEnding(sprint), locale),
-          score: sprintScore(sprint),
+          ...localizeContent(sprintEnding(sprint, scenarioDef), locale),
+          score: sprintScore(sprint, scenarioDef),
           fatal: Boolean(sprint.fatal),
         }
       : null;
@@ -195,11 +207,12 @@ export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; s
     <div className="flex flex-col gap-6">
       {header}
       <SprintRunner
+        scenarioKey={scenarioDef.key}
         view={sprint.view}
         week={sprint.week}
-        stats={sprintCopy.stats.map((s) => ({
+        stats={longCopy.stats.map((s) => ({
           key: s.key,
-          label: statLabels[s.key] ?? s.label,
+          label: statLabel(s.key),
           value: sprint.stats[s.key],
           max: s.max,
           danger: s.danger,
@@ -238,7 +251,7 @@ export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; s
                 outcome: pending.outcome,
                 deltas: Object.entries(pending.effects)
                   .filter(([, v]) => v !== 0)
-                  .map(([k, v]) => ({ label: statLabels[k] ?? k, value: v as number })),
+                  .map(([k, v]) => ({ label: statLabel(k), value: v as number })),
                 timedOut: pending.timedOut,
               }
             : null
@@ -247,7 +260,7 @@ export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; s
           summary
             ? {
                 delta: summary.delta.map((d) => ({
-                  label: statLabels[d.key] ?? d.key,
+                  label: statLabel(d.key),
                   from: d.from,
                   to: d.to,
                   change: d.change,

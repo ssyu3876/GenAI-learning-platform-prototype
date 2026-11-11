@@ -11,12 +11,14 @@
 import { Fragment, useId, type ReactNode } from 'react';
 import {
   Activity,
+  AlertTriangle,
   ArrowRight,
   Check,
   CircleCheck,
   CircleDashed,
   CircleX,
   ClipboardCheck,
+  Code,
   ClipboardList,
   Clock,
   Cloud,
@@ -26,8 +28,10 @@ import {
   GitMerge,
   Goal,
   Hammer,
+  HelpCircle,
   History,
   Lightbulb,
+  MapPin,
   Link2,
   ListOrdered,
   LoaderCircle,
@@ -50,6 +54,8 @@ import {
   Split,
   Store,
   Sunrise,
+  Target,
+  Trophy,
   Undo2,
   UserMinus,
   UserRound,
@@ -76,6 +82,11 @@ export const SLIDE_VISUALS = [
   'test-pyramid',
   'ci-pipeline',
   'safe-release',
+  'tone-meter',
+  'star-stack',
+  'dialogue-review',
+  'dialogue-interview',
+  'dialogue-client',
 ] as const;
 export type SlideVisualName = (typeof SLIDE_VISUALS)[number];
 
@@ -797,6 +808,192 @@ function SafeRelease({ active }: VisualProps) {
   );
 }
 
+function ToneMeter() {
+  return (
+    <div className="grid gap-3">
+      <div className="flex items-stretch gap-2">
+        <div className="flex flex-1 items-center gap-2 rounded-blob border-2 border-line bg-cream px-3 py-2">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-coral-deep" aria-hidden />
+          <div className="flex flex-1 flex-col gap-1.5" aria-hidden>
+            <span className="h-2 w-11/12 rounded-pill bg-ink/20" />
+            <span className="h-2 w-2/3 rounded-pill bg-ink/15" />
+          </div>
+          <X className="h-4 w-4 shrink-0 text-coral-deep" aria-hidden />
+        </div>
+        <div className="flex flex-1 items-center gap-2 rounded-blob border-2 border-line bg-mint-soft px-3 py-2">
+          <Check className="h-4 w-4 shrink-0 text-mint-deep" aria-hidden />
+          <div className="flex flex-1 flex-col gap-1.5" aria-hidden>
+            <span className="h-2 w-3/4 rounded-pill bg-ink/30" />
+            <span className="h-2 w-1/2 rounded-pill bg-ink/20" />
+          </div>
+          <Check className="h-4 w-4 shrink-0 text-mint-deep" aria-hidden />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <AlertTriangle className="h-4 w-4 shrink-0 text-coral-deep" aria-hidden />
+        <div className="relative h-3 flex-1 overflow-hidden rounded-pill border-2 border-line bg-paper" aria-hidden>
+          <span className="absolute inset-y-0 left-0 w-1/3 bg-coral" />
+          <span className="absolute inset-y-0 left-1/3 w-1/3 bg-butter" />
+          <span className="absolute inset-y-0 right-0 w-1/3 bg-mint" />
+          <span className="absolute top-1/2 left-[68%] h-5 w-1 -translate-y-1/2 rounded-pill bg-line" />
+        </div>
+        <Check className="h-4 w-4 shrink-0 text-mint-deep" aria-hidden />
+      </div>
+    </div>
+  );
+}
+
+const STAR_BOXES = [
+  { letter: 'S', icon: MapPin, tone: 'bg-coral-soft' },
+  { letter: 'T', icon: Target, tone: 'bg-butter-soft' },
+  { letter: 'A', icon: Wrench, tone: 'bg-sky-soft' },
+  { letter: 'R', icon: Trophy, tone: 'bg-mint-soft' },
+] as const;
+
+/** The four STAR boxes, in order. The letters are the same in both languages. */
+function StarStack({ active = null }: VisualProps) {
+  return (
+    <div className="flex items-stretch gap-2">
+      {STAR_BOXES.map(({ letter, icon: Icon, tone }, i) => {
+        const visible = active === null || active >= i;
+        return (
+          <div key={letter} className="flex flex-1 items-center gap-2">
+            <div
+              className={cn(
+                'flex flex-1 flex-col items-center gap-1 rounded-blob border-2 border-line px-2 py-3 transition-all duration-300',
+                tone,
+                visible ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0',
+              )}
+            >
+              <span className="font-display text-xl leading-none font-bold">{letter}</span>
+              <Icon className="h-5 w-5 text-ink" aria-hidden />
+            </div>
+            {i < STAR_BOXES.length - 1 ? (
+              <ArrowRight className="h-4 w-4 shrink-0 text-ink-soft" aria-hidden />
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** A small friendly face, used in the dialogue scenes. No words, so it works in both locales. */
+function Face({
+  tone,
+  mood,
+  flip,
+}: {
+  tone: string;
+  mood: 'happy' | 'think' | 'worried';
+  flip?: boolean;
+}) {
+  const mouth =
+    mood === 'happy' ? 'M24 40 Q32 47 40 40' : mood === 'think' ? 'M25 41 H39' : 'M24 44 Q32 38 40 44';
+  return (
+    <svg viewBox="0 0 64 64" className={cn('h-20 w-20 shrink-0', flip && '-scale-x-100')} aria-hidden>
+      <circle cx="32" cy="34" r="23" strokeWidth={3} className={cn('stroke-line', tone)} />
+      <path d="M13 27 Q18 9 32 9 Q46 9 51 27" fill="none" strokeWidth={3} strokeLinecap="round" className="stroke-line" />
+      <circle cx="24" cy="31" r="2.5" className="fill-ink" />
+      <circle cx="40" cy="31" r="2.5" className="fill-ink" />
+      <path d={mouth} fill="none" strokeWidth={2.5} strokeLinecap="round" className="stroke-line" />
+    </svg>
+  );
+}
+
+function Bubble({ tone, show = true, children }: { tone: string; show?: boolean; children: ReactNode }) {
+  return (
+    <div
+      className={cn(
+        'rounded-blob border-2 border-line px-3 py-2 shadow-sticker-sm transition-all duration-300',
+        tone,
+        show ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0',
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** Reviewer points at the line; the author listens. Bubbles appear with the narration. */
+function DialogueReview({ active = null }: VisualProps) {
+  const show = (at: number) => active === null || active >= at;
+  return (
+    <div className="grid grid-cols-2 items-end gap-3">
+      <div className="flex flex-col items-center gap-2">
+        <Bubble tone="bg-cream" show={show(0)}>
+          <HelpCircle className="h-4 w-4 text-ink-soft" aria-hidden />
+        </Bubble>
+        <Face tone="fill-butter-soft" mood="worried" />
+      </div>
+      <div className="flex flex-col items-center gap-2">
+        <Bubble tone="bg-mint-soft" show={show(2)}>
+          <div className="flex items-center gap-2">
+            <Code className="h-4 w-4 text-ink-soft" aria-hidden />
+            <span className="h-2 w-16 rounded-pill bg-ink/25" aria-hidden />
+            <Check className="h-4 w-4 text-mint-deep" aria-hidden />
+          </div>
+        </Bubble>
+        <Face tone="fill-mint-soft" mood="happy" flip />
+      </div>
+    </div>
+  );
+}
+
+/** The candidate answers with the four STAR beats; the interviewer asks for more. */
+function DialogueInterview({ active = null }: VisualProps) {
+  const show = (at: number) => active === null || active >= at;
+  return (
+    <div className="grid grid-cols-2 items-end gap-3">
+      <div className="flex flex-col items-center gap-2">
+        <Bubble tone="bg-paper" show={show(0)}>
+          <div className="flex items-center gap-1" aria-hidden>
+            {['S', 'T', 'A', 'R'].map((letter) => (
+              <span
+                key={letter}
+                className="grid h-6 w-6 place-items-center rounded-md border-2 border-line bg-butter-soft font-display text-[0.65rem] font-bold"
+              >
+                {letter}
+              </span>
+            ))}
+          </div>
+        </Bubble>
+        <Face tone="fill-coral-soft" mood="happy" />
+      </div>
+      <div className="flex flex-col items-center gap-2">
+        <Bubble tone="bg-sky-soft" show={show(2)}>
+          <HelpCircle className="h-4 w-4 text-ink-soft" aria-hidden />
+        </Bubble>
+        <Face tone="fill-sky-soft" mood="think" flip />
+      </div>
+    </div>
+  );
+}
+
+/** The client is confused; the engineer answers with what changed. */
+function DialogueClient({ active = null }: VisualProps) {
+  const show = (at: number) => active === null || active >= at;
+  return (
+    <div className="grid grid-cols-2 items-end gap-3">
+      <div className="flex flex-col items-center gap-2">
+        <Bubble tone="bg-cream" show={show(0)}>
+          <HelpCircle className="h-4 w-4 text-ink-soft" aria-hidden />
+        </Bubble>
+        <Face tone="fill-lilac-soft" mood="worried" />
+      </div>
+      <div className="flex flex-col items-center gap-2">
+        <Bubble tone="bg-mint-soft" show={show(2)}>
+          <div className="flex items-center gap-1 font-display text-sm font-bold">
+            12s <ArrowRight className="h-3 w-3 text-ink-soft" aria-hidden /> 2s
+          </div>
+        </Bubble>
+        <Face tone="fill-mint-soft" mood="happy" flip />
+      </div>
+    </div>
+  );
+}
+
 const VISUALS: Record<SlideVisualName, (props: VisualProps) => ReactNode> = {
   'impact-first': ImpactFirst,
   'three-moves': ThreeMoves,
@@ -812,6 +1009,11 @@ const VISUALS: Record<SlideVisualName, (props: VisualProps) => ReactNode> = {
   'test-pyramid': TestPyramid,
   'ci-pipeline': CiPipeline,
   'safe-release': SafeRelease,
+  'tone-meter': ToneMeter,
+  'star-stack': StarStack,
+  'dialogue-review': DialogueReview,
+  'dialogue-interview': DialogueInterview,
+  'dialogue-client': DialogueClient,
 };
 
 export function SlideVisual({ name, active = null }: { name: SlideVisualName; active?: number | null }) {

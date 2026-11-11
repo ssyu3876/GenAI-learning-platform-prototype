@@ -10,7 +10,7 @@ export const slidesActivity = defineActivity<SlidesConfig>({
   icon: Presentation,
   schema: slidesConfigSchema,
   promptGuide:
-    '{ "slides": [ { "heading": string, "bullets": string[] (2-4, short), "narration": string (2-4 spoken sentences, conversational, as if explaining to a friend), "visual"?: one of "impact-first" | "three-moves" | "trade-off" (optional diagram) } ] } with 3-5 slides.',
+    '{ "slides": [ { "heading": string, "bullets": string[] (2-4, short), "narration": string (2-4 spoken sentences, conversational, as if explaining to a friend), "visual"?: one of "impact-first" | "three-moves" | "trade-off" | "tone-meter" | "star-stack" | "dialogue-review" | "dialogue-interview" | "dialogue-client" (optional diagram), "check"?: { "question": string, "options": string[] (2-4), "answerIndex": number, "explanation": string } (optional quick check) } ] } with 3-7 slides.',
   defaultConfig: {
     slides: [
       { heading: 'What is a sprint?', bullets: ['A short, fixed time box', 'Usually 1-2 weeks'], narration: 'A sprint is a short, fixed period where a team commits to finishing a small set of work.' },

@@ -19,7 +19,10 @@
     "interviewsTitle": "Practice interviews",
     "interviewsSubtitle": "Seven formats. One question at a time, with hints when you stall.",
     "coach": "Coach",
-    "footer": "Scenario scores add to your XP, so Pip grows from them too. They are not a hiring tool: nothing here is a judgement about you as a person, only about one attempt."
+    "footer": "Scenario scores add to your XP, so Pip grows from them too. They are not a hiring tool: nothing here is a judgement about you as a person, only about one attempt.",
+    "formats": "{count} formats",
+    "featured": "Featured · Roguelike",
+    "moreWays": "More ways to practice"
   },
   "widget": {
     "subtitle": "Practice where your choices carry forward",

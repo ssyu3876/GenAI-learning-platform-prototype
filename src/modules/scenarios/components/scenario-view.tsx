@@ -27,9 +27,11 @@ import {
 } from '../engine';
 import { SHIP_IT } from '../content/ship-it';
 import { SPRINT_ZERO } from '../content/sprint-zero';
+import { DUNGEON } from '../content/dungeon';
 import { StartPanel } from './start-panel';
 import { ShipRunner } from './ship-runner';
 import { SprintRunner } from './sprint-runner';
+import { AgentDungeon } from './agent-dungeon';
 
 function Intro({
   title,
@@ -66,11 +68,12 @@ function Intro({
 }
 
 export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; scenarioKey: string }) {
-  if (scenarioKey !== SHIP_IT.key && scenarioKey !== SPRINT_ZERO.key) notFound();
+  if (scenarioKey !== SHIP_IT.key && scenarioKey !== SPRINT_ZERO.key && scenarioKey !== DUNGEON.key) notFound();
 
   const { locale, t } = await getT();
   const shipCopy = localizeContent(SHIP_IT, locale);
   const sprintCopy = localizeContent(SPRINT_ZERO, locale);
+  const dungeonCopy = localizeContent(DUNGEON, locale);
   const statLabels: Record<string, string> = {
     budget: t.scenarios.stats.budget,
     morale: t.scenarios.stats.morale,
@@ -86,11 +89,21 @@ export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; s
   const isShip = scenarioKey === SHIP_IT.key;
   const header = (
     <PageHeader
-      eyebrow={isShip ? shipCopy.meta : sprintCopy.meta}
-      title={isShip ? shipCopy.title : sprintCopy.title}
-      subtitle={isShip ? shipCopy.tagline : sprintCopy.tagline}
+      eyebrow={scenarioKey === DUNGEON.key ? dungeonCopy.labels.meta : isShip ? shipCopy.meta : sprintCopy.meta}
+      title={scenarioKey === DUNGEON.key ? dungeonCopy.labels.title : isShip ? shipCopy.title : sprintCopy.title}
+      subtitle={scenarioKey === DUNGEON.key ? dungeonCopy.labels.tagline : isShip ? shipCopy.tagline : sprintCopy.tagline}
     />
   );
+
+  // ---- Agent Dungeon ----
+  if (scenarioKey === DUNGEON.key) {
+    return (
+      <div className="flex flex-col gap-6">
+        {header}
+        <AgentDungeon copy={dungeonCopy} />
+      </div>
+    );
+  }
 
   // ---- Ship It ----
   if (scenarioKey === SHIP_IT.key) {

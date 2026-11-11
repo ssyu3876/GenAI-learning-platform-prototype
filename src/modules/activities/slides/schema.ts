@@ -11,6 +11,18 @@ export const slidesConfigSchema = z.object({
         // Optional diagram drawn by the player. Unknown names are ignored, so old decks and
         // AI-generated decks keep working.
         visual: z.string().min(1).max(48).optional(),
+        // Optional extra line under the bullets: an example, a number, or why the idea works.
+        detail: z.string().min(1).max(300).optional(),
+        // Optional one-question check on the slide. It gives instant feedback and never
+        // blocks moving on, so a deck stays usable without it.
+        check: z
+          .object({
+            question: z.string().min(1).max(200),
+            options: z.array(z.string().min(1).max(160)).min(2).max(4),
+            answerIndex: z.number().int().min(0).max(3),
+            explanation: z.string().min(1).max(300),
+          })
+          .optional(),
       }),
     )
     .min(2)

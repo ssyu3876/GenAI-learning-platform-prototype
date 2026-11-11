@@ -7,6 +7,7 @@ import type { InterviewRunState, ShipState, SprintState } from './engine';
 import { INTERVIEW_TYPES } from './content/interview';
 import { SHIP_IT } from './content/ship-it';
 import { SPRINT_ZERO } from './content/sprint-zero';
+import { DUNGEON } from './content/dungeon';
 import { getLocale } from '@/i18n';
 import { localizeContent } from '@/i18n/content';
 
@@ -111,8 +112,17 @@ export function runProgress(key: string, run: StoredRun | undefined, zh = false)
     };
   }
 
-  if (key === 'ship-it') {
-    const total = 9;
+  if (key === 'agent-dungeon') {
+    return {
+      started: false,
+      label: zh ? '3 层' : '3 layers',
+      percent: 0,
+      best: 0,
+      completions: 0,
+    };
+  }
+
+  if (key === 'ship-it') {    const total = 9;
     const done = run.state.kind === 'ship' ? run.state.history.length : 0;
     const finished = run.completions > 0 && done === 0;
     return {
@@ -165,6 +175,7 @@ export async function getScenarioCards(userId: string): Promise<ScenarioCardData
   const runs = await getAllRuns(userId);
   const ship = localizeContent(SHIP_IT, locale);
   const sprint = localizeContent(SPRINT_ZERO, locale);
+  const farm = localizeContent(DUNGEON, locale);
   const interviewsCopy = localizeContent(INTERVIEW_TYPES, locale);
 
   const main: ScenarioCardData[] = [
@@ -187,6 +198,16 @@ export async function getScenarioCards(userId: string): Promise<ScenarioCardData
       minutes: sprint.minutes,
       href: '/scenarios/sprint-zero',
       progress: runProgress('sprint-zero', runs.get('sprint-zero'), zh),
+    },
+    {
+      key: 'agent-dungeon',
+      title: farm.labels.title,
+      tagline: farm.labels.tagline,
+      summary: farm.labels.summary,
+      meta: farm.labels.meta,
+      minutes: 10,
+      href: '/scenarios/agent-dungeon',
+      progress: runProgress('agent-dungeon', runs.get('agent-dungeon'), zh),
     },
   ];
 

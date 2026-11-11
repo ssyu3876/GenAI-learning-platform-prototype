@@ -23,6 +23,11 @@ import {
 } from 'lucide-react';
 import { cn } from '@/components/ui';
 
+export interface SlideVisualProps {
+  /** Current narration sentence, or null when the narration is not playing. */
+  progress?: number | null;
+}
+
 export const SLIDE_VISUALS = [
   'impact-first',
   'three-moves',
@@ -76,27 +81,31 @@ const MOVES = [
   { icon: Split, tone: 'bg-sky-soft' },
 ] as const;
 
-function ThreeMoves() {
+function ThreeMoves({ progress = null }: SlideVisualProps) {
   return (
     <div className="flex items-stretch gap-2">
-      {MOVES.map(({ icon: Icon, tone }, i) => (
-        <div key={i} className="flex flex-1 items-center gap-2">
-          <div
-            className={cn(
-              'flex flex-1 items-center gap-2 rounded-blob border-2 border-line px-3 py-2',
-              tone,
-            )}
-          >
-            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 border-line bg-paper font-display text-xs font-bold">
-              {i + 1}
-            </span>
-            <Icon className="h-4 w-4 text-ink" aria-hidden />
+      {MOVES.map(({ icon: Icon, tone }, i) => {
+        const visible = progress === null || progress >= i;
+        return (
+          <div key={i} className="flex flex-1 items-center gap-2">
+            <div
+              className={cn(
+                'flex flex-1 items-center gap-2 rounded-blob border-2 border-line px-3 py-2 transition-all duration-300',
+                tone,
+                visible ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0',
+              )}
+            >
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 border-line bg-paper font-display text-xs font-bold">
+                {i + 1}
+              </span>
+              <Icon className="h-4 w-4 text-ink" aria-hidden />
+            </div>
+            {i < MOVES.length - 1 ? (
+              <ArrowRight className="h-4 w-4 shrink-0 text-ink-soft" aria-hidden />
+            ) : null}
           </div>
-          {i < MOVES.length - 1 ? (
-            <ArrowRight className="h-4 w-4 shrink-0 text-ink-soft" aria-hidden />
-          ) : null}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -169,25 +178,29 @@ const STAR_BOXES = [
 ] as const;
 
 /** The four STAR boxes, in order. The letters are the same in both languages. */
-function StarStack() {
+function StarStack({ progress = null }: SlideVisualProps) {
   return (
     <div className="flex items-stretch gap-2">
-      {STAR_BOXES.map(({ letter, icon: Icon, tone }, i) => (
-        <div key={letter} className="flex flex-1 items-center gap-2">
-          <div
-            className={cn(
-              'flex flex-1 flex-col items-center gap-1 rounded-blob border-2 border-line px-2 py-3',
-              tone,
-            )}
-          >
-            <span className="font-display text-xl leading-none font-bold">{letter}</span>
-            <Icon className="h-5 w-5 text-ink" aria-hidden />
+      {STAR_BOXES.map(({ letter, icon: Icon, tone }, i) => {
+        const visible = progress === null || progress >= i;
+        return (
+          <div key={letter} className="flex flex-1 items-center gap-2">
+            <div
+              className={cn(
+                'flex flex-1 flex-col items-center gap-1 rounded-blob border-2 border-line px-2 py-3 transition-all duration-300',
+                tone,
+                visible ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0',
+              )}
+            >
+              <span className="font-display text-xl leading-none font-bold">{letter}</span>
+              <Icon className="h-5 w-5 text-ink" aria-hidden />
+            </div>
+            {i < STAR_BOXES.length - 1 ? (
+              <ArrowRight className="h-4 w-4 shrink-0 text-ink-soft" aria-hidden />
+            ) : null}
           </div>
-          {i < STAR_BOXES.length - 1 ? (
-            <ArrowRight className="h-4 w-4 shrink-0 text-ink-soft" aria-hidden />
-          ) : null}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -215,21 +228,33 @@ function Face({
   );
 }
 
-function Bubble({ tone, children }: { tone: string; children: ReactNode }) {
+function Bubble({ tone, show = true, children }: { tone: string; show?: boolean; children: ReactNode }) {
   return (
-    <div className={cn('rounded-blob border-2 border-line px-3 py-2 shadow-sticker-sm', tone)}>
+    <div
+      className={cn(
+        'rounded-blob border-2 border-line px-3 py-2 shadow-sticker-sm transition-all duration-300',
+        tone,
+        show ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0',
+      )}
+    >
       {children}
     </div>
   );
 }
 
-/** Reviewer points at the line; the author listens. */
-function DialogueReview() {
+/** Reviewer points at the line; the author listens. Bubbles appear with the narration. */
+function DialogueReview({ progress = null }: SlideVisualProps) {
+  const show = (at: number) => progress === null || progress >= at;
   return (
-    <div className="flex items-end justify-between gap-3">
-      <Face tone="fill-butter-soft" mood="worried" />
-      <div className="flex flex-col items-end gap-1">
-        <Bubble tone="bg-mint-soft">
+    <div className="grid grid-cols-2 items-end gap-3">
+      <div className="flex flex-col items-center gap-2">
+        <Bubble tone="bg-cream" show={show(0)}>
+          <HelpCircle className="h-4 w-4 text-ink-soft" aria-hidden />
+        </Bubble>
+        <Face tone="fill-butter-soft" mood="worried" />
+      </div>
+      <div className="flex flex-col items-center gap-2">
+        <Bubble tone="bg-mint-soft" show={show(2)}>
           <div className="flex items-center gap-2">
             <Code className="h-4 w-4 text-ink-soft" aria-hidden />
             <span className="h-2 w-16 rounded-pill bg-ink/25" aria-hidden />
@@ -243,11 +268,12 @@ function DialogueReview() {
 }
 
 /** The candidate answers with the four STAR beats; the interviewer asks for more. */
-function DialogueInterview() {
+function DialogueInterview({ progress = null }: SlideVisualProps) {
+  const show = (at: number) => progress === null || progress >= at;
   return (
-    <div className="flex items-end justify-between gap-3">
-      <div className="flex flex-col items-start gap-1">
-        <Bubble tone="bg-paper">
+    <div className="grid grid-cols-2 items-end gap-3">
+      <div className="flex flex-col items-center gap-2">
+        <Bubble tone="bg-paper" show={show(0)}>
           <div className="flex items-center gap-1" aria-hidden>
             {['S', 'T', 'A', 'R'].map((letter) => (
               <span
@@ -261,8 +287,8 @@ function DialogueInterview() {
         </Bubble>
         <Face tone="fill-coral-soft" mood="happy" />
       </div>
-      <div className="flex flex-col items-end gap-1">
-        <Bubble tone="bg-sky-soft">
+      <div className="flex flex-col items-center gap-2">
+        <Bubble tone="bg-sky-soft" show={show(2)}>
           <HelpCircle className="h-4 w-4 text-ink-soft" aria-hidden />
         </Bubble>
         <Face tone="fill-sky-soft" mood="think" flip />
@@ -272,17 +298,18 @@ function DialogueInterview() {
 }
 
 /** The client is confused; the engineer answers with what changed. */
-function DialogueClient() {
+function DialogueClient({ progress = null }: SlideVisualProps) {
+  const show = (at: number) => progress === null || progress >= at;
   return (
-    <div className="flex items-end justify-between gap-3">
-      <div className="flex flex-col items-start gap-1">
-        <Bubble tone="bg-cream">
+    <div className="grid grid-cols-2 items-end gap-3">
+      <div className="flex flex-col items-center gap-2">
+        <Bubble tone="bg-cream" show={show(0)}>
           <HelpCircle className="h-4 w-4 text-ink-soft" aria-hidden />
         </Bubble>
         <Face tone="fill-lilac-soft" mood="worried" />
       </div>
-      <div className="flex flex-col items-end gap-1">
-        <Bubble tone="bg-mint-soft">
+      <div className="flex flex-col items-center gap-2">
+        <Bubble tone="bg-mint-soft" show={show(2)}>
           <div className="flex items-center gap-1 font-display text-sm font-bold">
             12s <ArrowRight className="h-3 w-3 text-ink-soft" aria-hidden /> 2s
           </div>
@@ -293,7 +320,7 @@ function DialogueClient() {
   );
 }
 
-const VISUALS: Record<SlideVisualName, () => ReactNode> = {
+const VISUALS: Record<SlideVisualName, (props: SlideVisualProps) => ReactNode> = {
   'impact-first': ImpactFirst,
   'three-moves': ThreeMoves,
   'trade-off': TradeOff,
@@ -304,11 +331,11 @@ const VISUALS: Record<SlideVisualName, () => ReactNode> = {
   'dialogue-client': DialogueClient,
 };
 
-export function SlideVisual({ name }: { name: SlideVisualName }) {
+export function SlideVisual({ name, progress = null }: { name: SlideVisualName } & SlideVisualProps) {
   const Visual = VISUALS[name];
   return (
     <div aria-hidden className="rounded-xl">
-      <Visual />
+      <Visual progress={progress} />
     </div>
   );
 }

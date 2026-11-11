@@ -263,16 +263,11 @@ If everything is must-fix, nothing is. Prefix small things with "nit:" so the au
             slides: [
               {
                 heading: 'A comment has a temperature',
-                bullets: ['What you mean', 'What they hear'],
+                bullets: ['What you mean', 'What they hear', 'Point at the failure'],
                 narration:
-                  'A review comment carries two messages: the fix you want, and how much you respect the person. The second one is usually louder.',
+                  'A review comment carries two messages: the fix you want, and how much you respect the person. The second one is usually louder. Point at the line and describe the failure: if the cart is empty, line 12 divides by zero. The author can act on that without guessing. The fix is one sentence; the respect is everything around it.',
+                detail: 'Specific, short and about the code. That is the whole recipe.',
                 visual: 'tone-meter',
-              },
-              {
-                heading: 'Point at the line',
-                bullets: ['Specific beats clever', 'Say what could go wrong'],
-                narration:
-                  'Point at the line and describe the failure. If the cart is empty, line 12 divides by zero. The author can act on that without guessing.',
                 check: {
                   question: 'Which comment can the author act on?',
                   options: [
@@ -285,10 +280,12 @@ If everything is must-fix, nothing is. Prefix small things with "nit:" so the au
                 },
               },
               {
-                heading: 'Separate must-fix from nit',
-                bullets: ['One blocks the merge', 'One can wait'],
+                heading: 'Must-fix or nit?',
+                bullets: ['One blocks the merge', 'One can wait', 'Say why, not just what'],
                 narration:
-                  'Say which comments block the merge and which are nits. A review where everything is urgent is a review with no priorities.',
+                  'Say which comments block the merge and which are nits. A review where everything is urgent is a review with no priorities. Naming the unit is clearer than quoting a rule: I could not tell whether totalCents was dollars. The reason lets the author apply the fix to the next line too. Prefix small things with nit: so nobody has to guess.',
+                detail: 'If everything is must-fix, nothing is. The author needs a ranking, not a pile.',
+                visual: 'dialogue-review',
                 check: {
                   question: 'Which comment actually blocks the merge?',
                   options: [
@@ -301,17 +298,11 @@ If everything is must-fix, nothing is. Prefix small things with "nit:" so the au
                 },
               },
               {
-                heading: 'Say why, not just what',
-                bullets: ['The reason is the lesson', 'One sentence is enough'],
+                heading: 'Read it as the author',
+                bullets: ['Would you be glad to receive it?', 'Cut the sentence, keep the point'],
                 narration:
-                  'Naming the unit is clearer than quoting a rule: I could not tell whether totalCents was dollars. The reason lets the author apply the fix to the next line too.',
-                visual: 'dialogue-review',
-              },
-              {
-                heading: 'Review the reviewer',
-                bullets: ['Would you be glad to receive it?', 'Read it as the author'],
-                narration:
-                  'Before you send, read the comment as the author. If you would feel attacked, cut the sentence that caused it, not the point you were making.',
+                  'Before you send, read the comment as the author. If you would feel attacked, cut the sentence that caused it, not the point you were making. Praise is part of the review: name one specific thing that worked, not a general well done. The author should finish reading knowing what to do next and what they did well. That is what a good review feels like.',
+                detail: 'Keep the information; remove the part aimed at the person.',
                 check: {
                   question: 'A review comment feels harsh. What should you change?',
                   options: [
@@ -327,7 +318,8 @@ If everything is must-fix, nothing is. Prefix small things with "nit:" so the au
                 heading: 'Your turn',
                 bullets: ['Sort the comments', 'Then pick the best review'],
                 narration:
-                  'Now try the two sorting activities and the etiquette quiz. Notice which comments you would be glad to receive.',
+                  'Now try the two sorting activities and the etiquette quiz. Notice which comments you would be glad to receive. Then write the one comment you would send on the password log line. Keep it under three sentences: location, failure, direction.',
+                detail: 'The next activities put this into practice; the quiz checks the priorities.',
               },
             ],
           },
@@ -456,16 +448,11 @@ Notice the details that make it believable: a number in the situation, a boundar
             slides: [
               {
                 heading: 'A story, not a summary',
-                bullets: ['Where and when', 'What you owned'],
+                bullets: ['Where and when', 'What you owned', 'One sentence of context'],
                 narration:
-                  'Behavioural answers are stories. Start with where and when, in one sentence, then say what you were responsible for.',
+                  'Behavioural answers are stories. Start with where and when, in one sentence, then say what you were responsible for. Last semester, our four-person team was two weeks behind is enough context. The interviewer does not need the history of the project. Give the stakes, then move to what you did.',
+                detail: 'One sentence for the situation. The rest of the answer is the action.',
                 visual: 'star-stack',
-              },
-              {
-                heading: 'Situation in one sentence',
-                bullets: ['One sentence of context', 'No life story'],
-                narration:
-                  'Give enough context to understand the stakes, then move on. Last semester, our four-person team was two weeks behind is enough. The interviewer does not need the history of the project.',
                 check: {
                   question: 'Which situation sentence is the right length?',
                   options: [
@@ -479,9 +466,10 @@ Notice the details that make it believable: a number in the situation, a boundar
               },
               {
                 heading: 'What you did',
-                bullets: ['Say I, not we', 'Concrete steps'],
+                bullets: ['Say I, not we', 'Concrete steps', 'In order'],
                 narration:
-                  'The action is the part interviewers score. Say what you did, in order, without hiding behind the team.',
+                  'The action is the part interviewers score. Say what you did, in order, without hiding behind the team. I split the work into small tasks, set a ten-minute morning check-in, and wrote a one-page rules file. Each step is something you could have skipped or done differently. That is what makes it yours.',
+                detail: 'If a sentence could describe anyone on the team, it is not your action.',
                 visual: 'dialogue-interview',
                 check: {
                   question: 'Which sentence shows your action?',
@@ -495,10 +483,11 @@ Notice the details that make it believable: a number in the situation, a boundar
                 },
               },
               {
-                heading: 'The result needs evidence',
-                bullets: ['What changed', 'A number if you have one'],
+                heading: 'Result, and the AI part',
+                bullets: ['What changed', 'A number if you have one', 'What you handed to AI'],
                 narration:
-                  'End with what changed: shipped on time, cut the queue in half, top grade in the class. A result without evidence sounds like a hope.',
+                  'End with what changed: shipped on time, cut the queue in half, top grade in the class. A result without evidence sounds like a hope. AI is part of the story now, so say what you handed over and how you checked it. That is a skill, not a confession. The interviewer is listening for judgement, not for whether you typed every line.',
+                detail: 'A date and a ranking can be checked; "it went well" cannot.',
                 check: {
                   question: 'Which result is evidence?',
                   options: [
@@ -511,16 +500,11 @@ Notice the details that make it believable: a number in the situation, a boundar
                 },
               },
               {
-                heading: 'Talk about AI honestly',
-                bullets: ['What you handed over', 'How you checked it'],
-                narration:
-                  'AI is part of the story now. Say what you handed over and how you checked it. That is a skill, not a confession.',
-              },
-              {
                 heading: 'Your turn',
                 bullets: ['Build the STAR answer', 'Then practise with Jordan'],
                 narration:
-                  'Put the sentences in order, then run the mock interview. Keep the whole answer under two minutes.',
+                  'Put the sentences in order, then run the mock interview. Keep the whole answer under two minutes. Write three stories this week: a conflict, a mistake, a success. If you cannot answer one follow-up on a story, it is not ready yet.',
+                detail: 'The sequence activity checks the order; the role-play checks the delivery.',
               },
             ],
           },
@@ -676,22 +660,18 @@ Ownership is a change you can make, not a place to point.
             slides: [
               {
                 heading: 'Three agents, three styles',
-                bullets: ['Shared rules once', 'One file every agent reads'],
+                bullets: ['Shared rules once', 'One file every agent reads', 'Naming and structure included'],
                 narration:
-                  'Three people with three agents produce three styles in an afternoon. Agree the stack, the naming and the structure once, and give every agent the same rules file.',
+                  'Three people with three agents produce three styles in an afternoon. Agree the stack, the naming and the structure once, and give every agent the same rules file. The file should say where pages live, how components are named, and which commands run the tests. Write it down, because a rule that lives in someone’s head will not reach the next agent. Change it once and tell the team.',
+                detail: 'A short written rules file beats three long verbal explanations.',
               },
               {
                 heading: 'Say what the AI wrote',
-                bullets: ['In the pull request', 'What you checked'],
+                bullets: ['In the pull request', 'What you checked', 'A second pair of eyes'],
                 narration:
-                  'Write down what the agent wrote and what you checked. It makes the review faster and tells the team where to look first.',
+                  'Write down what the agent wrote and what you checked. It makes the review faster and tells the team where to look first. The author and the agent share the same blind spot, so a reviewer who did not write the prompt is the cheapest way to find it. Four lines are enough: what it wrote, what you changed, what you checked, what you did not verify. The reviewer should never have to guess.',
+                detail: 'Disclosure is not a confession; it is a map of the diff.',
                 visual: 'dialogue-review',
-              },
-              {
-                heading: 'Review the output together',
-                bullets: ['A second pair of eyes', 'Catch what you both missed'],
-                narration:
-                  'The author and the agent share the same blind spot. A reviewer who did not write the prompt is the cheapest way to find it.',
                 check: {
                   question: 'Why review AI-written code with a teammate?',
                   options: [
@@ -707,7 +687,8 @@ Ownership is a change you can make, not a place to point.
                 heading: 'Own the result',
                 bullets: ['"The AI did it" is not an answer', 'Fix the process, not the blame'],
                 narration:
-                  'In a retro, the useful sentence is what you will change next time: a test first, a smaller slice, a second reader. The agent cannot attend the retro, so the ownership stays with you.',
+                  'In a retro, the useful sentence is what you will change next time: a test first, a smaller slice, a second reader. The agent cannot attend the retro, so the ownership stays with you. Saying the AI wrote it describes the tool, not the fix. Saying nobody told you to test describes the process, not your next move. Ownership is a change you can make.',
+                detail: 'The team remembers the change you propose, not the blame you assign.',
                 check: {
                   question: 'An AI-written feature broke production. What belongs in the retro?',
                   options: [
@@ -723,7 +704,8 @@ Ownership is a change you can make, not a place to point.
                 heading: 'Your turn',
                 bullets: ['Check your team habits', 'Then run the release week'],
                 narration:
-                  'Try the habits quiz, then play the short release game. Every decision there is a team decision, made under a date.',
+                  'Try the habits quiz, then play the short release game. Every decision there is a team decision, made under a date. Watch how quickly a small shortcut turns into a release problem. Then look at your own last pull request and write the four disclosure lines for it.',
+                detail: 'The quiz checks the habits; the release game shows what they cost under pressure.',
               },
             ],
           },
@@ -874,22 +856,18 @@ The trade is not a trick to avoid the work. It makes the cost visible to the per
             slides: [
               {
                 heading: 'The ask that does not fit',
-                bullets: ['Launch is Friday', 'The request arrives Wednesday'],
+                bullets: ['Launch is Friday', 'The request arrives Wednesday', 'Offer the next real date'],
                 narration:
-                  'It is Wednesday. The launch is Friday. A client asks for one more feature, and the honest answer is no. The question is not whether to say it. It is what comes after the no.',
+                  'It is Wednesday. The launch is Friday. A client asks for one more feature, and the honest answer is no. The question is not whether to say it; it is what comes after the no. A bare no leaves the client with nothing. I cannot add it before Friday, but I can ship it on Tuesday gives them a date they can plan around.',
+                detail: 'The no is one sentence. The plan after it is the part they remember.',
                 visual: 'dialogue-client',
               },
               {
-                heading: 'Say what you can do',
-                bullets: ['"Not this week" is not a plan', 'Offer the next real date'],
-                narration:
-                  'A bare no leaves the client with nothing. I cannot add it before Friday, but I can ship it on Tuesday gives them a date they can plan around.',
-              },
-              {
                 heading: 'Trade, do not refuse',
-                bullets: ['Name the constraint once', 'Offer two options'],
+                bullets: ['Name the constraint once', 'Offer two options', 'Write down what was agreed'],
                 narration:
-                  'Name the constraint once: the launch is Friday and testing takes a day. Then offer the trade: the new feature, or the export fix. Now the client is choosing, not arguing.',
+                  'Name the constraint once: the launch is Friday and testing takes a day. Then offer the trade: the new feature, or the export fix. Now the client is choosing, not arguing. After the call, send three lines: what was agreed, who does what, and when you check again. Memory is not a project plan, and a written trade is harder to reopen by accident.',
+                detail: 'A choice moves the decision back to the client without reopening the date.',
                 visual: 'trade-off',
                 check: {
                   question: 'What makes this a trade rather than a refusal?',
@@ -903,10 +881,11 @@ The trade is not a trick to avoid the work. It makes the cost visible to the per
                 },
               },
               {
-                heading: 'Write it down',
-                bullets: ['What was agreed', 'When you check again'],
+                heading: 'Protect the relationship',
+                bullets: ['No to the request, yes to the person', 'No silent yes', 'Early, specific, consistent'],
                 narration:
-                  'After the call, send three lines: what was agreed, who does what, and when you check again. Memory is not a project plan, and a written trade is harder to reopen by accident.',
+                  'You are refusing a request, not a person. Keep the relationship by being early, specific and consistent. Say the constraint once, then stop explaining; three reasons start to sound like excuses. The silent yes is the one that costs the relationship later, because the date breaks louder than the no would have. A no today is cheaper than a broken promise on Friday.',
+                detail: 'The person should leave the conversation with a date and a choice, not a apology.',
                 check: {
                   question: 'What belongs in the follow-up message?',
                   options: [
@@ -919,16 +898,11 @@ The trade is not a trick to avoid the work. It makes the cost visible to the per
                 },
               },
               {
-                heading: 'Protect the relationship',
-                bullets: ['No to the request, yes to the person', 'No silent yes'],
-                narration:
-                  'You are refusing a request, not a person. Keep the relationship by being early, specific and consistent. The silent yes is the one that costs the relationship later.',
-              },
-              {
                 heading: 'Your turn',
                 bullets: ['Sort the replies that keep trust', 'Then pick the best no'],
                 narration:
-                  'Try the sort and the quiz next. Every option turns something down. Only some of them keep the relationship.',
+                  'Try the sort and the quiz next. Every option turns something down; only some of them keep the relationship. Then write the three-line follow-up for the feature request. Keep it to what was agreed, who owns it, and when you check again.',
+                detail: 'The sort checks tone; the quiz checks the trade under pressure.',
               },
             ],
           },

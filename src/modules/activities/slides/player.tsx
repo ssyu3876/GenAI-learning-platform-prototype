@@ -267,7 +267,7 @@ export function SlidesPlayer({ activity, config, onComplete, previousBest, previ
             <div className="mt-5 grid gap-5 sm:grid-cols-12 sm:items-center">
               {slide.visual && isSlideVisual(slide.visual) ? (
                 <div className="animate-pop sm:col-span-5">
-                  <SlideVisual name={slide.visual} />
+                  <SlideVisual name={slide.visual} progress={speaking ? sentenceIndex : null} />
                 </div>
               ) : null}
               <div

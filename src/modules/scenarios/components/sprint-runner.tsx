@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowRight, Check, Clock, Lock, Play, RotateCcw } from 'lucide-react';
 import { Badge, Button, Card, CardBody, CardHeader, ProgressBar, cn } from '@/components/ui';
 import { sprintEnter, sprintGoOn, sprintLeaveWeekSummary, sprintPick, resetScenario } from '../actions';
+import { Radar } from './radar';
 
 export interface SprintRunnerProps {
   view: 'select' | 'week' | 'summary' | 'ending';
@@ -125,6 +126,22 @@ export function SprintRunner(props: SprintRunnerProps) {
           </CardBody>
         </Card>
         <Card>
+          <CardHeader title="Where you finished" subtitle="Four numbers, one shape" />
+          <CardBody className="mx-auto w-full max-w-[360px]">
+            <Radar
+              axes={stats.map((s) => ({
+                key: s.key,
+                label: s.label,
+                value: s.value,
+                max: s.max,
+                danger: s.danger,
+              }))}
+              tone="sky"
+              label="Final stats"
+            />
+          </CardBody>
+        </Card>
+        <Card>
           <CardHeader title="Your decisions" subtitle={`${history.length} recorded`} />
           <CardBody>
             <ol className="flex flex-col gap-2">
@@ -185,6 +202,31 @@ export function SprintRunner(props: SprintRunnerProps) {
                 Back to weeks <ArrowRight className="h-4 w-4" aria-hidden />
               </Button>
             </div>
+          </CardBody>
+        </Card>
+        <Card>
+          <CardHeader title="The shape of your week" subtitle="Dashed line is where the week started" />
+          <CardBody className="mx-auto flex w-full max-w-[360px] flex-col gap-2">
+            <Radar
+              axes={stats.map((s) => ({
+                key: s.key,
+                label: s.label,
+                value: s.value,
+                max: s.max,
+                danger: s.danger,
+              }))}
+              compare={stats.map((s) => ({
+                key: s.key,
+                label: s.label,
+                value: summary.delta.find((d) => d.label === s.label)?.from ?? s.value,
+                max: s.max,
+              }))}
+              tone="sky"
+              label="Stats at the end of the week"
+            />
+            <p className="text-xs text-ink-soft">
+              A point that sits further in than the rest is the one to spend next week on.
+            </p>
           </CardBody>
         </Card>
         <StatBars stats={stats} />

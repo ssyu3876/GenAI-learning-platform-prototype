@@ -2,10 +2,12 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Lightbulb, RotateCcw, SkipForward } from 'lucide-react';
+import { ArrowRight, Check, Lightbulb, Minus, RotateCcw, SkipForward } from 'lucide-react';
 import { Badge, Button, Card, CardBody, CardHeader, ProgressBar, cn } from '@/components/ui';
 import { answerInterview, skipInterviewQuestion, startInterviewRun } from '../actions';
+import { analyseAnswer, type AnswerSignals } from '../content/interview-engine';
 import type { InterviewReport } from '../content/interview-engine';
+import { Radar } from './radar';
 
 export interface InterviewRunnerProps {
   typeId: string;
@@ -23,6 +25,59 @@ export interface InterviewRunnerProps {
 function ScorePill({ score }: { score: number }) {
   const tint = score >= 4 ? 'mint' : score >= 3 ? 'butter' : 'coral';
   return <Badge tint={tint}>{score.toFixed(1)} / 5</Badge>;
+}
+
+type SignalKey = 'example' | 'numbers' | 'tradeoff' | 'structure' | 'verification';
+
+const SIGNALS: Array<{ key: SignalKey; label: string }> = [
+  { key: 'example', label: 'A real example' },
+  { key: 'numbers', label: 'A number or result' },
+  { key: 'tradeoff', label: 'A trade-off' },
+  { key: 'structure', label: 'A clear order' },
+  { key: 'verification', label: 'How you checked it' },
+];
+
+/** Live checklist: the same signals the server scores on, shown while you type. */
+function AnswerChecklist({ text }: { text: string }) {
+  const signals: AnswerSignals = analyseAnswer(text);
+  const met = SIGNALS.filter((s) => signals[s.key]).length;
+
+  return (
+    <div className="rounded-blob border-2 border-dashed border-line/60 bg-cream px-3 py-2">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-xs font-semibold tracking-wide text-ink-soft uppercase">
+          What the interviewer listens for
+        </span>
+        <span className="text-xs font-semibold">
+          {met} / {SIGNALS.length}
+        </span>
+      </div>
+      <ul className="mt-1.5 flex flex-wrap gap-1.5">
+        {SIGNALS.map((s) => {
+          const on = signals[s.key];
+          return (
+            <li
+              key={s.key}
+              className={cn(
+                'flex items-center gap-1 rounded-pill border-2 px-2 py-0.5 text-xs font-semibold',
+                on ? 'border-mint-deep bg-mint-soft' : 'border-line/30 bg-paper text-ink-soft',
+              )}
+            >
+              {on ? (
+                <Check className="h-3 w-3 text-mint-deep" aria-hidden />
+              ) : (
+                <Minus className="h-3 w-3 text-ink-soft" aria-hidden />
+              )}
+              {s.label}
+            </li>
+          );
+        })}
+      </ul>
+      {met === SIGNALS.length ? (
+        <p className="mt-1.5 text-xs font-semibold text-mint-deep">All five are in. Send it.</p>
+      ) : null}
+    </div>
+  );
 }
 
 export function InterviewRunner(props: InterviewRunnerProps) {
@@ -103,6 +158,27 @@ export function InterviewRunner(props: InterviewRunnerProps) {
                 ))}
               </ol>
             </div>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader
+            title="Five dimensions"
+            subtitle="Scored from the answers you gave, not from how polished they sounded"
+          />
+          <CardBody className="mx-auto w-full max-w-[360px]">
+            <Radar
+              axes={report.dimensions.map((d) => ({
+                key: d.competency,
+                label: d.competency,
+                value: d.score,
+                max: 5,
+                danger: 2,
+              }))}
+              decimals={1}
+              tone="lilac"
+              label="Competency scores"
+            />
           </CardBody>
         </Card>
 
@@ -232,6 +308,8 @@ export function InterviewRunner(props: InterviewRunnerProps) {
           <span>Aim for 40 or more, with one concrete example.</span>
         </div>
       </div>
+
+      <AnswerChecklist text={answer} />
 
       <div className="flex flex-wrap gap-2">
         <Button variant="primary" onClick={submit} disabled={isPending || words < 5}>

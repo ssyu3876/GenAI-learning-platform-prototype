@@ -72,6 +72,8 @@ export interface ShipTurn {
   /** Quality change for each verb. The good verb is 0 and evidence is always 0. */
   delta: Record<ShipAction, number>;
   note: Record<ShipAction, string>;
+  /** Why specific diff lines matter. `line` is 0-based into `diff`. */
+  risks?: Array<{ line: number; note: string }>;
   /** Required when good === 'repair': the sequence that makes the change sound. */
   repair?: ShipRepair;
 }

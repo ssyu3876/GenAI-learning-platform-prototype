@@ -3,6 +3,7 @@ import { Badge, Card, CardBody, CardHeader, EmptyState, PageHeader, ProgressBar,
 import { Flame, Lock, Trophy, Zap } from 'lucide-react';
 import { getBadgeStates } from '../queries';
 import { GROUP_LABEL, GROUP_ORDER } from '../definitions';
+import { BadgeMap } from './badge-map';
 import { GrowthCard } from './growth-card';
 
 /** /badges: the growth journey first, then every badge grouped by why you earn it. */
@@ -27,6 +28,16 @@ export async function BadgesView({ user }: { user: SessionUser }) {
 
       <GrowthCard snapshot={snapshot} />
 
+      <Card>
+        <CardHeader
+          title="Badge map"
+          subtitle="Three trails, one node per badge. Pick a node to jump to its card."
+        />
+        <CardBody>
+          <BadgeMap badges={badges} />
+        </CardBody>
+      </Card>
+
       {GROUP_ORDER.map((group) => {
         const groupBadges = badges.filter((b) => b.def.group === group);
         const earnedHere = groupBadges.filter((b) => b.earned).length;
@@ -42,7 +53,7 @@ export async function BadgesView({ user }: { user: SessionUser }) {
               {groupBadges.map(({ def, earned, have, need, percent }) => {
                 const Icon = def.icon;
                 return (
-                  <li key={def.id}>
+                  <li key={def.id} id={`badge-${def.id}`} className="scroll-mt-24">
                     <Card tint={earned ? def.tint : 'paper'} className={cn('h-full', !earned && 'opacity-90')}>
                       <div className="flex items-start gap-3 px-4 pt-4">
                         <div

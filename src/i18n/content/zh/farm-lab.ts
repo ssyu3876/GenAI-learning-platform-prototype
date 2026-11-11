@@ -90,7 +90,7 @@ export const FARM_LAB_ZH: FarmCopy = {
     forward: '前进',
     left: '左转',
     right: '右转',
-    level: '关卡',
+    levelLabel: '关卡',
     goal: '目标',
     steps: '步数',
     success: '无人机把活干完了。',

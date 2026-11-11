@@ -118,7 +118,7 @@ export function FarmLab({ copy }: { copy: FarmCopy }) {
                 i === levelIndex ? 'bg-coral text-ink' : 'bg-paper text-ink-soft hover:bg-cream',
               )}
             >
-              {copy.labels.level} {i + 1}
+              {copy.labels.levelLabel} {i + 1}
             </button>
           ))}
           <Badge tint="mint">

@@ -22,7 +22,7 @@ export interface FarmCopy {
     forward: string;
     left: string;
     right: string;
-    level: string;
+    levelLabel: string;
     goal: string;
     steps: string;
     success: string;
@@ -122,7 +122,7 @@ export const FARM_LAB: FarmCopy = {
     forward: 'Forward',
     left: 'Turn left',
     right: 'Turn right',
-    level: 'Level',
+    levelLabel: 'Level',
     goal: 'Goal',
     steps: 'Steps',
     success: 'The drone finished the job.',

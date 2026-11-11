@@ -12,6 +12,7 @@
 // file.
 import type { Locale } from '../config';
 import { agentsCourse } from '../../../scripts/seed/course-agents';
+import { agentsStudentCourse } from '../../../scripts/seed/course-agents-student';
 import { basicsCourse } from '../../../scripts/seed/course-basics';
 import { databasesDraft, gitCourse, photographyCourse } from '../../../scripts/seed/course-extras';
 import { peopleCourse } from '../../../scripts/seed/course-people';
@@ -20,6 +21,7 @@ import { SHIP_IT } from '@/modules/scenarios/content/ship-it';
 import { SPRINT_ZERO_COPY } from '@/modules/scenarios/content/sprint-zero';
 import { RELEASE_COPY } from '@/modules/scenarios/content/release-week';
 import { agentsCourseZh } from './zh/course-agents';
+import { agentsStudentCourseZh } from './zh/course-agents-student';
 import { basicsCourseZh } from './zh/course-basics';
 import { databasesDraftZh, gitCourseZh, photographyCourseZh } from './zh/course-extras';
 import { peopleCourseZh } from './zh/course-people';
@@ -87,6 +89,7 @@ function collect(english: unknown, chinese: unknown, out: Record<string, string>
 
 collect(basicsCourse, basicsCourseZh, dictionary);
 collect(agentsCourse, agentsCourseZh, dictionary);
+collect(agentsStudentCourse, agentsStudentCourseZh, dictionary);
 collect(peopleCourse, peopleCourseZh, dictionary);
 collect(databasesDraft, databasesDraftZh, dictionary);
 collect(gitCourse, gitCourseZh, dictionary);

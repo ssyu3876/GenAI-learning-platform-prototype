@@ -55,8 +55,8 @@ export const courseDraftSchema = z.object({
   tags: z.array(z.string().max(30)).max(6).default([]),
   emoji: z.string().max(8).default('🌱'),
   color: z.enum(COURSE_COLORS).catch('mint'),
-  // Book-like courses can run to twelve chapters; the AI generator still asks for 6 or fewer.
-  lessons: z.array(lessonDraftSchema).min(1).max(12),
+  // Book-like courses can run to twenty chapters; the AI generator still asks for 6 or fewer.
+  lessons: z.array(lessonDraftSchema).min(1).max(20),
 });
 
 export type CourseDraft = z.infer<typeof courseDraftSchema>;

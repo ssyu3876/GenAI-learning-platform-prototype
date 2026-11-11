@@ -9,6 +9,7 @@ import { getT } from '@/i18n';
 import type { Translations } from '@/i18n';
 import { startCourse } from '../actions';
 import { getCoursePageData } from '../queries';
+import { courseDuration } from './duration';
 
 const ACTIVITY_LABEL_KEY: Record<string, keyof Translations['activities']['types']> = {
   slides: 'slides',
@@ -49,7 +50,7 @@ export async function CourseView({ user, slug }: { user: SessionUser; slug: stri
                 {outline.lessons.length} {t.chrome.common.lessons}
               </Badge>
               <Badge tint="paper">
-                <Clock className="h-3 w-3" /> {t.courses.page.about}{outline.estimatedMinutes} {t.courses.page.min}
+                <Clock className="h-3 w-3" /> {t.courses.page.about}{courseDuration(outline.estimatedMinutes, t)}
               </Badge>
               {outline.tags.map((tag) => (
                 <Badge key={tag} tint="paper">

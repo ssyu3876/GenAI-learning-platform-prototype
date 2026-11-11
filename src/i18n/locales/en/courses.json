@@ -1,6 +1,6 @@
 {
   "title": "Courses",
-  "subtitle": "Short mini-courses. Each lesson takes about 10 minutes and ends with something to try.",
+  "subtitle": "Short mini-courses with a 10-minute core, plus project labs for students who want to go deeper.",
   "learnSomethingElse": "Learn something else",
   "pickedForYou": "Picked for you",
   "startHere": "Start here",
@@ -27,7 +27,7 @@
     "lessons": "lessons",
     "lessonsTitle": "Lessons",
     "upNext": "Up next",
-    "about": "~",
+    "about": "~ ",
     "min": "min",
     "complete": "complete",
     "continue": "Continue",

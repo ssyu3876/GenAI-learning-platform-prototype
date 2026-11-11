@@ -37,6 +37,7 @@ import { sortConfigSchema } from '@/modules/activities/sort/schema';
 import { releaseRunSchema } from '@/modules/scenarios/activities/release-run/schema';
 import { leaderboardPrefs } from '@/modules/leaderboard/schema';
 import { agentsCourse } from './course-agents';
+import { agentsStudentCourse } from './course-agents-student';
 import { basicsCourse } from './course-basics';
 import { databasesDraft, gitCourse, photographyCourse } from './course-extras';
 import { peopleCourse } from './course-people';
@@ -254,6 +255,7 @@ async function insertChunks<T>(rows: T[], insert: (chunk: T[]) => Promise<unknow
 const PRESET_COURSES = [
   { slug: 'how-software-gets-built', draft: basicsCourse },
   { slug: 'working-with-ai-coding-agents', draft: agentsCourse },
+  { slug: 'working-with-ai-coding-agents-student', draft: agentsStudentCourse },
   { slug: 'people-skills-for-tech-teams', draft: peopleCourse },
 ] as const;
 
@@ -401,7 +403,7 @@ export async function runSeed() {
   const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, 'admin@demo.dev')).limit(1);
   if (existing) {
     await syncPresetCourses();
-    console.info('Demo data already present: refreshed the three preset courses; accounts and history left intact.');
+    console.info('Demo data already present: refreshed the preset courses; accounts and history left intact.');
     return;
   }
 
@@ -422,6 +424,7 @@ export async function runSeed() {
   const seedOpts = { ownerId: null, source: 'seed' as const, status: 'published' as const, visibility: 'public' as const };
   const basics = await saveCourseDraft(validated(basicsCourse), { ...seedOpts, slug: 'how-software-gets-built' });
   const agents = await saveCourseDraft(validated(agentsCourse), { ...seedOpts, slug: 'working-with-ai-coding-agents' });
+  const agentsStudent = await saveCourseDraft(validated(agentsStudentCourse), { ...seedOpts, slug: 'working-with-ai-coding-agents-student' });
   const people = await saveCourseDraft(validated(peopleCourse), { ...seedOpts, slug: 'people-skills-for-tech-teams' });
   await saveCourseDraft(validated(photographyCourse), { ownerId: miaId, source: 'learner_ai', status: 'published', visibility: 'private' });
   await saveCourseDraft(validated(databasesDraft), { ownerId: instructorId, source: 'manual', status: 'draft', visibility: 'private' });
@@ -460,7 +463,7 @@ export async function runSeed() {
     codingLevel: 1,
     interests: ['teamwork', 'ai-agents'],
     track: 'explorer',
-    recommendedCourseIds: [basics.id, people.id, agents.id],
+    recommendedCourseIds: [basics.id, people.id, agentsStudent.id],
     welcomeNote:
       'Nice to meet you, Mia! Since you are coming from business, we start with how software teams actually work, then the people side, then how to work alongside AI tools.',
   });

@@ -87,7 +87,8 @@
     "play": "播放讲解",
     "noSpeech": "你的浏览器无法朗读，这里显示字幕。",
     "finish": "看完幻灯片",
-    "narration": "讲解"
+    "narration": "讲解",
+    "speed": "讲解语速：{speed}×"
   },
   "roleplay": {
     "talkingTo": "你在和谁对话",

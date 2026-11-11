@@ -56,6 +56,23 @@ All videos were checked to exist and to allow embedding. In lesson 4, the line s
 board lives in GitHub Projects was changed to a general statement, because our team does not use
 GitHub Projects. New quiz answers are spread over A–D.
 
+## Narrated slides: speed control and a playback fix
+
+Applies to every narrated-slides activity in every course (`src/modules/activities/slides/player.tsx`).
+
+- **Faster default pace.** Browser voices read slowly at their default rate, so 1× now means rate
+  1.1 in English and 1.2 in Chinese (was 1.02). The pause between slides in autoplay is 250 ms
+  (was 500 ms).
+- **Speed button** next to *Play narration*: 0.75× / 1× / 1.25× / 1.5×. Changing it mid-sentence
+  restarts the current slide at the new speed. The choice is remembered in the browser
+  (`localStorage`, with an in-memory fallback). New strings: `activities.slides.speed` in the
+  English and Chinese locale files.
+- **Fix:** stopping speech (pause, next slide, speed change) made the browser fire a late "ended"
+  event for the old narration. That flipped the button back to *Play* and could skip a slide, and
+  in Chrome the new narration was sometimes dropped, so *Play* then did nothing. Each narration now
+  has a number and events from stopped narrations are ignored; a new narration starts about 60 ms
+  after the old one is cancelled.
+
 ## Getting the new course onto the live site
 
 The seed script skips a database that already has demo data, so **merging this does not change

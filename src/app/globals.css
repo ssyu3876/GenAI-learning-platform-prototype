@@ -15,6 +15,16 @@
 }
 .animate-shake { animation: shake 0.35s ease-in-out; }
 
+@keyframes shake-hard {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  15% { transform: translateX(-12px) rotate(-1deg); }
+  30% { transform: translateX(12px) rotate(1deg); }
+  45% { transform: translateX(-9px) rotate(-0.6deg); }
+  60% { transform: translateX(9px) rotate(0.6deg); }
+  75% { transform: translateX(-5px) rotate(-0.3deg); }
+}
+.animate-shake-hard { animation: shake-hard 0.55s ease-in-out; }
+
 @keyframes damage-flash {
   0% { opacity: 0.9; }
   100% { opacity: 0; }

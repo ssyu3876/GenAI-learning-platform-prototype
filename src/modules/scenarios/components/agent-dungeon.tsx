@@ -89,6 +89,12 @@ function blip(frequency: number, duration = 120, type: OscillatorType = 'square'
   }
 }
 
+function breakSound() {
+  blip(520, 110, 'square');
+  window.setTimeout(() => blip(880, 160, 'sine'), 80);
+  window.setTimeout(() => blip(1320, 240, 'sine'), 200);
+}
+
 export function AgentDungeon({ copy }: { copy: Copy }) {
   const L = copy.labels as unknown as Record<string, string>;
   const [phase, setPhase] = useState<Phase>('menu');
@@ -394,8 +400,8 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
         if (next.confidence === 0) {
           next.broken = true;
           setBreakFx(true);
-          blip(880, 260, 'sine');
-          window.setTimeout(() => setBreakFx(false), 1400);
+          breakSound();
+          window.setTimeout(() => setBreakFx(false), 900);
         }
       } else {
         let damage = triple ? 3 : 1;
@@ -567,8 +573,8 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
       setTimeLeft((t) => (t ?? 0) + 30);
     }
     if (id === 'gold') {
-      setGold((g) => g + 60);
-      setStats((s) => ({ ...s, gold: s.gold + 60 }));
+      setGold((g) => g + 40);
+      setStats((s) => ({ ...s, gold: s.gold + 40 }));
     }
     if (id === 'reroll') {
       const draw = drawQuestion(questionBank, difficulty, used);
@@ -849,23 +855,6 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     const enemyHp = Math.max(0, battle.hp);
     return (
       <div className="mx-auto flex max-w-3xl flex-col gap-3">
-        {breakFx ? (
-          <div className="pointer-events-none fixed inset-0 z-50 grid place-items-center bg-ink/50">
-            <div className="relative h-64 w-64">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <span
-                  key={i}
-                  className="absolute top-1/2 left-1/2 h-40 w-0.5 origin-top bg-coral"
-                  style={{ transform: `rotate(${i * 45}deg)` }}
-                  aria-hidden
-                />
-              ))}
-              <p className="absolute inset-0 grid place-items-center font-display text-4xl font-bold text-cream">
-                BREAK!
-              </p>
-            </div>
-          </div>
-        ) : null}
         {damageFlash ? (
           <div
             className="animate-damage pointer-events-none fixed inset-0 z-50"
@@ -882,7 +871,32 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
           </span>
         </div>
 
-        <div className={cn('rounded-blob border-2 border-line bg-paper p-4 shadow-sticker', battle.elite && 'ring-2 ring-butter', enemyHit && 'animate-shake')}>
+        <div
+          className={cn(
+            'relative overflow-hidden rounded-blob border-2 border-line bg-paper p-4 shadow-sticker',
+            battle.elite && 'ring-2 ring-butter',
+            enemyHit && 'animate-shake',
+            breakFx && 'animate-shake-hard border-coral-deep ring-4 ring-coral',
+          )}
+        >
+          {breakFx ? (
+            <span className="pointer-events-none absolute inset-0 z-20" aria-hidden>
+              {Array.from({ length: 9 }).map((_, i) => (
+                <span
+                  key={i}
+                  className="absolute top-1/2 left-1/2 h-52 w-0.5 origin-top bg-line/50"
+                  style={{ transform: `rotate(${i * 20 - 80}deg) translateY(-50%)` }}
+                />
+              ))}
+              {Array.from({ length: 6 }).map((_, i) => (
+                <span
+                  key={`short-${i}`}
+                  className="absolute top-1/2 left-1/2 h-24 w-px origin-top bg-coral-deep/60"
+                  style={{ transform: `rotate(${i * 60}deg) translateY(-100%)` }}
+                />
+              ))}
+            </span>
+          ) : null}
           <div className="flex items-center gap-3">
             <span className="text-6xl">{battle.icon}</span>
             <div className="flex-1">

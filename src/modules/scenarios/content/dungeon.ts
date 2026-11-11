@@ -288,7 +288,7 @@ export const DUNGEON: DungeonContent = {
     { id: 'shield', name: 'Barrier', icon: '🛡️', description: 'Block the next damage you would take.', price: [22, 28, 36] },
     { id: 'hourglass', name: 'Hourglass', icon: '⏳', description: 'Add 15 seconds to the boss timer.', price: [16, 20, 26] },
     { id: 'bomb', name: 'Confidence Bomb', icon: '💣', description: 'Remove 1 confidence point, or 2 HP if already broken.', price: [30, 38, 48] },
-    { id: 'gold', name: 'Gold Pouch', icon: '💰', description: 'Gain 60 gold.', price: [24, 30, 38] },
+    { id: 'gold', name: 'Gold Pouch', icon: '💰', description: 'Gain 40 gold.', price: [24, 30, 38] },
     { id: 'reroll', name: 'New Angle', icon: '🔄', description: 'Replace the current question with a new one.', price: [20, 26, 34] },
     { id: 'freeze', name: 'Freeze', icon: '🧊', description: 'Add 30 seconds to the boss timer.', price: [18, 24, 30] },
     { id: 'ward', name: 'Ward', icon: '🔮', description: 'Block the next damage you would take.', price: [26, 32, 40] },

@@ -10,7 +10,7 @@ export const DUNGEON_CONFIG = {
   eliteDamage: { easy: 12, normal: 17, hard: 22 } as const,
   bossDamage: { easy: 15, normal: 20, hard: 25 } as const,
   monsterGold: { easy: 20, normal: 30, hard: 40 } as const,
-  bossGold: { easy: 60, normal: 90, hard: 130 } as const,
+  bossGold: { easy: 45, normal: 65, hard: 95 } as const,
   eliteChance: [0.2, 0.35, 0.5] as const,
   rerollCost: 20,
   buffPrice: { easy: 60, normal: 75, hard: 90 } as const,
@@ -296,5 +296,5 @@ export function bossAt(bosses: BossDef[], layer: number): BossDef {
 
 export function monsterGold(monster: MonsterDef, difficulty: 'easy' | 'normal' | 'hard', layer: number): number {
   const base = monster.gold + (DUNGEON_CONFIG.monsterGold[difficulty] - 20);
-  return Math.round(base * (1 + (layer - 1) * 0.25));
+  return Math.round(base * (1 + (layer - 1) * 0.25) * 0.7);
 }

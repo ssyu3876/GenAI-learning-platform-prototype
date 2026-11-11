@@ -132,7 +132,7 @@ export const DUNGEON_ZH: DungeonContent = {
     { id: 'shield', name: '护盾', icon: '🛡️', description: '抵挡下一次伤害。', price: [22, 28, 36] },
     { id: 'hourglass', name: '沙漏', icon: '⏳', description: 'Boss 限时 +15 秒。', price: [16, 20, 26] },
     { id: 'bomb', name: '自信炸弹', icon: '💣', description: '扣 1 点自信；已破防则扣 2 生命。', price: [30, 38, 48] },
-    { id: 'gold', name: '钱袋', icon: '💰', description: '获得 60 金币。', price: [24, 30, 38] },
+    { id: 'gold', name: '钱袋', icon: '💰', description: '获得 40 金币。', price: [24, 30, 38] },
     { id: 'reroll', name: '换个角度', icon: '🔄', description: '把当前题目换成新题。', price: [20, 26, 34] },
     { id: 'freeze', name: '冰冻', icon: '🧊', description: 'Boss 限时 +30 秒。', price: [18, 24, 30] },
     { id: 'ward', name: '结界', icon: '🔮', description: '抵挡下一次伤害。', price: [26, 32, 40] },

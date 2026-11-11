@@ -161,7 +161,7 @@ export function runScore(input: RunScoreInput): number {
 
 /** Study points are deliberately slow: one good run should buy a talent. */
 export function studyPoints(score: number, victory: boolean, tier: number): number {
-  return Math.max(1, Math.floor(score / 80) + (victory ? 2 : 0) + (tier - 1));
+  return Math.max(1, Math.floor(score / 140) + (victory ? 1 : 0) + Math.floor((tier - 1) / 2));
 }
 
 /** One modifier per layer; the tier adds another layer of pressure. */

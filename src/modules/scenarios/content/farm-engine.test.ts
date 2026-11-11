@@ -17,6 +17,8 @@ const ROW: FarmLevel = {
   target: 3,
   maxSteps: 12,
   allowed: ['forward', 'harvest', 'left'],
+  lesson: { title: '', href: '' },
+  questions: [],
   suggestedLoop: 1,
 };
 

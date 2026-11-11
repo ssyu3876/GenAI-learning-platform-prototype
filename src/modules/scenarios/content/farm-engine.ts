@@ -9,16 +9,29 @@ export interface FarmTile {
   x: number;
   y: number;
   crop: Crop;
+  /** A ripe tile can carry a review question. The drone stops when it steps on it. */
+  questionId?: string;
+}
+
+export interface FarmQuestion {
+  id: string;
+  concept: string;
+  prompt: string;
+  options: string[];
+  answerIndex: number;
+  explanation: string;
 }
 
 export interface FarmLevel {
   id: string;
   name: string;
   brief: string;
+  lesson: { title: string; href: string };
   width: number;
   height: number;
   start: { x: number; y: number; dir: FarmDir };
   tiles: FarmTile[];
+  questions: FarmQuestion[];
   goal: 'harvest' | 'plant';
   target: number;
   maxSteps: number;

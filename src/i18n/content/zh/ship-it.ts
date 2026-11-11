@@ -5,11 +5,24 @@
 // costs time but no quality, and repairing costs the most. Roughly a third of the turns are
 // correct as written: the lesson is calibration, not suspicion.
 import type { ShipScenario, ShipRepair, ShipTurn } from '@/modules/scenarios/content/types';
+import { SHIP_LINE_NOTES_ZH } from './ship-it-notes';
 
 const approvalNote = '本来就没写错。AI 助手做出来的东西，不是个个都有问题。';
 
 function repair(prompt: string, steps: ShipRepair['steps']): ShipRepair {
   return { prompt, steps };
+}
+
+/** Mirror of the helper in the English content file: attach the translated line notes. */
+function withRisks(turn: ShipTurn): ShipTurn {
+  const notes = SHIP_LINE_NOTES_ZH[turn.id];
+  if (!notes) return turn;
+  return {
+    ...turn,
+    risks: Object.entries(notes)
+      .map(([line, note]) => ({ line: Number(line), note }))
+      .sort((a, b) => a.line - b.line),
+  };
 }
 
 const TURNS: ShipTurn[] = [
@@ -953,5 +966,5 @@ export const SHIP_IT_ZH: ShipScenario = {
   weights: { quality: 0.65, time: 0.35 },
   drawCount: 9,
   drawMix: { approve: 3, reject: 3, repair: 3 },
-  turns: TURNS,
+  turns: TURNS.map(withRisks),
 };

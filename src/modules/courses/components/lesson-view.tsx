@@ -69,7 +69,7 @@ export async function LessonView({ user, slug, lessonId }: { user: SessionUser; 
           ) : null}
         </div>
         <h1 className="mb-4 text-3xl font-bold">{lesson.title}</h1>
-        <Markdown>{lesson.content}</Markdown>
+        <Markdown videos>{lesson.content}</Markdown>
       </Card>
 
       <AdaptPanel lessonId={lesson.id} suggested={suggested} />

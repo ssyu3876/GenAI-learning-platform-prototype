@@ -7,6 +7,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    // scripts/: pure helpers of the seed, such as scripts/seed/match-rows.ts
+    include: ['src/**/*.test.ts', 'scripts/**/*.test.ts'],
   },
 });

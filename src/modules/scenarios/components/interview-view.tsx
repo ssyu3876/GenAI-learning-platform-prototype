@@ -4,7 +4,8 @@ import { Badge, Card, CardBody, CardHeader, PageHeader } from '@/components/ui';
 import { getT } from '@/i18n';
 import { fmt } from '@/i18n/format';
 import { localizeContent } from '@/i18n/content';
-import { getRun } from '../queries';
+import { getClosedScenarios, getRun } from '../queries';
+import { ClosedNotice } from './closed-notice';
 import { INTERVIEW_TYPES, interviewType } from '../content/interview';
 import { buildInterviewReport, pickQuestions } from '../content/interview-engine';
 import { InterviewRunner } from './interview-runner';
@@ -17,9 +18,16 @@ export async function InterviewView({
   typeId: string | undefined;
 }) {
   const { locale, t } = await getT();
-  const formats = localizeContent(INTERVIEW_TYPES, locale);
+  const closed = await getClosedScenarios();
+  // A closed format drops out of the picker; the type itself still resolves below so a
+  // direct link can explain why it will not start.
+  const formats = localizeContent(INTERVIEW_TYPES, locale).filter((f) => !closed.has(`interview:${f.id}`));
   const rawType = typeId ? interviewType(typeId) : undefined;
   const type = rawType ? localizeContent(rawType, locale) : undefined;
+
+  if (type && user.role !== 'admin' && closed.has(`interview:${type.id}`)) {
+    return <ClosedNotice />;
+  }
 
   if (!type) {
     return (

@@ -1,5 +1,5 @@
 // Relative imports: drizzle-kit loads schema files outside Next.js (no "@/" alias).
-import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import { users } from '../../core/db/schema';
 
 export type RunStatus = 'active' | 'finished';
@@ -33,3 +33,17 @@ export const scenarioRuns = pgTable(
     index('scenario_runs_user_idx').on(t.userId),
   ],
 );
+
+/**
+ * Whether a scenario is open. There is deliberately no row per scenario: the catalogue is
+ * code, so a scenario is available unless an admin has closed it. That keeps this table
+ * empty in a fresh database and stops it drifting from the content files.
+ */
+export const scenarioSettings = pgTable('scenario_settings', {
+  scenarioKey: text().primaryKey(),
+  enabled: boolean().notNull().default(true),
+  /** Last admin to change it, for the panel and the audit trail. */
+  updatedBy: text().references(() => users.id, { onDelete: 'set null' }),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
+

@@ -5,7 +5,8 @@
     "courses": "Courses · Admin",
     "aiUsage": "AI usage · Admin",
     "scenarios": "Scenarios · Admin",
-    "badges": "Badges · Admin"
+    "badges": "Badges · Admin",
+    "activity": "Activity · Admin"
   },
   "nav": {
     "label": "Admin sections",
@@ -14,7 +15,8 @@
     "courses": "Courses",
     "aiUsage": "AI usage",
     "scenarios": "Scenarios",
-    "badges": "Badges"
+    "badges": "Badges",
+    "activity": "Activity"
   },
   "roles": {
     "learner": "Learner",
@@ -127,6 +129,13 @@
     },
     "emptyTitle": "No courses match",
     "emptyBody": "Try a different filter.",
+    "archive": "Take offline",
+    "archiving": "Taking offline…",
+    "archiveConfirm": "Take {title} out of the catalog? Learners keep their progress.",
+    "archiveLabel": "Take {title} offline",
+    "restore": "Restore",
+    "restoring": "Restoring…",
+    "restoreLabel": "Restore {title} as a draft",
     "columns": {
       "course": "Course",
       "status": "Status",
@@ -134,7 +143,8 @@
       "source": "Source",
       "owner": "Owner",
       "lessons": "Lessons",
-      "updated": "Updated"
+      "updated": "Updated",
+      "actions": "Actions"
     }
   },
   "review": {
@@ -189,6 +199,13 @@
     "untouchedHint": "Scenarios with no runs at all.",
     "never": "Never",
     "retired": "not in the catalogue",
+    "badRequest": "That scenario could not be recognised.",
+    "open": "Open",
+    "close": "Close",
+    "toggling": "Saving…",
+    "opened": "{name} is open again.",
+    "closed": "{name} is closed. Learners see a notice instead.",
+    "closedBadge": "Closed",
     "emptyTitle": "No scenarios yet",
     "emptyBody": "This table fills up as people play.",
     "columns": {
@@ -197,7 +214,8 @@
       "started": "Started",
       "finished": "Finished",
       "avgBest": "Avg best",
-      "lastPlayed": "Last played"
+      "lastPlayed": "Last played",
+      "status": "Status"
     }
   },
   "badges": {
@@ -217,6 +235,21 @@
       "group": "Group",
       "earnedBy": "Learners",
       "share": "Share"
+    }
+  },
+  "activity": {
+    "title": "Activity",
+    "subtitle": "Changes admins have made. Newest first.",
+    "emptyTitle": "Nothing yet",
+    "emptyBody": "Role changes, course reviews and closed scenarios show up here.",
+    "actions": {
+      "user.role_changed": "made {target} a {role}",
+      "course.approved": "published {target}",
+      "course.sent_back": "sent {target} back to its author",
+      "course.archived": "took {target} out of the catalog",
+      "course.restored": "restored {target} as a draft",
+      "scenario.closed": "closed {target}",
+      "scenario.opened": "reopened {target}"
     }
   },
   "modules": {
@@ -280,6 +313,10 @@
     "courseNotPending": "This course is no longer waiting for review.",
     "thisCourse": "The course",
     "approved": "{title} is now in the public catalog.",
-    "rejected": "{title} went back to its author as a draft."
+    "rejected": "{title} went back to its author as a draft.",
+    "notPublished": "That course is not published.",
+    "notArchived": "That course is not archived.",
+    "archived": "{title} is out of the catalog.",
+    "restored": "{title} is back as a draft."
   }
 }

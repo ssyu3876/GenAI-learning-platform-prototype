@@ -264,6 +264,35 @@ export const aiUsage = pgTable(
   (t) => [index().on(t.userId, t.createdAt), index().on(t.createdAt)],
 );
 
+/**
+ * Admin actions that change something. Append-only: a role change or a course going offline
+ * should leave a trace that outlives the person who did it.
+ *
+ * Writes go through core/audit.ts so every module logs the same shape. `action` is a stable
+ * key rendered through i18n at read time, because the console is bilingual and the reader's
+ * language is not known when the row is written.
+ */
+export const adminAudit = pgTable(
+  'admin_audit',
+  {
+    id: text().primaryKey(),
+    actorId: text().references(() => users.id, { onDelete: 'set null' }),
+    /** Snapshot of who acted, so the row still reads correctly after a rename. */
+    actorName: text().notNull(),
+    /** e.g. 'user.role_changed', 'course.archived', 'scenario.closed'. */
+    action: text().notNull(),
+    /** 'user' | 'course' | 'scenario'. */
+    targetType: text().notNull(),
+    targetId: text().notNull(),
+    /** Snapshot of the target's name at the time of the action. */
+    targetName: text().notNull(),
+    /** Structured facts for the action, e.g. { from: 'learner', to: 'admin' }. */
+    detail: jsonb().$type<Record<string, unknown>>(),
+    createdAt: createdAt(),
+  },
+  (t) => [index().on(t.createdAt), index().on(t.actorId)],
+);
+
 export type User = typeof users.$inferSelect;
 export type LearnerProfile = typeof learnerProfiles.$inferSelect;
 export type Course = typeof courses.$inferSelect;

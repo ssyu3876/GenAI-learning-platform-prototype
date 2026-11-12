@@ -34,7 +34,13 @@
   "card": {
     "minutes": "{minutes} 分钟",
     "best": "最佳 {score}",
-    "progressLabel": "{title} 的进度"
+    "progressLabel": "{title} 的进度",
+    "closed": "暂时关闭"
+  },
+  "closed": {
+    "title": "这个场景暂时关闭",
+    "body": "管理员暂时关闭了它。你的进度都保留着，其他场景照常可以玩。",
+    "back": "返回场景列表"
   },
   "common": {
     "start": "开始",

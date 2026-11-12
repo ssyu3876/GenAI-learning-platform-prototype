@@ -11,6 +11,7 @@ export const ID_PREFIX = {
   event: 'evt',
   class: 'cls',
   aiUsage: 'aiu',
+  audit: 'aud',
 } as const;
 
 export type IdKind = keyof typeof ID_PREFIX;

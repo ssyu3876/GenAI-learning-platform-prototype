@@ -5,6 +5,7 @@
 import { Badge, Card, CardBody, EmptyState } from '@/components/ui';
 import { fmt, getT } from '@/i18n';
 import { getScenarioOps } from './queries';
+import { ScenarioToggle } from './scenario-toggle';
 
 export async function ScenarioOps() {
   const { locale, t } = await getT();
@@ -56,7 +57,8 @@ export async function ScenarioOps() {
                     <th scope="col" className="py-2 pr-3">{t.admin.scenarios.columns.started}</th>
                     <th scope="col" className="py-2 pr-3">{t.admin.scenarios.columns.finished}</th>
                     <th scope="col" className="py-2 pr-3">{t.admin.scenarios.columns.avgBest}</th>
-                    <th scope="col" className="py-2">{t.admin.scenarios.columns.lastPlayed}</th>
+                    <th scope="col" className="py-2 pr-3">{t.admin.scenarios.columns.lastPlayed}</th>
+                    <th scope="col" className="py-2">{t.admin.scenarios.columns.status}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -64,8 +66,11 @@ export async function ScenarioOps() {
                     <tr key={row.key} className="border-t-2 border-line/15">
                       <td className="py-2.5 pr-3">
                         <span className="font-semibold">{row.title}</span>
+                        {row.closed ? (
+                          <Badge tint="coral" className="ml-2">{t.admin.scenarios.closedBadge}</Badge>
+                        ) : null}
                         {row.title === row.key ? (
-                          <Badge tint="coral" className="ml-2">{t.admin.scenarios.retired}</Badge>
+                          <Badge tint="paper" className="ml-2">{t.admin.scenarios.retired}</Badge>
                         ) : null}
                         <code className="block text-xs text-ink-soft">{row.key}</code>
                       </td>
@@ -78,7 +83,10 @@ export async function ScenarioOps() {
                         ) : null}
                       </td>
                       <td className="py-2.5 pr-3">{row.runs ? row.avgBest : '—'}</td>
-                      <td className="py-2.5">{dateLabel(row.lastPlayedAt)}</td>
+                      <td className="py-2.5 pr-3">{dateLabel(row.lastPlayedAt)}</td>
+                      <td className="py-2.5">
+                        <ScenarioToggle scenarioKey={row.key} name={row.title} closed={row.closed} />
+                      </td>
                     </tr>
                   ))}
                 </tbody>

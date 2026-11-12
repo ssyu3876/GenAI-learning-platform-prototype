@@ -21,7 +21,9 @@ export async function ScenarioHubView({ user }: { user: SessionUser }) {
   ]);
   const main = cards.filter((c) => !c.key.startsWith('interview:'));
   const interviews = cards.filter((c) => c.key.startsWith('interview:'));
-  const startedInterviews = interviews.filter((c) => c.progress.started).length;
+  // A closed format stays in the catalogue but drops out of the picker count.
+  const openInterviews = interviews.filter((c) => !c.closed);
+  const startedInterviews = openInterviews.filter((c) => c.progress.started).length;
   const dungeon = main.find((c) => c.key === 'agent-dungeon');
   const others = main.filter((c) => c.key !== 'agent-dungeon');
 
@@ -30,15 +32,16 @@ export async function ScenarioHubView({ user }: { user: SessionUser }) {
     title: t.scenarios.hub.interviewsTitle,
     tagline: t.scenarios.interview.pickerSubtitle,
     summary: t.scenarios.hub.interviewsSubtitle,
-    meta: fmt(t.scenarios.hub.formats, { count: interviews.length }),
+    meta: fmt(t.scenarios.hub.formats, { count: openInterviews.length }),
     minutes: 10,
     href: '/scenarios/interview',
+    closed: openInterviews.length === 0,
     progress: {
       started: startedInterviews > 0,
-      label: fmt(t.scenarios.hub.formats, { count: interviews.length }),
-      percent: Math.round((startedInterviews / Math.max(1, interviews.length)) * 100),
-      best: Math.max(0, ...interviews.map((i) => i.progress.best)),
-      completions: interviews.reduce((sum, i) => sum + i.progress.completions, 0),
+      label: fmt(t.scenarios.hub.formats, { count: openInterviews.length }),
+      percent: Math.round((startedInterviews / Math.max(1, openInterviews.length)) * 100),
+      best: Math.max(0, ...openInterviews.map((i) => i.progress.best)),
+      completions: openInterviews.reduce((sum, i) => sum + i.progress.completions, 0),
     },
   };
 
@@ -97,9 +100,15 @@ export async function ScenarioHubView({ user }: { user: SessionUser }) {
                 </span>
               ) : null}
             </div>
-            <Link href={dungeon.href} className={buttonClasses('primary', 'md', 'mt-4')}>
-              {t.scenarios.common.start}
-            </Link>
+            {dungeon.closed ? (
+              <span className={buttonClasses('ghost', 'md', 'mt-4 pointer-events-none opacity-60')}>
+                {t.scenarios.card.closed}
+              </span>
+            ) : (
+              <Link href={dungeon.href} className={buttonClasses('primary', 'md', 'mt-4')}>
+                {t.scenarios.common.start}
+              </Link>
+            )}
           </div>
           <div className="relative mt-4 grid grid-cols-4 gap-1.5 rounded-blob border-2 border-cream/20 bg-cream/10 p-2.5 md:mt-0">
             {['?', '⚔️', '?', '👑', '?', '🎁', '?', '?', '?', '⚔️', '?', '?', '?', '?', '🏪', '?'].map(

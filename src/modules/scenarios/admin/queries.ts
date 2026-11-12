@@ -10,6 +10,7 @@ import { INTERVIEW_TYPES } from '../content/interview';
 import { SHIP_IT } from '../content/ship-it';
 import { SPRINT_ZERO } from '../content/sprint-zero';
 import { scenarioRuns } from '../schema';
+import { getClosedScenarios } from '../queries';
 
 export interface ScenarioOpsRow {
   key: string;
@@ -22,6 +23,8 @@ export interface ScenarioOpsRow {
   completions: number;
   avgBest: number;
   lastPlayedAt: Date | null;
+  /** An admin has closed it: learners see a notice instead of the runner. */
+  closed: boolean;
 }
 
 /** Localized names for every scenario in the catalogue. */
@@ -55,7 +58,7 @@ export interface ScenarioOpsReport {
 export async function getScenarioOps(locale: Locale): Promise<ScenarioOpsReport> {
   const db = await getDb();
   const titles = scenarioTitles(locale);
-  const [rows, totals] = await Promise.all([
+  const [rows, totals, closed] = await Promise.all([
     db
       .select({
         key: scenarioRuns.scenarioKey,
@@ -75,6 +78,7 @@ export async function getScenarioOps(locale: Locale): Promise<ScenarioOpsReport>
         finished: sql<number>`count(*) filter (where ${scenarioRuns.status} = 'finished')`.mapWith(Number),
       })
       .from(scenarioRuns),
+    getClosedScenarios(),
   ]);
 
   const byKey = new Map(rows.map((row) => [row.key, row]));
@@ -90,11 +94,16 @@ export async function getScenarioOps(locale: Locale): Promise<ScenarioOpsReport>
       completions: row?.completions ?? 0,
       avgBest: row?.avgBest ?? 0,
       lastPlayedAt: row?.lastPlayedAt ?? null,
+      closed: closed.has(key),
     };
   });
   // A key that is no longer in the catalogue (a renamed scenario) still has history worth
   // seeing, so it comes last instead of disappearing.
-  const retired: ScenarioOpsRow[] = [...byKey.values()].map((row) => ({ ...row, title: row.key }));
+  const retired: ScenarioOpsRow[] = [...byKey.values()].map((row) => ({
+    ...row,
+    title: row.key,
+    closed: closed.has(row.key),
+  }));
 
   return {
     summary: {

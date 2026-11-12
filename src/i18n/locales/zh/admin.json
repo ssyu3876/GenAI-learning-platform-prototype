@@ -5,7 +5,8 @@
     "courses": "课程 · 管理控制台",
     "aiUsage": "AI 用量 · 管理控制台",
     "scenarios": "场景 · 管理控制台",
-    "badges": "徽章 · 管理控制台"
+    "badges": "徽章 · 管理控制台",
+    "activity": "操作记录 · 管理控制台"
   },
   "nav": {
     "label": "管理后台导航",
@@ -14,7 +15,8 @@
     "courses": "课程",
     "aiUsage": "AI 用量",
     "scenarios": "场景",
-    "badges": "徽章"
+    "badges": "徽章",
+    "activity": "操作记录"
   },
   "roles": {
     "learner": "学习者",
@@ -127,6 +129,13 @@
     },
     "emptyTitle": "没有匹配的课程",
     "emptyBody": "换个筛选条件试试。",
+    "archive": "下架",
+    "archiving": "正在下架…",
+    "archiveConfirm": "把《{title}》从课程目录下线？学习者的进度会保留。",
+    "archiveLabel": "下架《{title}》",
+    "restore": "恢复",
+    "restoring": "正在恢复…",
+    "restoreLabel": "把《{title}》恢复为草稿",
     "columns": {
       "course": "课程",
       "status": "状态",
@@ -134,7 +143,8 @@
       "source": "来源",
       "owner": "作者",
       "lessons": "课节数",
-      "updated": "更新时间"
+      "updated": "更新时间",
+      "actions": "操作"
     }
   },
   "review": {
@@ -189,6 +199,13 @@
     "untouchedHint": "一局都没有跑过的场景。",
     "never": "从未",
     "retired": "不在当前目录中",
+    "badRequest": "无法识别这个场景。",
+    "open": "开放",
+    "close": "关闭",
+    "toggling": "保存中…",
+    "opened": "{name} 已重新开放。",
+    "closed": "{name} 已关闭，学习者会看到提示页。",
+    "closedBadge": "已关闭",
     "emptyTitle": "还没有场景记录",
     "emptyBody": "有人开始玩之后，这张表才会有数据。",
     "columns": {
@@ -197,7 +214,8 @@
       "started": "开始",
       "finished": "完成",
       "avgBest": "平均最高分",
-      "lastPlayed": "最近一次"
+      "lastPlayed": "最近一次",
+      "status": "状态"
     }
   },
   "badges": {
@@ -217,6 +235,21 @@
       "group": "分组",
       "earnedBy": "学习者",
       "share": "占比"
+    }
+  },
+  "activity": {
+    "title": "操作记录",
+    "subtitle": "管理员做过的改动，最新的在最上面。",
+    "emptyTitle": "还没有记录",
+    "emptyBody": "改角色、审课程、开关场景都会记录在这里。",
+    "actions": {
+      "user.role_changed": "把 {target} 设为{role}",
+      "course.approved": "通过了《{target}》",
+      "course.sent_back": "把《{target}》退回给作者",
+      "course.archived": "把《{target}》从目录下架",
+      "course.restored": "把《{target}》恢复为草稿",
+      "scenario.closed": "关闭了场景「{target}」",
+      "scenario.opened": "重新开放了场景「{target}」"
     }
   },
   "modules": {
@@ -280,6 +313,10 @@
     "courseNotPending": "这门课程已经不在等待审核了。",
     "thisCourse": "这门课程",
     "approved": "{title} 已进入公开课程目录。",
-    "rejected": "{title} 已作为草稿退回给作者。"
+    "rejected": "{title} 已作为草稿退回给作者。",
+    "notPublished": "这门课程不是已发布状态。",
+    "notArchived": "这门课程不在已下架状态。",
+    "archived": "{title} 已从课程目录下架。",
+    "restored": "{title} 已恢复为草稿。"
   }
 }

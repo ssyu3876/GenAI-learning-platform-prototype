@@ -2,7 +2,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { getDb } from '@/core/db/client';
 import type { SessionUser } from '@/core/types';
 import { getTotalXp } from '@/core/progress/service';
-import { scenarioRuns, type RunStatus } from './schema';
+import { scenarioRuns, scenarioSettings, type RunStatus } from './schema';
 import type { InterviewRunState, ShipState, SprintState } from './engine';
 import { INTERVIEW_TYPES } from './content/interview';
 import { SHIP_IT } from './content/ship-it';
@@ -167,12 +167,35 @@ export interface ScenarioCardData {
   minutes: number;
   href: string;
   progress: Progress;
+  /** An admin closed this scenario. It stays listed, but nobody can start a new run. */
+  closed: boolean;
+}
+
+/** Keys an admin has closed. A scenario with no row is open: the catalogue is code. */
+export async function getClosedScenarios(): Promise<Set<string>> {
+  const db = await getDb();
+  const rows = await db
+    .select({ key: scenarioSettings.scenarioKey })
+    .from(scenarioSettings)
+    .where(eq(scenarioSettings.enabled, false));
+  return new Set(rows.map((row) => row.key));
+}
+
+/** Whether one scenario is playable. Used by the runner before it renders anything. */
+export async function isScenarioOpen(key: string): Promise<boolean> {
+  const db = await getDb();
+  const [row] = await db
+    .select({ enabled: scenarioSettings.enabled })
+    .from(scenarioSettings)
+    .where(eq(scenarioSettings.scenarioKey, key))
+    .limit(1);
+  return row?.enabled ?? true;
 }
 
 export async function getScenarioCards(userId: string): Promise<ScenarioCardData[]> {
   const locale = await getLocale();
   const zh = locale === 'zh';
-  const runs = await getAllRuns(userId);
+  const [runs, closed] = await Promise.all([getAllRuns(userId), getClosedScenarios()]);
   const ship = localizeContent(SHIP_IT, locale);
   const sprint = localizeContent(SPRINT_ZERO, locale);
   const farm = localizeContent(DUNGEON, locale);
@@ -188,6 +211,7 @@ export async function getScenarioCards(userId: string): Promise<ScenarioCardData
       minutes: ship.minutes,
       href: '/scenarios/ship-it',
       progress: runProgress('ship-it', runs.get('ship-it'), zh),
+      closed: closed.has('ship-it'),
     },
     {
       key: 'sprint-zero',
@@ -198,6 +222,7 @@ export async function getScenarioCards(userId: string): Promise<ScenarioCardData
       minutes: sprint.minutes,
       href: '/scenarios/sprint-zero',
       progress: runProgress('sprint-zero', runs.get('sprint-zero'), zh),
+      closed: closed.has('sprint-zero'),
     },
     {
       key: 'agent-dungeon',
@@ -208,6 +233,7 @@ export async function getScenarioCards(userId: string): Promise<ScenarioCardData
       minutes: 10,
       href: '/scenarios/agent-dungeon',
       progress: runProgress('agent-dungeon', runs.get('agent-dungeon'), zh),
+      closed: closed.has('agent-dungeon'),
     },
   ];
 
@@ -222,6 +248,7 @@ export async function getScenarioCards(userId: string): Promise<ScenarioCardData
       minutes: 10,
       href: `/scenarios/interview?type=${type.id}`,
       progress: runProgress(key, runs.get(key), zh),
+      closed: closed.has(key),
     };
   });
 

@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { Badge, Button, buttonClasses, Card, CardBody, CardHeader, EmptyState, PageHeader, Select, type Tint } from '@/components/ui';
 import { fmt, getT, plural } from '@/i18n';
 import { AdminNav } from '../components/admin-nav';
+import { CourseStatusButtons } from '../components/course-status-buttons';
 import { ReviewButtons } from '../components/review-buttons';
 import {
   COURSE_SOURCES,
@@ -145,7 +146,8 @@ export async function AdminCoursesPage({ filters }: { filters: CourseFilters }) 
                       <th scope="col" className="py-2 pr-3">{t.admin.courses.columns.source}</th>
                       <th scope="col" className="py-2 pr-3">{t.admin.courses.columns.owner}</th>
                       <th scope="col" className="py-2 pr-3">{t.admin.courses.columns.lessons}</th>
-                      <th scope="col" className="py-2">{t.admin.courses.columns.updated}</th>
+                      <th scope="col" className="py-2 pr-3">{t.admin.courses.columns.updated}</th>
+                      <th scope="col" className="py-2">{t.admin.courses.columns.actions}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -164,7 +166,10 @@ export async function AdminCoursesPage({ filters }: { filters: CourseFilters }) 
                         <td className="py-2.5 pr-3">{t.admin.source[c.source]}</td>
                         <td className="py-2.5 pr-3">{c.ownerName ?? '–'}</td>
                         <td className="py-2.5 pr-3">{c.lessonCount}</td>
-                        <td className="py-2.5">{dateLabel(c.updatedAt)}</td>
+                        <td className="py-2.5 pr-3">{dateLabel(c.updatedAt)}</td>
+                        <td className="py-2.5">
+                          <CourseStatusButtons courseId={c.id} title={c.title} status={c.status} />
+                        </td>
                       </tr>
                     ))}
                   </tbody>

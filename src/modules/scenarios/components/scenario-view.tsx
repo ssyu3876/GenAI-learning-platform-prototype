@@ -6,7 +6,7 @@ import { getUserStats } from '@/core/progress/service';
 import { getT, type Translations } from '@/i18n';
 import { localizeContent } from '@/i18n/content';
 import { localizeShipEnding } from '@/i18n/content/ship-endings';
-import { getRun } from '../queries';
+import { getRun, isScenarioOpen } from '../queries';
 import {
   SHIP_TIME_BUDGET,
   shipAlternatives,
@@ -29,6 +29,7 @@ import { SHIP_IT } from '../content/ship-it';
 import { SPRINT_ZERO } from '../content/sprint-zero';
 import { DUNGEON } from '../content/dungeon';
 import { StartPanel } from './start-panel';
+import { ClosedNotice } from './closed-notice';
 import { ShipRunner } from './ship-runner';
 import { SprintRunner } from './sprint-runner';
 import { AgentDungeon } from './agent-dungeon';
@@ -71,6 +72,10 @@ export async function ScenarioView({ user, scenarioKey }: { user: SessionUser; s
   if (scenarioKey !== SHIP_IT.key && scenarioKey !== SPRINT_ZERO.key && scenarioKey !== DUNGEON.key) notFound();
 
   const { locale, t } = await getT();
+  // An admin can still open a closed scenario to check the content; learners see a notice.
+  if (user.role !== 'admin' && !(await isScenarioOpen(scenarioKey))) {
+    return <ClosedNotice />;
+  }
   const shipCopy = localizeContent(SHIP_IT, locale);
   const sprintCopy = localizeContent(SPRINT_ZERO, locale);
   const dungeonCopy = localizeContent(DUNGEON, locale);

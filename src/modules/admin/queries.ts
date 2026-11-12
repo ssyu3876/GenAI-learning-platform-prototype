@@ -4,6 +4,7 @@ import { and, asc, count, desc, eq, gte, ilike, inArray, or, sql, type SQL } fro
 import { getDb } from '@/core/db/client';
 import {
   aiUsage,
+  adminAudit,
   courses,
   learningEvents,
   lessons,
@@ -178,6 +179,39 @@ export async function listCourseOwners(): Promise<{ id: string; name: string }[]
     .from(courses)
     .innerJoin(users, eq(users.id, courses.ownerId))
     .orderBy(asc(users.name));
+}
+
+/** How many audit rows the console shows at once. */
+export const AUDIT_PAGE_SIZE = 100;
+
+export interface AuditRow {
+  id: string;
+  actorName: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  targetName: string;
+  detail: Record<string, unknown> | null;
+  createdAt: Date;
+}
+
+/** Newest first. The audit table is append-only, so this is the whole history view. */
+export async function getAuditLog(limit = AUDIT_PAGE_SIZE): Promise<AuditRow[]> {
+  const db = await getDb();
+  return db
+    .select({
+      id: adminAudit.id,
+      actorName: adminAudit.actorName,
+      action: adminAudit.action,
+      targetType: adminAudit.targetType,
+      targetId: adminAudit.targetId,
+      targetName: adminAudit.targetName,
+      detail: adminAudit.detail,
+      createdAt: adminAudit.createdAt,
+    })
+    .from(adminAudit)
+    .orderBy(desc(adminAudit.createdAt))
+    .limit(limit);
 }
 
 export interface AiFeatureRow {

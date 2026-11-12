@@ -120,13 +120,24 @@ mockRules: [
   customers, budget, deadline and feature questions each reveal one detail. With an AI key the
   real model is used as before. Other role-plays keep working unchanged (`mockRules` defaults to `[]`).
 
-## Preset sync keeps attempts with the right activity
+## Preset sync keeps progress with the right lesson and activity
 
-`syncPresetCourses()` (in `scripts/seed/run.ts`) matched activity rows by position only. Adding
-a deck at the start of a lesson would have turned the existing sort row into the deck, and the
-quiz row into the sort, so learners' attempts and Review cards would have pointed at the wrong
-activity. `matchActivityRows()` now pairs activities by type and title first, then by position
-when only the title changed, and updates each row's position. New activities get new rows.
+`syncPresetCourses()` (in `scripts/seed/run.ts`) matched rows by position only. Adding a deck at
+the start of a lesson would have turned the existing sort row into the deck, and the quiz row
+into the sort, so learners' attempts and Review cards would have pointed at the wrong activity.
+The same would happen to lesson completions if a lesson were inserted at the start of a course.
+
+`matchRows()` in `scripts/seed/match-rows.ts` now pairs both lessons and activities:
+
+1. same title (and same type, for activities): the item moved, keep its row;
+2. otherwise the row at the same position with the same type: only the title was edited;
+3. otherwise a new row with a new id.
+
+Matched rows get their new position. Removed activities are deleted; removed lessons are still
+left alone, because deleting them would cascade into learner progress.
+`scripts/seed/match-rows.test.ts` covers inserting at the start, swapping, editing a title,
+changing the type, removing, duplicate titles, and the same cases for lessons. `vitest.config.ts`
+now also runs tests under `scripts/`.
 
 ## Getting the new course onto the live site
 

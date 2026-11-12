@@ -40,6 +40,7 @@ import { agentsCourse } from './course-agents';
 import { agentsStudentCourse } from './course-agents-student';
 import { basicsCourse } from './course-basics';
 import { databasesDraft, gitCourse, photographyCourse } from './course-extras';
+import { matchRows } from './match-rows';
 import { peopleCourse } from './course-people';
 
 export const DEMO_PASSWORD = 'sprout123';
@@ -245,12 +246,12 @@ async function insertChunks<T>(rows: T[], insert: (chunk: T[]) => Promise<unknow
  * already exists. Every deploy builds and seeds, so this is how richer course content reaches
  * the live demo database without wiping user accounts or progress.
  *
- * Course and lesson IDs stay stable by matching positions, so enrolments, class assignments
- * and existing attempts keep pointing at the same rows. Activities are matched by type and
- * title first (see matchActivityRows), so inserting a new activity at the start of a lesson
- * does not turn last week's quiz row into a slide deck: attempts and review cards stay with
- * the activity they were made for. Removed activities are deleted; removed lessons are left
- * alone (there are none today) because deleting them would cascade into learner progress.
+ * Course IDs stay stable by slug. Lessons and activities are matched by title (and type, for
+ * activities) before position (see match-rows.ts), so inserting a lesson or an activity at the
+ * start does not turn last week's quiz row into a slide deck: enrolments, attempts, lesson
+ * completions and review cards stay with what they were made for. Removed activities are
+ * deleted; removed lessons are left alone (there are none today) because deleting them would
+ * cascade into learner progress.
  */
 const PRESET_COURSES = [
   { slug: 'how-software-gets-built', draft: basicsCourse },
@@ -260,40 +261,6 @@ const PRESET_COURSES = [
 ] as const;
 
 const PRESET_SEED_OPTS = { ownerId: null, source: 'seed' as const, status: 'published' as const, visibility: 'public' as const };
-
-interface ActivityRowKey {
-  id: string;
-  position: number;
-  type: string;
-  title: string;
-}
-
-/**
- * Pairs each activity in the seed file with an existing row, by index into `drafts`:
- * 1. a row with the same type and title (the activity may have moved);
- * 2. otherwise the row at the same position, if it has the same type (the title was edited);
- * 3. otherwise null: a new activity, inserted with a new id.
- * Rows left unpaired are activities that were removed from the seed file.
- */
-export function matchActivityRows(
-  rows: ActivityRowKey[],
-  drafts: { type: string; title: string }[],
-): { matches: (ActivityRowKey | null)[]; unused: ActivityRowKey[] } {
-  const free = new Set(rows.map((row) => row.id));
-  const take = (row: ActivityRowKey | undefined) => {
-    if (!row || !free.has(row.id)) return null;
-    free.delete(row.id);
-    return row;
-  };
-  const matches: (ActivityRowKey | null)[] = drafts.map((draft) =>
-    take(rows.find((row) => free.has(row.id) && row.type === draft.type && row.title === draft.title)),
-  );
-  drafts.forEach((draft, i) => {
-    if (matches[i]) return;
-    matches[i] = take(rows.find((row) => free.has(row.id) && row.position === i && row.type === draft.type));
-  });
-  return { matches, unused: rows.filter((row) => free.has(row.id)) };
-}
 
 async function syncPresetCourse(slug: string, draft: CourseDraft): Promise<void> {
   const db = await getDb();
@@ -327,13 +294,15 @@ async function syncPresetCourse(slug: string, draft: CourseDraft): Promise<void>
     .where(eq(lessons.courseId, existing.id))
     .orderBy(asc(lessons.position));
 
+  const lessonMatches = matchRows(existingLessons, clean.lessons).matches;
   for (const [position, lesson] of clean.lessons.entries()) {
-    const currentLesson = existingLessons.find((row) => row.position === position) ?? existingLessons[position];
+    const currentLesson = lessonMatches[position];
     let lessonId = currentLesson?.id;
     if (currentLesson) {
       await db
         .update(lessons)
         .set({
+          position,
           title: lesson.title,
           content: lesson.content,
           estimatedMinutes: lesson.estimatedMinutes ?? 10,
@@ -359,7 +328,7 @@ async function syncPresetCourse(slug: string, draft: CourseDraft): Promise<void>
       .where(eq(activities.lessonId, lessonId))
       .orderBy(asc(activities.position));
 
-    const { matches, unused } = matchActivityRows(currentActivities, lesson.activities);
+    const { matches, unused } = matchRows(currentActivities, lesson.activities);
     for (const [activityPosition, activity] of lesson.activities.entries()) {
       const currentActivity = matches[activityPosition];
       if (currentActivity) {

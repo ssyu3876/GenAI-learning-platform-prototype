@@ -31,7 +31,7 @@
   "badges": {
     "first-activity": {
       "name": "第一次作答",
-      "description": "在任意一课里完成一个活动。"
+      "description": "完成任意一节课里的一个活动。"
     },
     "ten-activities": {
       "name": "渐入佳境",
@@ -41,13 +41,13 @@
       "name": "稳步前进",
       "description": "完成二十五个活动。"
     },
-    "perfect-one": {
-      "name": "完美一次",
-      "description": "在任意一个活动中拿到 100 分。"
+    "fifty-activities": {
+      "name": "养成习惯",
+      "description": "完成五十个活动。"
     },
-    "perfect-five": {
-      "name": "五次满分",
-      "description": "在五个不同的活动中拿到 100 分。"
+    "hundred-activities": {
+      "name": "百题俱乐部",
+      "description": "完成一百个活动。"
     },
     "first-lesson": {
       "name": "第一课",
@@ -57,37 +57,105 @@
       "name": "十节课",
       "description": "完成十节课。"
     },
+    "thirty-lessons": {
+      "name": "长途跋涉",
+      "description": "完成三十节课。"
+    },
+    "perfect-one": {
+      "name": "完美一次",
+      "description": "任意活动拿到满分。"
+    },
+    "perfect-five": {
+      "name": "五次满分",
+      "description": "五个不同活动拿到满分。"
+    },
+    "perfect-ten": {
+      "name": "十次零失误",
+      "description": "十个不同活动拿到满分。"
+    },
     "first-course": {
       "name": "完成第一门课",
-      "description": "完整学完一门课程。"
+      "description": "完成一门课程。"
     },
-    "three-courses": {
-      "name": "三门课程",
-      "description": "学完三门课程。"
+    "two-courses": {
+      "name": "两门课程",
+      "description": "完成两门课程。"
+    },
+    "five-courses": {
+      "name": "课程收藏家",
+      "description": "完成五门课程。"
     },
     "first-scenario": {
-      "name": "亲身经历",
+      "name": "走进故事",
       "description": "完成任意一个场景。"
     },
-    "both-long": {
-      "name": "两个长场景",
-      "description": "完成《发布时刻》和《第零个冲刺》。"
+    "ship-it-finish": {
+      "name": "发布成功",
+      "description": "完成「Ship It」。"
     },
-    "clean-release": {
+    "ship-it-high": {
       "name": "干净发布",
-      "description": "在《发布时刻》中拿到 80 分或以上。"
+      "description": "「Ship It」得分 80 以上。"
     },
-    "still-standing": {
+    "ship-it-ace": {
+      "name": "滴水不漏",
+      "description": "「Ship It」得分 95 以上。"
+    },
+    "sprint-zero-finish": {
+      "name": "冲刺完成",
+      "description": "完成「第零个冲刺」。"
+    },
+    "sprint-zero-high": {
       "name": "依然挺立",
-      "description": "在《第零个冲刺》中拿到 80 分或以上。"
+      "description": "「第零个冲刺」得分 80 以上。"
+    },
+    "dungeon-clear": {
+      "name": "打通地牢",
+      "description": "击败「Agent Dungeon」全部三层。"
+    },
+    "dungeon-tier-3": {
+      "name": "继续深入",
+      "description": "在难度 3 或更高通关「Agent Dungeon」。"
+    },
+    "dungeon-tier-5": {
+      "name": "无所畏惧",
+      "description": "在难度 5 通关「Agent Dungeon」。"
+    },
+    "dungeon-score-80": {
+      "name": "高效通关",
+      "description": "「Agent Dungeon」得分 80 以上。"
+    },
+    "dungeon-flawless": {
+      "name": "毫发无伤",
+      "description": "不受伤通关任意一层。"
+    },
+    "dungeon-daily": {
+      "name": "今日地牢",
+      "description": "通关一次每日挑战。"
+    },
+    "dungeon-weekly": {
+      "name": "本周地牢",
+      "description": "通关一次每周挑战。"
     },
     "interviewed": {
-      "name": "坐上面试椅",
-      "description": "完成一次模拟面试。"
+      "name": "第一次面试",
+      "description": "完成一场模拟面试。"
     },
-    "all-formats": {
-      "name": "全部形式",
-      "description": "完成全部七种面试类型。"
+    "interview-three": {
+      "name": "三种形式",
+      "description": "完成三种面试形式。"
+    },
+    "interview-all": {
+      "name": "全部七种",
+      "description": "完成所有面试形式。"
+    },
+    "all-scenarios": {
+      "name": "四种玩法",
+      "description": "完成「Ship It」「第零个冲刺」「Agent Dungeon」和一场面试。"
+    },
+    "scenario-runs-10": {
+      "name": "十次历练",
+      "description": "累计完成十次场景，含重玩。"
     },
     "streak-3": {
       "name": "连续三天",
@@ -97,13 +165,41 @@
       "name": "整整一周",
       "description": "连续七天学习。"
     },
+    "streak-14": {
+      "name": "两周不断",
+      "description": "连续十四天学习。"
+    },
+    "streak-30": {
+      "name": "整整一个月",
+      "description": "连续三十天学习。"
+    },
+    "stage-2": {
+      "name": "幼苗",
+      "description": "累计 250 XP。"
+    },
     "stage-3": {
       "name": "小树",
-      "description": "把 Pip 养到第 3 阶段。"
+      "description": "累计 900 XP。"
     },
     "stage-4": {
       "name": "树林",
-      "description": "把 Pip 养到最后一个阶段。"
+      "description": "累计 2100 XP。"
+    },
+    "xp-1500": {
+      "name": "1500 XP",
+      "description": "累计获得 1500 XP。"
+    },
+    "xp-3000": {
+      "name": "3000 XP",
+      "description": "累计获得 3000 XP。"
+    },
+    "level-5": {
+      "name": "等级 5",
+      "description": "达到等级 5。"
+    },
+    "level-8": {
+      "name": "等级 8",
+      "description": "达到等级 8。"
     }
   },
   "closest": {

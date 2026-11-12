@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { getDb } from '@/core/db/client';
 import type { SessionUser } from '@/core/types';
 import { getTotalXp } from '@/core/progress/service';
@@ -171,6 +171,12 @@ export interface ScenarioCardData {
   closed: boolean;
 }
 
+/**
+ * The seven interview formats share one switch. Closing them one by one is busywork, and an
+ * admin thinks of "practice interviews" as one thing, so the console shows one row for it.
+ */
+export const INTERVIEW_GROUP = 'interview';
+
 /** Keys an admin has closed. A scenario with no row is open: the catalogue is code. */
 export async function getClosedScenarios(): Promise<Set<string>> {
   const db = await getDb();
@@ -178,18 +184,37 @@ export async function getClosedScenarios(): Promise<Set<string>> {
     .select({ key: scenarioSettings.scenarioKey })
     .from(scenarioSettings)
     .where(eq(scenarioSettings.enabled, false));
-  return new Set(rows.map((row) => row.key));
+  const closed = new Set(rows.map((row) => row.key));
+  // The group and its formats are one switch in both directions: a closed group closes every
+  // format, and a closed format (a row written by an older build) marks the group as closed.
+  const formatsClosed = [...closed].some((key) => key.startsWith('interview:'));
+  if (closed.has(INTERVIEW_GROUP) || formatsClosed) {
+    closed.add(INTERVIEW_GROUP);
+    for (const type of INTERVIEW_TYPES) closed.add(`interview:${type.id}`);
+  }
+  return closed;
+}
+
+/**
+ * The settings rows that decide whether `key` may run.
+ *
+ * An interview format answers to the whole group, including rows written for a sibling format
+ * by an older build, when closing one format was still possible. Keeping this pure means the
+ * rule is testable without a database.
+ */
+export function scenarioCheckKeys(key: string): string[] {
+  if (!key.startsWith('interview:')) return [key];
+  return [INTERVIEW_GROUP, ...INTERVIEW_TYPES.map((type) => `interview:${type.id}`)];
 }
 
 /** Whether one scenario is playable. Used by the runner before it renders anything. */
 export async function isScenarioOpen(key: string): Promise<boolean> {
   const db = await getDb();
-  const [row] = await db
+  const rows = await db
     .select({ enabled: scenarioSettings.enabled })
     .from(scenarioSettings)
-    .where(eq(scenarioSettings.scenarioKey, key))
-    .limit(1);
-  return row?.enabled ?? true;
+    .where(inArray(scenarioSettings.scenarioKey, scenarioCheckKeys(key)));
+  return rows.every((row) => row.enabled);
 }
 
 export async function getScenarioCards(userId: string): Promise<ScenarioCardData[]> {

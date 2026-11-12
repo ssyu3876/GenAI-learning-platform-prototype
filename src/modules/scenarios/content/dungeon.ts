@@ -117,6 +117,29 @@ export interface DungeonLabels {
   hpFull: string;
   itemUsed: string;
   questionNumber: string;
+  charactersSection: string;
+  talentsSection: string;
+  tierSection: string;
+  modeSection: string;
+  volumeLabel: string;
+  metaLine: string;
+  scoreLabel: string;
+  streakBestLabel: string;
+  flawlessLabel: string;
+  achievementLabel: string;
+  modes: Record<'free' | 'daily' | 'weekly', string>;
+  /** Display copy for the meta definitions, which keep their English defaults in code. */
+  characters: Record<string, DungeonVocab>;
+  talents: Record<string, DungeonVocab>;
+  modifiers: Record<string, DungeonVocab>;
+  achievements: Record<string, DungeonVocab>;
+  /** One line per tier, index 0 = tier 1. */
+  tierPressure: string[];
+}
+
+export interface DungeonVocab {
+  name: string;
+  description: string;
 }
 
 export interface DungeonContent {
@@ -198,6 +221,54 @@ export const DUNGEON: DungeonContent = {
     hpFull: 'HP is already full.',
     itemUsed: 'Item used.',
     questionNumber: 'Question',
+    charactersSection: 'Characters',
+    talentsSection: 'Talents (max 2)',
+    tierSection: 'Tier',
+    modeSection: 'Mode',
+    volumeLabel: 'Volume',
+    metaLine: '3 layers · 3 bosses',
+    scoreLabel: 'Score',
+    streakBestLabel: 'Best streak',
+    flawlessLabel: 'Flawless layers',
+    achievementLabel: 'Achievement',
+    modes: { free: 'Free', daily: 'Daily', weekly: 'Weekly' },
+    characters: {
+      rookie: { name: 'Rookie', description: 'No bonus. Learn the dungeon first.' },
+      tank: { name: 'Tank', description: 'Max HP +30.' },
+      merchant: { name: 'Merchant', description: 'Start with +40 gold.' },
+      scholar: { name: 'Scholar', description: 'Start with an extra item.' },
+      duelist: { name: 'Duelist', description: 'Broken bosses take +1 damage.' },
+    },
+    talents: {
+      hp20: { name: 'Bigger Heart', description: 'Max HP +20.' },
+      gold25: { name: 'Pocket Money', description: 'Start with +25 gold.' },
+      heal: { name: 'First Aid', description: 'Start with a Heal Card.' },
+      scan: { name: 'Scanner', description: 'Start with a Scan Card.' },
+      time10: { name: 'Extra Minute', description: 'Boss timers +10 seconds.' },
+      discount: { name: 'Haggler', description: 'Shop prices -20%.' },
+      revive: { name: 'One More Try', description: 'Survive one fatal hit with 20 HP.' },
+      power: { name: 'Sharp Edge', description: 'Broken bosses take +1 damage.' },
+      gold50: { name: 'Treasure Sense', description: 'Gold rewards +50%.' },
+      items2: { name: 'Prepared', description: 'Start with 2 random items.' },
+    },
+    modifiers: {
+      tight: { name: 'Tight Clock', description: 'Boss timer -5 seconds.' },
+      heavy: { name: 'Heavy Blow', description: 'Wrong answers deal double damage.' },
+      thin: { name: 'Thin Pack', description: 'You can hold at most 2 items.' },
+      pricey: { name: 'Pricey', description: 'Shop prices +30%.' },
+    },
+    achievements: {
+      flawless: { name: 'Untouchable', description: 'Clear a layer without taking damage.' },
+      streak10: { name: 'On Fire', description: 'Answer 10 questions correctly in a row.' },
+      minimalist: { name: 'Light Packer', description: 'Win holding at most one item.' },
+    },
+    tierPressure: [
+      'No extra pressure.',
+      'Max HP -10, boss timer -2s.',
+      'Max HP -20, boss timer -4s.',
+      'Max HP -30, boss timer -6s, wrong hits +3.',
+      'Max HP -40, boss timer -8s, wrong hits +5.',
+    ],
   },
   monsters: [
     { id: 'slime', name: 'Slime', icon: '🟢', hp: 1, layers: [1], gold: 20 },

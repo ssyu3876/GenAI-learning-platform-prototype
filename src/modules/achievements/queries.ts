@@ -5,29 +5,66 @@ import { getUserStats } from '@/core/progress/service';
 import { computeStreak, getLevel } from '@/core/progress/xp';
 import { BADGES, type BadgeDef, type BadgeGroup, type BadgeId, type BadgeSnapshot } from './definitions';
 
+/** The fields a `scenario.completed` payload can carry. Older rows only have the first two. */
+export interface ScenarioPayload {
+  scenarioKey?: string;
+  score?: number;
+  /** Agent Dungeon only: the tier cleared and how the run was seeded. */
+  tier?: number;
+  flawless?: boolean;
+  mode?: string;
+}
+
 /** The part of a snapshot that comes from `scenario.completed` events. */
-export function scenarioTotals(payloads: Array<{ scenarioKey?: string; score?: number }>) {
+export function scenarioTotals(payloads: ScenarioPayload[]) {
   const finished = new Set<string>();
-  const interviewKeys = new Set<string>();
+  const interviews = new Set<string>();
   let shipItBest = 0;
   let sprintBest = 0;
+  let dungeonBest = 0;
+  let dungeonBestTier = 0;
+  let dungeonCleared = false;
+  let dungeonFlawless = false;
+  let dungeonDaily = false;
+  let dungeonWeekly = false;
+  let scenarioRuns = 0;
 
   for (const payload of payloads) {
     const key = payload.scenarioKey;
     if (!key) continue;
+    scenarioRuns += 1;
     finished.add(key);
     const score = Number(payload.score ?? 0);
-    if (key === 'ship-it') shipItBest = Math.max(shipItBest, score);
-    if (key === 'sprint-zero') sprintBest = Math.max(sprintBest, score);
-    if (key.startsWith('interview:')) interviewKeys.add(key);
+
+    if (key === 'ship-it') {
+      shipItBest = Math.max(shipItBest, score);
+    } else if (key === 'sprint-zero') {
+      sprintBest = Math.max(sprintBest, score);
+    } else if (key === 'agent-dungeon') {
+      // A dungeon event is only written on a win, so seeing one is a clear.
+      dungeonCleared = true;
+      dungeonBest = Math.max(dungeonBest, score);
+      dungeonBestTier = Math.max(dungeonBestTier, Number(payload.tier ?? 0));
+      if (payload.flawless) dungeonFlawless = true;
+      if (payload.mode === 'daily') dungeonDaily = true;
+      if (payload.mode === 'weekly') dungeonWeekly = true;
+    } else if (key.startsWith('interview:')) {
+      interviews.add(key);
+    }
   }
 
   return {
-    scenariosFinished: finished.size,
-    longScenariosFinished: (finished.has('ship-it') ? 1 : 0) + (finished.has('sprint-zero') ? 1 : 0),
+    finishedScenarios: [...finished],
+    scenarioRuns,
     shipItBest,
     sprintBest,
-    interviewsFinished: interviewKeys.size,
+    dungeonCleared,
+    dungeonBestTier,
+    dungeonBest,
+    dungeonFlawless,
+    dungeonDaily,
+    dungeonWeekly,
+    interviewsFinished: interviews.size,
   };
 }
 
@@ -65,7 +102,9 @@ export async function getBadgeSnapshot(userId: string): Promise<BadgeSnapshot> {
     perfectActivities: perfect[0]?.n ?? 0,
     lessonsCompleted: lessons[0]?.n ?? 0,
     coursesCompleted: courses[0]?.n ?? 0,
-    ...scenarioTotals(scenarioEvents.map((row) => (row.payload ?? {}) as { scenarioKey?: string; score?: number })),
+    ...scenarioTotals(
+      scenarioEvents.map((row) => (row.payload ?? {}) as ScenarioPayload),
+    ),
   };
 }
 
@@ -186,9 +225,9 @@ export async function getBadgeDistribution(): Promise<BadgeDistribution> {
   const xpByUser = new Map(xpRows.map((row) => [row.userId, Number(row.total ?? 0)]));
   const daysByUser = new Map<string, string[]>();
   for (const row of dayRows) push(daysByUser, row.userId, row.day);
-  const scenariosByUser = new Map<string, Array<{ scenarioKey?: string; score?: number }>>();
+  const scenariosByUser = new Map<string, ScenarioPayload[]>();
   for (const row of scenarioRows) {
-    push(scenariosByUser, row.userId, (row.payload ?? {}) as { scenarioKey?: string; score?: number });
+    push(scenariosByUser, row.userId, (row.payload ?? {}) as ScenarioPayload);
   }
   const perUser = (rows: Array<{ userId: string; n: number }>) => new Map(rows.map((row) => [row.userId, row.n]));
 

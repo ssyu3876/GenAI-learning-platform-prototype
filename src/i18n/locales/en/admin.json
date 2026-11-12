@@ -4,7 +4,8 @@
     "users": "Users · Admin",
     "courses": "Courses · Admin",
     "aiUsage": "AI usage · Admin",
-    "modules": "Modules · Admin"
+    "scenarios": "Scenarios · Admin",
+    "badges": "Badges · Admin"
   },
   "nav": {
     "label": "Admin sections",
@@ -12,7 +13,8 @@
     "users": "Users",
     "courses": "Courses",
     "aiUsage": "AI usage",
-    "modules": "Modules"
+    "scenarios": "Scenarios",
+    "badges": "Badges"
   },
   "roles": {
     "learner": "Learner",
@@ -66,8 +68,10 @@
       "coursesClear": "Nothing waiting. Browse every course with filters.",
       "aiTitle": "AI usage",
       "aiBody": "Calls per feature, real vs demo mode, tokens and speed.",
-      "modulesTitle": "Modules",
-      "modulesBody": "Feature modules installed in this build."
+      "scenariosTitle": "Scenarios",
+      "scenariosBody": "Who is playing the long-form practice runs, and who is not.",
+      "badgesTitle": "Badges",
+      "badgesBody": "How many learners hold each badge, and which ones nobody reaches."
     }
   },
   "widget": {
@@ -174,9 +178,50 @@
       "caption": "Last {days} days: {real} real AI calls and {mock} mock calls."
     }
   },
+  "scenarios": {
+    "title": "Scenarios",
+    "subtitle": "Read-only: scenario content ships with the code, not the database.",
+    "startedRuns": "Runs started",
+    "byPeople": "by {count} people",
+    "finishedRuns": "Runs finished",
+    "finishRate": "finish rate",
+    "untouched": "Never opened",
+    "untouchedHint": "Scenarios with no runs at all.",
+    "never": "Never",
+    "retired": "not in the catalogue",
+    "emptyTitle": "No scenarios yet",
+    "emptyBody": "This table fills up as people play.",
+    "columns": {
+      "scenario": "Scenario",
+      "learners": "Learners",
+      "started": "Started",
+      "finished": "Finished",
+      "avgBest": "Avg best",
+      "lastPlayed": "Last played"
+    }
+  },
+  "badges": {
+    "title": "Badges",
+    "subtitle": "Read-only: a badge is computed from the event log, never stored.",
+    "learners": "Learners",
+    "activeHint": "{count} of them have done something",
+    "neverEarned": "Nobody has these",
+    "neverHint": "Too hard, or broken.",
+    "everyoneHas": "Everybody has these",
+    "everyoneHint": "They no longer tell learners apart.",
+    "never": "Never earned",
+    "emptyTitle": "No learners yet",
+    "emptyBody": "Badge reach appears once people start using the platform.",
+    "columns": {
+      "badge": "Badge",
+      "group": "Group",
+      "earnedBy": "Learners",
+      "share": "Share"
+    }
+  },
   "modules": {
-    "title": "Modules",
-    "subtitle": "Each feature is a module listed once in src/registry/modules.ts. Remove the line and it disappears.",
+    "title": "Feature modules",
+    "subtitle": "What this build ships. Each one is a line in src/registry/modules.ts.",
     "empty": "No modules installed",
     "navItemsOne": "{count} nav item",
     "navItemsMany": "{count} nav items",

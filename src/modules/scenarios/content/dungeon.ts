@@ -118,6 +118,10 @@ export interface DungeonLabels {
   emptyShop: string;
   hpFull: string;
   itemUsed: string;
+  /** Shown when the backpack is at its cap, so a disabled Buy button has a reason. */
+  bagFull: string;
+  /** The layer-change transition. */
+  descending: string;
   questionNumber: string;
   charactersSection: string;
   talentsSection: string;
@@ -227,6 +231,8 @@ export const DUNGEON: DungeonContent = {
     emptyShop: 'Nothing left to buy.',
     hpFull: 'HP is already full.',
     itemUsed: 'Item used.',
+    bagFull: 'Your backpack is full.',
+    descending: 'Going deeper',
     questionNumber: 'Question',
     charactersSection: 'Characters',
     talentsSection: 'Talents (max 2)',

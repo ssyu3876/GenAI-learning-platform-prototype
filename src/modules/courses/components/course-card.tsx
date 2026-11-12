@@ -5,6 +5,7 @@ import { Clock } from 'lucide-react';
 import { asTint, Badge, Card, ProgressBar, TINT_SOLID } from '@/components/ui';
 import { useT } from '@/i18n/client';
 import type { CourseCardData } from '../queries';
+import { courseDuration } from './duration';
 
 export function CourseCard({ course, highlight }: { course: CourseCardData; highlight?: string }) {
   const t = useT();
@@ -42,7 +43,7 @@ export function CourseCard({ course, highlight }: { course: CourseCardData; high
             <Badge tint="paper">{LEVEL_LABEL[course.level]}</Badge>
             <Badge tint="paper">{AUDIENCE_LABEL[course.audience]}</Badge>
             <Badge tint="paper">
-              <Clock className="h-3 w-3" /> {course.estimatedMinutes} {t.chrome.common.min}
+              <Clock className="h-3 w-3" /> {courseDuration(course.estimatedMinutes, t)}
             </Badge>
           </div>
           {course.progress && (course.enrolled || course.progress.done > 0) ? (

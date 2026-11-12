@@ -9,6 +9,7 @@ import { getT } from '@/i18n';
 import type { Translations } from '@/i18n';
 import { startCourse } from '../actions';
 import { getCoursePageData } from '../queries';
+import { courseDuration } from './duration';
 
 const ACTIVITY_LABEL_KEY: Record<string, keyof Translations['activities']['types']> = {
   slides: 'slides',
@@ -19,6 +20,10 @@ const ACTIVITY_LABEL_KEY: Record<string, keyof Translations['activities']['types
   coding: 'coding',
   'release-run': 'releaseRun',
 };
+
+// The AI agents course has a student and a professional edition. The edition tag is for
+// routing, not for display: learners should see one course, not a catalog split in two.
+const EDITION_TAGS = new Set(['student', 'professional', '学生', '职场']);
 
 export async function CourseView({ user, slug }: { user: SessionUser; slug: string }) {
   const { t } = await getT();
@@ -49,9 +54,9 @@ export async function CourseView({ user, slug }: { user: SessionUser; slug: stri
                 {outline.lessons.length} {t.chrome.common.lessons}
               </Badge>
               <Badge tint="paper">
-                <Clock className="h-3 w-3" /> {t.courses.page.about}{outline.estimatedMinutes} {t.courses.page.min}
+                <Clock className="h-3 w-3" /> {t.courses.page.about}{courseDuration(outline.estimatedMinutes, t)}
               </Badge>
-              {outline.tags.map((tag) => (
+              {outline.tags.filter((tag) => !EDITION_TAGS.has(tag)).map((tag) => (
                 <Badge key={tag} tint="paper">
                   #{tag}
                 </Badge>

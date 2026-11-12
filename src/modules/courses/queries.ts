@@ -19,16 +19,37 @@ export type CourseCardData = Course & {
   enrolled: boolean;
 };
 
+/**
+ * The AI agents course has a student and a professional edition. They are separate rows so
+ * content, progress and duration stay clean, but learners see only the edition that matches
+ * their onboarding identity. Presets other than the AI agents pair are unaffected.
+ */
+function editionForBackground(background: string | undefined): 'student' | 'professional' {
+  return background === 'cs_student' || background === 'non_cs' ? 'student' : 'professional';
+}
+
+function editionOfSeedCourse(course: Course): 'student' | 'professional' | null {
+  if (course.source !== 'seed') return null;
+  if (course.tags.includes('student')) return 'student';
+  if (course.tags.includes('professional')) return 'professional';
+  return null;
+}
+
 export async function getCatalog(user: SessionUser) {
   const locale = await getLocale();
   const db = await getDb();
   const all = await listVisibleCourses(user);
-  const visible = all.filter((c) => c.status === 'published' || c.ownerId === user.id);
+  const [profile] = await db.select().from(learnerProfiles).where(eq(learnerProfiles.userId, user.id)).limit(1);
+  const edition = editionForBackground(profile?.background);
+  const visible = all.filter((c) => {
+    if (c.status !== 'published' && c.ownerId !== user.id) return false;
+    const courseEdition = editionOfSeedCourse(c);
+    return courseEdition === null || courseEdition === edition;
+  });
   const ids = visible.map((c) => c.id);
-  const [progress, enrolledRows, [profile]] = await Promise.all([
+  const [progress, enrolledRows] = await Promise.all([
     getCourseProgress(user.id, ids),
     db.select({ courseId: enrollments.courseId }).from(enrollments).where(eq(enrollments.userId, user.id)),
-    db.select().from(learnerProfiles).where(eq(learnerProfiles.userId, user.id)).limit(1),
   ]);
   const enrolled = new Set(enrolledRows.map((r) => r.courseId));
   const cards: CourseCardData[] = visible.map((c) => ({

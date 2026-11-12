@@ -3,6 +3,7 @@
 import type { CourseAudience, CourseLevel, LearnerBackground, LearnerGoal, LearnerTrack } from '@/core/db/schema';
 
 export type LearningStyle = 'concepts' | 'hands_on';
+export type CourseEdition = 'student' | 'professional';
 
 export interface OnboardingAnswers {
   background: LearnerBackground;
@@ -18,6 +19,25 @@ export interface CourseForMatching {
   tags: string[];
   level: CourseLevel;
   audience: CourseAudience;
+}
+
+/**
+ * The onboarding identity question has four options:
+ * - cs_student: computer science, still studying
+ * - non_cs: another subject (business, design, arts, science…), usually still studying
+ * - cs_graduate: computer science, graduated and preparing for a technical job
+ * - other: working, changing career, or just curious
+ *
+ * No extra question is needed: these four map to the two editions of the AI agents course.
+ */
+export function courseEditionFor(background: LearnerBackground): CourseEdition {
+  return background === 'cs_student' || background === 'non_cs' ? 'student' : 'professional';
+}
+
+function editionOf(course: CourseForMatching): CourseEdition | null {
+  if (course.tags.includes('student')) return 'student';
+  if (course.tags.includes('professional')) return 'professional';
+  return null;
 }
 
 export const INTEREST_OPTIONS = [
@@ -64,7 +84,15 @@ export function scoreCourse(a: OnboardingAnswers, c: CourseForMatching): number 
 
 /** Ordered course ids, best match first. */
 export function recommendCourses(a: OnboardingAnswers, catalog: CourseForMatching[], limit = 4): string[] {
-  return catalog
+  // The AI agents course exists as two editions. Show learners only the edition that matches
+  // their onboarding identity; other courses have no edition tag and stay available to all.
+  const wanted = courseEditionFor(a.background);
+  const hasWantedEdition = catalog.some((c) => editionOf(c) === wanted);
+  const eligible = hasWantedEdition
+    ? catalog.filter((c) => editionOf(c) === null || editionOf(c) === wanted)
+    : catalog;
+
+  return eligible
     .map((c) => ({ id: c.id, title: c.title, s: scoreCourse(a, c) }))
     .sort((x, y) => y.s - x.s || x.title.localeCompare(y.title))
     .slice(0, limit)

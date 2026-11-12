@@ -37,6 +37,7 @@ import { sortConfigSchema } from '@/modules/activities/sort/schema';
 import { releaseRunSchema } from '@/modules/scenarios/activities/release-run/schema';
 import { leaderboardPrefs } from '@/modules/leaderboard/schema';
 import { agentsCourse } from './course-agents';
+import { agentsStudentCourse } from './course-agents-student';
 import { basicsCourse } from './course-basics';
 import { databasesDraft, gitCourse, photographyCourse } from './course-extras';
 import { peopleCourse } from './course-people';
@@ -254,6 +255,7 @@ async function insertChunks<T>(rows: T[], insert: (chunk: T[]) => Promise<unknow
 const PRESET_COURSES = [
   { slug: 'how-software-gets-built', draft: basicsCourse },
   { slug: 'working-with-ai-coding-agents', draft: agentsCourse },
+  { slug: 'working-with-ai-coding-agents-student', draft: agentsStudentCourse },
   { slug: 'people-skills-for-tech-teams', draft: peopleCourse },
 ] as const;
 
@@ -396,12 +398,48 @@ export async function syncPresetCourses(): Promise<void> {
   for (const preset of PRESET_COURSES) await syncPresetCourse(preset.slug, preset.draft);
 }
 
+/**
+ * Keeps existing learner paths consistent with the two AI agents editions. A profile created
+ * before the editions existed may still point at the professional row while its background is
+ * a student (or the reverse). Replace only that one course id, preserving the rest of the path.
+ */
+export async function syncProfileEditions(): Promise<void> {
+  const db = await getDb();
+  const rows = await db
+    .select({ id: courses.id, slug: courses.slug })
+    .from(courses)
+    .where(inArray(courses.slug, ['working-with-ai-coding-agents', 'working-with-ai-coding-agents-student']));
+  const professional = rows.find((row) => row.slug === 'working-with-ai-coding-agents')?.id;
+  const student = rows.find((row) => row.slug === 'working-with-ai-coding-agents-student')?.id;
+  if (!professional || !student) return;
+
+  const profiles = await db
+    .select({
+      userId: learnerProfiles.userId,
+      background: learnerProfiles.background,
+      recommendedCourseIds: learnerProfiles.recommendedCourseIds,
+    })
+    .from(learnerProfiles);
+
+  for (const profile of profiles) {
+    const wanted = profile.background === 'cs_student' || profile.background === 'non_cs' ? student : professional;
+    const unwanted = wanted === student ? professional : student;
+    if (!profile.recommendedCourseIds.includes(unwanted)) continue;
+    const next = [...new Set(profile.recommendedCourseIds.map((id) => (id === unwanted ? wanted : id)))];
+    await db
+      .update(learnerProfiles)
+      .set({ recommendedCourseIds: next, updatedAt: new Date() })
+      .where(eq(learnerProfiles.userId, profile.userId));
+  }
+}
+
 export async function runSeed() {
   const db = await getDb();
   const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, 'admin@demo.dev')).limit(1);
   if (existing) {
     await syncPresetCourses();
-    console.info('Demo data already present: refreshed the three preset courses; accounts and history left intact.');
+    await syncProfileEditions();
+    console.info('Demo data already present: refreshed the preset courses; accounts and history left intact.');
     return;
   }
 
@@ -422,6 +460,7 @@ export async function runSeed() {
   const seedOpts = { ownerId: null, source: 'seed' as const, status: 'published' as const, visibility: 'public' as const };
   const basics = await saveCourseDraft(validated(basicsCourse), { ...seedOpts, slug: 'how-software-gets-built' });
   const agents = await saveCourseDraft(validated(agentsCourse), { ...seedOpts, slug: 'working-with-ai-coding-agents' });
+  const agentsStudent = await saveCourseDraft(validated(agentsStudentCourse), { ...seedOpts, slug: 'working-with-ai-coding-agents-student' });
   const people = await saveCourseDraft(validated(peopleCourse), { ...seedOpts, slug: 'people-skills-for-tech-teams' });
   await saveCourseDraft(validated(photographyCourse), { ownerId: miaId, source: 'learner_ai', status: 'published', visibility: 'private' });
   await saveCourseDraft(validated(databasesDraft), { ownerId: instructorId, source: 'manual', status: 'draft', visibility: 'private' });
@@ -460,7 +499,7 @@ export async function runSeed() {
     codingLevel: 1,
     interests: ['teamwork', 'ai-agents'],
     track: 'explorer',
-    recommendedCourseIds: [basics.id, people.id, agents.id],
+    recommendedCourseIds: [basics.id, people.id, agentsStudent.id],
     welcomeNote:
       'Nice to meet you, Mia! Since you are coming from business, we start with how software teams actually work, then the people side, then how to work alongside AI tools.',
   });
@@ -516,6 +555,8 @@ export async function runSeed() {
     createdAt: at(Math.floor(between(0, 14))),
   }));
   await insertChunks(usage, (c) => db.insert(aiUsage).values(c));
+
+  await syncProfileEditions();
 
   console.info(
     'Seeded: 3 staff/demo accounts + %d classmates, 6 courses, 1 class (invite code SPROUT), %d learning events. Password for every demo account: %s',

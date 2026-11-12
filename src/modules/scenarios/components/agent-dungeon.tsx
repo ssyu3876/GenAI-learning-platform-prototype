@@ -147,6 +147,8 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
   const [result, setResult] = useState<{ score: number; points: number; unlocked: string[] } | null>(null);
   /** Guards against reporting the same win twice when the victory effect re-runs. */
   const reportedRun = useRef(false);
+  /** Whether the server accepted the run, shown on the result screen. */
+  const [runSave, setRunSave] = useState<'idle' | 'saving' | 'ok' | 'error'>('idle');
 
   useEffect(() => {
     const timer = window.setTimeout(() => setMeta(loadMeta()), 0);
@@ -195,6 +197,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
   useEffect(() => {
     if (phase !== 'victory' || reportedRun.current) return;
     reportedRun.current = true;
+    setRunSave('saving');
     void recordDungeonRun({
       difficulty,
       tier,
@@ -203,11 +206,21 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
       wrong: stats.wrong,
       gold: stats.gold,
       flawlessLayers,
-    }).then((result) => {
-      // Nothing to show on success: the badge page picks it up. A rejected run (a dropped
-      // request, a stale session) is ignored rather than blocking the result screen.
-      if (!result.ok) reportedRun.current = false;
-    });
+    })
+      .then((result) => {
+        // A silent failure used to mean the player finished a run and never got the badge,
+        // with nothing on screen to explain it. The result screen now says what happened.
+        if (result.ok) {
+          setRunSave('ok');
+          return;
+        }
+        reportedRun.current = false;
+        setRunSave('error');
+      })
+      .catch(() => {
+        reportedRun.current = false;
+        setRunSave('error');
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
@@ -286,6 +299,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     setModifier(MODIFIERS[Math.floor(Math.random() * MODIFIERS.length)] ?? null);
     setAwarded(false);
     reportedRun.current = false;
+    setRunSave('idle');
     const start = nextMaps[0]!.rooms.find((r) => r.id === nextMaps[0]!.startRoomId)!;
     setRoomId(start.id);
     setVisited(new Set([start.id]));
@@ -867,6 +881,14 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
                 </p>
               ) : null}
             </div>
+          ) : null}
+          {runSave !== 'idle' ? (
+            <p
+              role="status"
+              className={cn('mt-2 text-sm', runSave === 'error' ? 'text-coral-deep' : 'text-ink-soft')}
+            >
+              {runSave === 'saving' ? L.saveSaving : runSave === 'ok' ? L.saveOk : L.saveFailed}
+            </p>
           ) : null}
         </div>
         <div className="flex gap-2">

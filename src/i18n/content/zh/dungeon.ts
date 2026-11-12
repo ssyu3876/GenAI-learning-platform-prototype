@@ -80,6 +80,9 @@ export const DUNGEON_ZH: DungeonContent = {
     streakBestLabel: '最高连击',
     flawlessLabel: '无伤层数',
     achievementLabel: '成就',
+    saveSaving: '正在记录本局…',
+    saveOk: '本局已记录，徽章会更新。',
+    saveFailed: '本局成绩未能保存，徽章可能不会更新。',
     modes: { free: '自由', daily: '每日', weekly: '每周' },
     characters: {
       rookie: { name: '新手', description: '没有加成，先熟悉地牢。' },

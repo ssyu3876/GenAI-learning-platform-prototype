@@ -129,6 +129,10 @@ export interface DungeonLabels {
   streakBestLabel: string;
   flawlessLabel: string;
   achievementLabel: string;
+  /** What happened to the run once the server was told about it. */
+  saveSaving: string;
+  saveOk: string;
+  saveFailed: string;
   modes: Record<'free' | 'daily' | 'weekly', string>;
   /** Display copy for the meta definitions, which keep their English defaults in code. */
   characters: Record<string, DungeonVocab>;
@@ -234,6 +238,9 @@ export const DUNGEON: DungeonContent = {
     streakBestLabel: 'Best streak',
     flawlessLabel: 'Flawless layers',
     achievementLabel: 'Achievement',
+    saveSaving: 'Saving this run…',
+    saveOk: 'Run saved. Badges will update.',
+    saveFailed: 'Could not save this run. Badges may not update.',
     modes: { free: 'Free', daily: 'Daily', weekly: 'Weekly' },
     characters: {
       rookie: { name: 'Rookie', description: 'No bonus. Learn the dungeon first.' },

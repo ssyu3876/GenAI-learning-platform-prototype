@@ -45,10 +45,6 @@
       "name": "养成习惯",
       "description": "完成五十个活动。"
     },
-    "hundred-activities": {
-      "name": "百题俱乐部",
-      "description": "完成一百个活动。"
-    },
     "first-lesson": {
       "name": "第一课",
       "description": "完成一节课。"
@@ -56,10 +52,6 @@
     "ten-lessons": {
       "name": "十节课",
       "description": "完成十节课。"
-    },
-    "thirty-lessons": {
-      "name": "长途跋涉",
-      "description": "完成三十节课。"
     },
     "perfect-one": {
       "name": "完美一次",
@@ -80,10 +72,6 @@
     "two-courses": {
       "name": "两门课程",
       "description": "完成两门课程。"
-    },
-    "five-courses": {
-      "name": "课程收藏家",
-      "description": "完成五门课程。"
     },
     "first-scenario": {
       "name": "走进故事",
@@ -204,6 +192,18 @@
     "streak-60": {
       "name": "两个月不断",
       "description": "连续六十天学习。"
+    },
+    "sixty-activities": {
+      "name": "深耕",
+      "description": "完成六十个活动。"
+    },
+    "twenty-lessons": {
+      "name": "二十节课",
+      "description": "完成二十节课。"
+    },
+    "three-courses": {
+      "name": "三门课程",
+      "description": "完成三门课程。"
     }
   },
   "closest": {

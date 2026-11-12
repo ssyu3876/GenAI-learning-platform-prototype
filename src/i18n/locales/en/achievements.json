@@ -45,10 +45,6 @@
       "name": "In the habit",
       "description": "Finish fifty activities."
     },
-    "hundred-activities": {
-      "name": "Hundred club",
-      "description": "Finish a hundred activities."
-    },
     "first-lesson": {
       "name": "First lesson",
       "description": "Complete a lesson."
@@ -56,10 +52,6 @@
     "ten-lessons": {
       "name": "Ten lessons",
       "description": "Complete ten lessons."
-    },
-    "thirty-lessons": {
-      "name": "Long haul",
-      "description": "Complete thirty lessons."
     },
     "perfect-one": {
       "name": "Perfect run",
@@ -80,10 +72,6 @@
     "two-courses": {
       "name": "Two courses down",
       "description": "Complete two courses."
-    },
-    "five-courses": {
-      "name": "Course collector",
-      "description": "Complete five courses."
     },
     "first-scenario": {
       "name": "Into the story",
@@ -204,6 +192,18 @@
     "streak-60": {
       "name": "Two months",
       "description": "Learn sixty days in a row."
+    },
+    "sixty-activities": {
+      "name": "Deep practice",
+      "description": "Finish sixty activities."
+    },
+    "twenty-lessons": {
+      "name": "Twenty lessons",
+      "description": "Complete twenty lessons."
+    },
+    "three-courses": {
+      "name": "Three courses down",
+      "description": "Complete three courses."
     }
   },
   "closest": {

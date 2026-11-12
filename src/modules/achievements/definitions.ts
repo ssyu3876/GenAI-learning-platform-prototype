@@ -132,12 +132,12 @@ export const BADGES: BadgeDef[] = [
     earned: (s) => s.activitiesCompleted >= 50,
   },
   {
-    id: 'hundred-activities',
+    id: 'sixty-activities',
     group: 'learning',
     icon: Gem,
     tint: 'lilac',
-    progress: (s) => ({ have: Math.min(s.activitiesCompleted, 100), need: 100 }),
-    earned: (s) => s.activitiesCompleted >= 100,
+    progress: (s) => ({ have: Math.min(s.activitiesCompleted, 60), need: 60 }),
+    earned: (s) => s.activitiesCompleted >= 60,
   },
   {
     id: 'first-lesson',
@@ -156,12 +156,12 @@ export const BADGES: BadgeDef[] = [
     earned: (s) => s.lessonsCompleted >= 10,
   },
   {
-    id: 'thirty-lessons',
+    id: 'twenty-lessons',
     group: 'learning',
     icon: Layers,
     tint: 'lilac',
-    progress: (s) => ({ have: Math.min(s.lessonsCompleted, 30), need: 30 }),
-    earned: (s) => s.lessonsCompleted >= 30,
+    progress: (s) => ({ have: Math.min(s.lessonsCompleted, 20), need: 20 }),
+    earned: (s) => s.lessonsCompleted >= 20,
   },
   {
     id: 'perfect-one',
@@ -204,12 +204,12 @@ export const BADGES: BadgeDef[] = [
     earned: (s) => s.coursesCompleted >= 2,
   },
   {
-    id: 'five-courses',
+    id: 'three-courses',
     group: 'learning',
     icon: Crown,
     tint: 'butter',
-    progress: (s) => ({ have: Math.min(s.coursesCompleted, 5), need: 5 }),
-    earned: (s) => s.coursesCompleted >= 5,
+    progress: (s) => ({ have: Math.min(s.coursesCompleted, 3), need: 3 }),
+    earned: (s) => s.coursesCompleted >= 3,
   },
 
   // ---- practice: Ship It ----

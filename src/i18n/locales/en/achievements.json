@@ -193,13 +193,17 @@
       "name": "3000 XP",
       "description": "Earn 3000 XP in total."
     },
-    "level-5": {
-      "name": "Level 5",
-      "description": "Reach level 5."
+    "dungeon-tier-4": {
+      "name": "No shortcuts",
+      "description": "Clear Agent Dungeon on tier 4 or higher."
     },
-    "level-8": {
-      "name": "Level 8",
-      "description": "Reach level 8."
+    "scenario-runs-25": {
+      "name": "Twenty-five runs",
+      "description": "Finish twenty-five scenario runs, replays included."
+    },
+    "streak-60": {
+      "name": "Two months",
+      "description": "Learn sixty days in a row."
     }
   },
   "closest": {

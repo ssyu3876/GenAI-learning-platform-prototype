@@ -53,6 +53,8 @@ export interface ItemDef {
 
 export interface DungeonLabels {
   title: string;
+  /** Small label above the title on the dungeon menu. */
+  eyebrow: string;
   tagline: string;
   summary: string;
   meta: string;
@@ -156,9 +158,10 @@ export const DUNGEON: DungeonContent = {
   key: 'agent-dungeon',
   labels: {
     title: 'Agent Dungeon',
+    eyebrow: 'Roguelike quiz',
     tagline: 'Three layers, one question at a time.',
     summary:
-      'A roguelike quiz run: explore a 4x4 dungeon, fight monsters with questions, break the boss’s confidence, and spend gold on buffs and items. Three layers, three bosses.',
+      'A roguelike quiz: explore a 4x4 dungeon, fight monsters by answering questions, break each boss’s confidence, then spend the gold on buffs and items.',
     meta: '3 layers · 3 bosses · about 10 minutes',
     play: 'Enter the dungeon',
     difficulty: 'Difficulty',

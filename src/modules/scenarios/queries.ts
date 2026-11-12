@@ -31,6 +31,8 @@ const COMPAT_VERSION = 3;
 function isCompatible(key: string, state: unknown): boolean {
   if (!state || typeof state !== 'object') return false;
   const s = state as { version?: number; kind?: string; drawn?: unknown; allHistory?: unknown; interview?: unknown };
+  // The dungeon keeps its real state in the browser; the row only records the result.
+  if (key === 'agent-dungeon') return s.kind === 'dungeon';
   if (s.version !== COMPAT_VERSION) return false;
   // The version alone was not enough: an earlier build also used 2 but had no `drawn`.
   // Check the fields the page actually reads, so a shape change can never crash a render.
@@ -113,12 +115,20 @@ export function runProgress(key: string, run: StoredRun | undefined, zh = false)
   }
 
   if (key === 'agent-dungeon') {
+    // Only a cleared run is stored, so "completions > 0" means the dungeon was beaten.
+    const cleared = (run?.completions ?? 0) > 0;
     return {
-      started: false,
-      label: zh ? '3 层' : '3 layers',
-      percent: 0,
-      best: 0,
-      completions: 0,
+      started: cleared,
+      label: cleared
+        ? zh
+          ? `最佳 ${run!.bestScore}`
+          : `Best ${run!.bestScore}`
+        : zh
+          ? '3 层'
+          : '3 layers',
+      percent: cleared ? 100 : 0,
+      best: run?.bestScore ?? 0,
+      completions: run?.completions ?? 0,
     };
   }
 

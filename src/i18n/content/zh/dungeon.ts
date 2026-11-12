@@ -3,10 +3,11 @@ import type { DungeonContent } from '@/modules/scenarios/content/dungeon';
 export const DUNGEON_ZH: DungeonContent = {
   key: 'agent-dungeon',
   labels: {
-    title: 'Agent Dungeon',
-    tagline: '三层地下城，一题一题打下去。',
+    title: '智能体地牢',
+    eyebrow: 'Roguelike 问答',
+    tagline: '三层地牢，一题一题打下去。',
     summary:
-      '一个 Roguelike 问答闯关：探索 4×4 地下城，用答题击败小怪，打破 Boss 的自信，再用金币买增益和道具。三层，三个 Boss。',
+      '一个 Roguelike 问答闯关：在 4×4 地牢里探索，用答题打怪，打破 Boss 的自信，再用金币换增益和道具。',
     meta: '3 层 · 3 个 Boss · 约 10 分钟',
     play: '进入地下城',
     difficulty: '难度',

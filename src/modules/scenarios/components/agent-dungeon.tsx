@@ -693,7 +693,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     return (
       <div className="mx-auto flex max-w-2xl flex-col gap-4">
         <div className="rounded-blob border-2 border-line bg-ink p-6 text-cream shadow-sticker">
-          <p className="text-sm font-bold tracking-[0.2em] text-cream/60 uppercase">Agent Dungeon</p>
+          <p className="text-sm font-bold tracking-[0.2em] text-cream/60 uppercase">{L.eyebrow}</p>
           <h2 className="mt-2 font-display text-3xl font-bold">{L.title}</h2>
           <p className="mt-2 text-sm text-cream/80">{L.summary}</p>
           <p className="mt-3 text-sm text-cream/60">{L.difficulty}: {L.metaLine}</p>

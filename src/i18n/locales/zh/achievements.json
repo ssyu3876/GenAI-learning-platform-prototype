@@ -193,13 +193,17 @@
       "name": "3000 XP",
       "description": "累计获得 3000 XP。"
     },
-    "level-5": {
-      "name": "等级 5",
-      "description": "达到等级 5。"
+    "dungeon-tier-4": {
+      "name": "不走捷径",
+      "description": "在难度 4 或更高通关「Agent Dungeon」。"
     },
-    "level-8": {
-      "name": "等级 8",
-      "description": "达到等级 8。"
+    "scenario-runs-25": {
+      "name": "二十五次历练",
+      "description": "累计完成二十五次场景，含重玩。"
+    },
+    "streak-60": {
+      "name": "两个月不断",
+      "description": "连续六十天学习。"
     }
   },
   "closest": {

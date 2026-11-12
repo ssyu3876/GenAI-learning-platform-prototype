@@ -14,7 +14,6 @@ import {
   Crosshair,
   Flag,
   Flame,
-  Gauge,
   Gem,
   Layers,
   Leaf,
@@ -283,6 +282,14 @@ export const BADGES: BadgeDef[] = [
     earned: (s) => s.dungeonBestTier >= 3,
   },
   {
+    id: 'dungeon-tier-4',
+    group: 'practice',
+    icon: Shield,
+    tint: 'coral',
+    progress: (s) => ({ have: Math.min(s.dungeonBestTier, 4), need: 4 }),
+    earned: (s) => s.dungeonBestTier >= 4,
+  },
+  {
     id: 'dungeon-tier-5',
     group: 'practice',
     icon: Skull,
@@ -372,6 +379,15 @@ export const BADGES: BadgeDef[] = [
     earned: (s) => s.scenarioRuns >= 10,
   },
 
+  {
+    id: 'scenario-runs-25',
+    group: 'practice',
+    icon: Repeat,
+    tint: 'coral',
+    progress: (s) => ({ have: Math.min(s.scenarioRuns, 25), need: 25 }),
+    earned: (s) => s.scenarioRuns >= 25,
+  },
+
   // ---- consistency ----
   {
     id: 'streak-3',
@@ -446,21 +462,12 @@ export const BADGES: BadgeDef[] = [
     earned: (s) => s.totalXp >= 3000,
   },
   {
-    id: 'level-5',
+    id: 'streak-60',
     group: 'consistency',
-    icon: Gauge,
-    tint: 'sky',
-    progress: (s) => ({ have: Math.min(s.level, 5), need: 5 }),
-    earned: (s) => s.level >= 5,
-  },
-  {
-    id: 'level-8',
-    group: 'consistency',
-    icon: Gauge,
-    tint: 'lilac',
-    progress: (s) => ({ have: Math.min(s.level, 8), need: 8 }),
-    earned: (s) => s.level >= 8,
+    icon: CalendarDays,
+    tint: 'coral',
+    progress: (s) => ({ have: Math.min(s.streak, 60), need: 60 }),
+    earned: (s) => s.streak >= 60,
   },
 ];
-
 export const GROUP_ORDER: BadgeGroup[] = ['learning', 'practice', 'consistency'];

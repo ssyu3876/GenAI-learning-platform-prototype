@@ -569,10 +569,10 @@ export interface SprintZeroCopy {
 export const SPRINT_ZERO_COPY: SprintZeroCopy = {
   key: 'sprint-zero',
   title: 'Sprint Zero',
-  tagline: 'Pick a week, run it, live with the numbers',
+  tagline: 'Lead a three-person team through its first three weeks',
   summary:
-    'Three weeks, eight decisions each, drawn from a bank of twelve. Each week starts on the numbers the last one ended with, and each week ends with a summary of what moved. Some options end the run on the spot.',
-  meta: '3 weeks, 24 of 36 drawn',
+    'You are the new lead of a small team. Each week hands you eight decisions — scope, hiring, whether to let an agent do the work — and the numbers at the end of a week are where the next one starts.',
+  meta: '3 weeks · 24 decisions',
   minutes: 20,
   stats: [
     { key: 'budget', label: 'Budget', max: 160, danger: 25 },

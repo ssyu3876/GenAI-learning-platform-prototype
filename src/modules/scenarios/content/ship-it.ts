@@ -745,10 +745,10 @@ const TURNS: ShipTurn[] = [
 export const SHIP_IT: ShipScenario = {
   key: 'ship-it',
   title: 'Ship It',
-  tagline: 'Spend review time, keep project quality',
+  tagline: 'Be the reviewer on a release that is running late',
   summary:
-    'Thirty review turns, nine drawn per run, three of each verdict. Approving is free, rejecting costs a little, checking the tests costs time but never quality, and repairing costs the most. A third of the turns are correct as written.',
-  meta: '9 of 30 turns',
+    'One release, nine pull requests, and less review time than you would like. For each diff you can approve it, send it back, read the tests or fix it yourself; every choice spends time or quality.',
+  meta: '9 reviews per run',
   minutes: 30,
   weights: { quality: 0.65, time: 0.35 },
   drawCount: 9,

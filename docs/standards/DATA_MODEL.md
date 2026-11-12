@@ -6,7 +6,7 @@
 
 ## 1. Conventions
 
-- Primary keys: prefixed text ids from `newId()`: `usr_`, `crs_`, `lsn_`, `act_`, `att_`, `evt_`, `cls_`, `aiu_`.
+- Primary keys: prefixed text ids from `newId()`: `usr_`, `crs_`, `lsn_`, `act_`, `att_`, `evt_`, `cls_`, `aiu_`, `aud_`.
 - Every table has `createdAt`; mutable tables also have `updatedAt` (set it in every update).
 - Enums are stored as `text` with a TypeScript union type (easier to extend than Postgres enums).
 - Flexible, type-specific data goes in `jsonb` and is validated with zod at the edges
@@ -30,6 +30,7 @@
 | `class_members` | Learner ↔ class | PK (`classId`, `userId`) |
 | `class_courses` | Courses assigned to a class | PK (`classId`, `courseId`) |
 | `ai_usage` | One row per AI call | `userId?`, `feature`, `model`, `mocked`, `promptTokens`, `completionTokens`, `latencyMs` |
+| `admin_audit` | Append-only log of admin actions | `actorId?` (set null on delete), `actorName`, `action` (stable key, e.g. `course.archived`), `targetType`, `targetId`, `targetName`, `detail` (jsonb) |
 
 Who can see a course (`src/core/content/queries.ts`): published + public → everyone;
 assigned to one of your classes → class members; `ownerId` = you → you; admins → all.
@@ -50,7 +51,11 @@ sum over the last 7 days. This keeps leaderboards, streaks and dashboards consis
 | `tutor.asked` | ai-tutor | 0 | `{ lessonId? }` |
 | `class.joined` | classes | 0 | `{ classId }` |
 | `review.answered` | review | 2 for a right answer on a due card, else 0 | `{ itemId, questionIndex, correct, box }` |
-| `scenario.completed` | scenarios | the run score 0-100 | `{ scenarioKey, score }` |
+| `scenario.completed` | scenarios | the run score 0-100 | `{ scenarioKey, score, tier?, difficulty?, mode?, flawless?, layers? }` |
+
+`scenario.completed` is written on **every** finish, so the count of rows is the number of runs.
+XP still only moves when the score beats the learner's best. The Agent Dungeon fields (`tier`,
+`mode`, `flawless`) are only present for that scenario.
 
 XP rules (`src/core/progress/xp.ts`): score ≥ 60 earns the activity's `xpReward`, 100 earns
 120%, below 60 earns a proportional share. Levels: Seed 0, Sprout 100, Seedling 250, Sapling
@@ -82,7 +87,8 @@ Each type is an `ActivityDefinition` (`src/core/activity-types.ts`) with a zod `
 | `lesson_adaptations` | courses | Cached "explain it my way" rewrites per lesson × learner track |
 | `review_items` | review | Missed quiz questions per learner, with Leitner box and next due date (built from `activity_attempts.detail.answers`) |
 | `class_insight_summaries` | classes | Latest AI summary of common misconceptions per class, with the answer count it was based on |
-| `scenario_runs` | scenarios | One row per learner per scenario key: `state` jsonb (steps, stats, history), `bestScore`, `completions` |
+| `scenario_runs` | scenarios | One row per learner per scenario key: `state` jsonb (steps, stats, history), `bestScore`, `completions`. The Agent Dungeon stores a summary here (`{ kind: 'dungeon', tier, score }`) because its real state stays in the browser |
+| `scenario_settings` | scenarios | One row per scenario an admin has closed: `scenarioKey` (PK), `enabled`, `updatedBy?`. No row means open, so a fresh database is empty and the table cannot drift from the content files |
 
 Achievements (`src/modules/achievements/`) owns **no tables**. A badge is a predicate over a
 snapshot built from `learning_events`, `activity_attempts`, `lesson_completions` and

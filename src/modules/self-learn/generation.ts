@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { generateJson, isAiConfigured } from '@/core/ai/client';
 import {
   courseDraftSchema,
@@ -13,10 +14,12 @@ import {
   courseOutlineSchema,
   lessonCountForRequest,
   minutesPerLessonForRequest,
+  outlineLessonSchema,
   preferredActivityTypes,
   totalMinutesForRequest,
   type CourseOutline,
   type GenerationRequest,
+  type OutlineLesson,
 } from './types';
 
 export interface GenerateOutlineInput {
@@ -34,6 +37,19 @@ export interface GenerateCourseInput {
   userId: string;
   feedback?: string;
 }
+
+/**
+ * A large outline is generated in batches. Long single JSON responses were failing on
+ * 10–12 lesson requests, so each batch has its own small schema and output budget.
+ */
+const outlineBatchSchema = z.object({
+  title: z.string().min(3).max(100).optional(),
+  promise: z.string().min(1).max(400).optional(),
+  outcomes: z.array(z.string().min(1).max(200)).min(2).max(5).optional(),
+  assessment: z.string().min(1).max(400).optional(),
+  videoPlan: z.string().min(1).max(300).optional(),
+  lessons: z.array(outlineLessonSchema).min(1).max(12),
+});
 
 /** Short label for prompt instructions, not UI copy. */
 function budgetLabel(request: Pick<GenerationRequest, 'timeBudget' | 'customMinutes'>): string {
@@ -84,6 +100,7 @@ export async function generateOutline(input: GenerateOutlineInput): Promise<Cour
   const count = lessonCountForRequest(request);
   const minutes = minutesPerLessonForRequest(request);
   const totalMinutes = totalMinutesForRequest(request);
+  if (count > 6) return generateOutlineInBatches(input, count, totalMinutes);
   const audience = buildAudienceNote(profile, request.why);
   const allowed = allowedTypes(specs);
 
@@ -157,6 +174,99 @@ export async function generateOutline(input: GenerateOutlineInput): Promise<Cour
     if (!retry.mocked) outline = retry.data;
   }
 
+  return normalizeOutline(outline, request, specs);
+}
+
+/**
+ * Generate a 7–12 lesson framework in two smaller batches. The single-call version was
+ * failing at 20 hours / 12 lessons; batching also keeps each model response shorter.
+ */
+async function generateOutlineInBatches(
+  input: GenerateOutlineInput,
+  count: number,
+  totalMinutes: number,
+): Promise<CourseOutline> {
+  const { request, profile, specs } = input;
+  const audience = buildAudienceNote(profile, request.why);
+  const allowed = allowedTypes(specs);
+  const fallback = mockOutline(request, specs);
+  const batchSize = 6;
+  const batchTotal = Math.ceil(count / batchSize);
+  const lessons: OutlineLesson[] = [];
+  let meta: Partial<CourseOutline> | null = null;
+
+  for (let start = 0; start < count; start += batchSize) {
+    const batchCount = Math.min(batchSize, count - start);
+    const batchNumber = Math.floor(start / batchSize) + 1;
+    const previousTitles = lessons.map((lesson) => lesson.title);
+    const system = [
+      'You are Pip, a careful curriculum designer for a learning platform.',
+      `You are building a ${count}-lesson course framework in ${batchTotal} batches.`,
+      `This is batch ${batchNumber} of ${batchTotal}: generate exactly ${batchCount} lessons for positions ${start + 1}-${start + batchCount}.`,
+      `Across the whole course there must be exactly ${count} distinct lessons, about ${totalMinutes} minutes in total, with varied lengths (1-2 longer applied/lab lessons and shorter core lessons).`,
+      'Do not duplicate previous lesson titles or turn the course into a table of contents.',
+      `Allowed activity types: ${allowed}.`,
+      'Return ONE JSON object only:',
+      '{ "title"?: string, "promise"?: string, "outcomes"?: string[], "assessment"?: string, "videoPlan"?: string, "lessons": [ { "title": string, "objective": string, "keyPoints": string[] (2-3), "estimatedMinutes": number, "activityTypes": string[] (1-3) } ] }',
+      'Include the course title, promise, outcomes, assessment and videoPlan in the first batch only; later batches can return just "lessons".',
+      outputLanguage(request.locale),
+    ].join('\n');
+    const user = [
+      `Topic: ${request.topic}`,
+      `Learner level: ${request.level}`,
+      `Total time: ${budgetLabel(request)} (${totalMinutes} minutes)`,
+      `Explanation style: ${styleLabel(request.explanationStyle)}.`,
+      `Content format: ${formatLabel(request.contentFormat)}.`,
+      `Assessment: ${assessmentLabel(request.assessment)}.`,
+      audience ? `Learner context: ${audience}.` : '',
+      previousTitles.length ? `Previous lesson titles (do not repeat): ${previousTitles.join(' · ')}` : '',
+      input.feedback ? `The learner asked for: ${input.feedback}` : '',
+      `Write lessons ${start + 1}-${start + batchCount} now. Each lesson needs its own concrete objective and key points.`,
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    const result = await generateJson(
+      [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
+      outlineBatchSchema,
+      {
+        feature: 'self_learn.generate_outline_batch',
+        userId: input.userId,
+        tier: 'smart',
+        maxTokens: 12000,
+        temperature: 0.5,
+        mock: () => ({
+          ...(start === 0
+            ? {
+                title: fallback.title,
+                promise: fallback.promise,
+                outcomes: fallback.outcomes,
+                assessment: fallback.assessment,
+                videoPlan: fallback.videoPlan,
+              }
+            : {}),
+          lessons: fallback.lessons.slice(start, start + batchCount),
+        }),
+      },
+    );
+    if (result.mocked && isAiConfigured()) {
+      throw new Error('Pip could not get a usable course framework from the model. Please try again.');
+    }
+    if (start === 0) meta = result.data;
+    lessons.push(...result.data.lessons.slice(0, batchCount));
+  }
+
+  const outline: CourseOutline = {
+    title: meta?.title ?? fallback.title,
+    promise: meta?.promise ?? fallback.promise,
+    outcomes: meta?.outcomes ?? fallback.outcomes,
+    assessment: meta?.assessment ?? fallback.assessment,
+    videoPlan: meta?.videoPlan,
+    lessons,
+  };
   return normalizeOutline(outline, request, specs);
 }
 

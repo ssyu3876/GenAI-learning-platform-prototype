@@ -7,7 +7,7 @@ import { SubmitButton } from '@/components/ui/submit-button';
 import { getT } from '@/i18n';
 import { fmt } from '@/i18n/format';
 import { regenerateLesson } from '../actions';
-import { getGeneratedCourse, getGenerationSession } from '../queries';
+import { getGeneratedCourse, getGenerationSession, getSeriesForSession } from '../queries';
 import { CourseFeedbackForm } from '../components/course-feedback-form';
 
 export async function FeedbackPage({
@@ -27,12 +27,28 @@ export async function FeedbackPage({
   if (!session.courseId) redirect(`/create/outline/${session.id}`);
   const generated = await getGeneratedCourse(session);
   if (!generated) notFound();
+  const series = await getSeriesForSession(session);
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-5">
       <Link href="/create" className="inline-flex items-center gap-1 text-sm font-semibold text-ink-soft hover:text-ink">
         <ChevronLeft className="h-4 w-4" /> {t.selfLearn.feedback.back}
       </Link>
+
+      {series ? (
+        <Card tint="butter" className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-display font-bold">{series.plan.title}</p>
+            <p className="text-sm text-ink-soft">{t.selfLearn.feedback.seriesNote}</p>
+          </div>
+          <Link
+            href={`/create/series/${series.id}`}
+            className="inline-flex w-fit items-center justify-center rounded-pill border-2 border-line bg-paper px-4 py-2 text-sm font-bold shadow-sticker-sm hover:bg-butter-soft"
+          >
+            {t.selfLearn.feedback.backToSeries}
+          </Link>
+        </Card>
+      ) : null}
 
       <div>
         <p className="text-sm font-bold text-ink-soft">{t.selfLearn.feedback.eyebrow}</p>

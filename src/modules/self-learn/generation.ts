@@ -16,10 +16,13 @@ import {
   minutesPerLessonForRequest,
   outlineLessonSchema,
   preferredActivityTypes,
+  seriesPlanSchema,
   totalMinutesForRequest,
   type CourseOutline,
+  type CourseSeriesPlan,
   type GenerationRequest,
   type OutlineLesson,
+  type SeriesCourse,
 } from './types';
 
 export interface GenerateOutlineInput {
@@ -311,6 +314,225 @@ function balanceMinutes<T extends { estimatedMinutes: number }>(lessons: T[], to
     if (scaled.every((minutes) => minutes === 5 || minutes === 240)) break;
   }
   return lessons.map((lesson, i) => ({ ...lesson, estimatedMinutes: scaled[i]! }));
+}
+
+export interface GenerateSeriesInput {
+  request: GenerationRequest;
+  parts: number;
+  profile: AudienceProfile | null;
+  userId: string;
+  feedback?: string;
+}
+
+/**
+ * Design the whole long programme once: each part owns complete chapters, and the parts
+ * connect through an explicit bridge. Only after this is approved do we write one course.
+ */
+export async function generateSeriesPlan(input: GenerateSeriesInput): Promise<CourseSeriesPlan> {
+  const { request, parts } = input;
+  const totalMinutes = request.customMinutes ?? 60;
+  const perCourseMinutes = Math.round(totalMinutes / parts);
+  const lessonCount = Math.min(12, Math.max(3, Math.round(perCourseMinutes / 25)));
+  const audience = buildAudienceNote(input.profile, request.why);
+  const system = [
+    'You are Pip, designing one coherent learning programme made of 2-3 separate courses.',
+    `The learner has ${Math.round(totalMinutes / 60)} hours in total. Split it into exactly ${parts} courses, each no more than 20 hours (about ${Math.round(perCourseMinutes / 60)} hours each).`,
+    'Each course must be a self-contained block of knowledge: assign whole chapters/topic clusters, never split one chapter or knowledge point across two courses.',
+    'Course 1 must finish its chapters before course 2 starts. Each course ends with a short bridge to the next one, and starts by referring back when relevant.',
+    'The learner reviews this whole programme before any full course is written.',
+    outputLanguage(request.locale),
+    'Reply with ONE JSON object only:',
+    '{ "title": string, "promise": string (1-2 sentences), "outcomes": string[] (2-6),',
+    `  "courses": [ { "title": string, "focus": string, "promise": string, "outcomes": string[] (2-5), "chapters": string[] (3-6 complete chapter names), "relationship": string (bridge from previous and into next), "estimatedMinutes": number, "lessonCount": number } ] } (exactly ${parts} courses)`,
+    'Do not repeat the same chapter in two courses. Do not use vague module names like "Introduction" without saying what is inside.',
+  ].join('\n');
+  const user = [
+    `Overall topic: ${request.topic}`,
+    `Learner level: ${request.level}`,
+    `Total time: ${Math.round(totalMinutes / 60)} hours across ${parts} courses.`,
+    audience ? `Learner context: ${audience}.` : '',
+    `Explanation style: ${styleLabel(request.explanationStyle)}.`,
+    `Content format: ${formatLabel(request.contentFormat)}.`,
+    `Assessment preference: ${assessmentLabel(request.assessment)}.`,
+    input.feedback ? `The learner reviewed the previous programme and asked for: ${input.feedback}` : '',
+    `Use about ${lessonCount} lessons per course and ${perCourseMinutes} minutes per course.`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  const result = await generateJson(
+    [
+      { role: 'system', content: system },
+      { role: 'user', content: user },
+    ],
+    seriesPlanSchema,
+    {
+      feature: 'self_learn.generate_series',
+      userId: input.userId,
+      tier: 'smart',
+      maxTokens: 10000,
+      temperature: 0.6,
+      mock: () => mockSeriesPlan(request, parts, perCourseMinutes, lessonCount),
+    },
+  );
+  if (result.mocked && isAiConfigured()) {
+    throw new Error('Pip could not get a usable series framework from the model. Please try again.');
+  }
+  return normalizeSeriesPlan(result.data, request, parts, perCourseMinutes, lessonCount);
+}
+
+function normalizeSeriesPlan(
+  plan: CourseSeriesPlan,
+  request: GenerationRequest,
+  parts: number,
+  perCourseMinutes: number,
+  lessonCount: number,
+): CourseSeriesPlan {
+  const fallback = mockSeriesPlan(request, parts, perCourseMinutes, lessonCount);
+  const courses = Array.from({ length: parts }, (_, index) => {
+    const course = plan.courses[index] ?? fallback.courses[index]!;
+    return {
+      ...course,
+      chapters: course.chapters.length ? course.chapters : fallback.courses[index]!.chapters,
+      relationship: course.relationship || fallback.courses[index]!.relationship,
+      estimatedMinutes: perCourseMinutes,
+      lessonCount,
+    };
+  });
+  return {
+    title: plan.title,
+    promise: plan.promise,
+    outcomes: plan.outcomes,
+    courses,
+  };
+}
+
+function mockSeriesPlan(
+  request: GenerationRequest,
+  parts: number,
+  perCourseMinutes: number,
+  lessonCount: number,
+): CourseSeriesPlan {
+  const locale = request.locale;
+  return {
+    title: byLocale(locale, `${request.topic}: a complete programme`, `${request.topic}：完整课程系列`),
+    promise: byLocale(
+      locale,
+      `A ${Math.round((perCourseMinutes * parts) / 60)}-hour programme split into ${parts} self-contained courses.`,
+      `一套 ${Math.round((perCourseMinutes * parts) / 60)} 小时的课程，拆成 ${parts} 门互相衔接、内容独立的课。`,
+    ),
+    outcomes: byLocale(
+      locale,
+      [`Build a complete mental model of ${request.topic}`, 'Finish each chapter before moving on', 'Connect the parts into one working practice'],
+      [`建立${request.topic}的完整知识框架`, '每一章学完再进入下一章', '把各部分连成一套可用的实践'],
+    ),
+    courses: Array.from({ length: parts }, (_, index) => {
+      const chapters = byLocale(
+        locale,
+        [`Foundations ${index + 1}`, `Core ideas ${index + 1}`, `Applied practice ${index + 1}`],
+        [`第 ${index + 1} 部分基础`, `第 ${index + 1} 部分核心概念`, `第 ${index + 1} 部分应用练习`],
+      );
+      return {
+        title: byLocale(locale, `${request.topic} — Course ${index + 1}`, `${request.topic} · 第 ${index + 1} 门`),
+        focus: byLocale(locale, `Complete chapters for part ${index + 1}.`, `完整讲完第 ${index + 1} 部分的章节。`),
+        promise: byLocale(locale, `Finish this part with a working understanding.`, `学完这一部分，形成完整的理解。`),
+        outcomes: byLocale(locale, ['Explain the chapters', 'Apply them in one task'], ['解释本章内容', '在一个任务里应用']),
+        chapters,
+        relationship: byLocale(locale, index === 0 ? 'Starts the programme.' : 'Builds directly on the previous course.', index === 0 ? '从系列起点开始。' : '直接衔接上一门课。'),
+        estimatedMinutes: perCourseMinutes,
+        lessonCount,
+      };
+    }),
+  };
+}
+
+/** Turn one approved series part into its own detailed course outline. */
+export async function generateSeriesCourseOutline(input: {
+  series: CourseSeriesPlan;
+  courseIndex: number;
+  request: GenerationRequest;
+  specs: ActivitySpec[];
+  userId: string;
+}): Promise<CourseOutline> {
+  const { series, courseIndex, request } = input;
+  const course = series.courses[courseIndex];
+  if (!course) throw new Error('Series course not found.');
+  const previous = series.courses[courseIndex - 1];
+  const next = series.courses[courseIndex + 1];
+  const feedback = [
+    `This is course ${courseIndex + 1} of ${series.courses.length} in the programme "${series.title}".`,
+    `Focus only on this course. Cover these chapters completely, with no chapter split across courses: ${course.chapters.join('; ')}.`,
+    previous ? `Bridge from the previous course (${previous.title}); do not reteach its chapters.` : 'This is the first course; open the programme.',
+    next ? `End with a bridge into the next course (${next.title}).` : 'This is the final course; close the programme.',
+    `Course focus: ${course.focus}`,
+  ].join('\n');
+  try {
+    return await generateOutline({
+      request: {
+        ...request,
+        topic: course.title,
+        why: feedback,
+        timeBudget: 'custom',
+        customMinutes: course.estimatedMinutes,
+        lessonCount: course.lessonCount,
+      },
+      profile: null,
+      specs: input.specs,
+      userId: input.userId,
+      feedback,
+    });
+  } catch (error) {
+    // Never block a whole programme because one part's outline call returned bad JSON.
+    console.warn('[self-learn] series part outline fell back to chapter scaffold:', course.title, error);
+    return fallbackSeriesOutline(course, request, input.specs);
+  }
+}
+
+function fallbackSeriesOutline(course: SeriesCourse, request: GenerationRequest, specs: ActivitySpec[]): CourseOutline {
+  const activityTypes = specs.slice(0, 2).map((spec) => spec.type);
+  const chapters = course.chapters.length ? course.chapters : [course.title];
+  const lessons = Array.from({ length: course.lessonCount }, (_, index) => {
+    const chapter = chapters[index % chapters.length]!;
+    const round = Math.floor(index / chapters.length) + 1;
+    const title = round === 1 ? chapter : byLocale(request.locale, `${chapter} — practice ${round}`, `${chapter} · 练习 ${round}`);
+    const minutes = Math.max(10, Math.round(course.estimatedMinutes / course.lessonCount) + (index % 3 === 0 ? 8 : 0));
+    return {
+      title,
+      objective: byLocale(
+        request.locale,
+        `Finish ${chapter} and connect it to the rest of ${course.title}.`,
+        `学完“${chapter}”，并把它和《${course.title}》的其他内容连起来。`,
+      ),
+      keyPoints: [
+        chapter,
+        byLocale(request.locale, `A concrete example from ${course.focus}`, `来自课程重点的一个具体例子`),
+        byLocale(request.locale, 'A common mistake and how to check your work', '一个常见错误和检查方法'),
+      ],
+      estimatedMinutes: minutes,
+      activityTypes: activityTypes.length ? activityTypes : ['quiz'],
+    };
+  });
+  return normalizeOutline(
+    {
+      title: course.title,
+      promise: course.promise,
+      outcomes: course.outcomes,
+      assessment: byLocale(
+        request.locale,
+        `Complete the applied task for ${course.title}.`,
+        `完成《${course.title}》的应用任务。`,
+      ),
+      videoPlan: byLocale(request.locale, 'Narrated slides with diagrams.', '带图解的语音幻灯片。'),
+      lessons,
+    },
+    {
+      ...request,
+      timeBudget: 'custom',
+      customMinutes: course.estimatedMinutes,
+      lessonCount: course.lessonCount,
+    },
+    specs,
+  );
 }
 
 /** Full generation; one call, because the outline already fixed the structure. */

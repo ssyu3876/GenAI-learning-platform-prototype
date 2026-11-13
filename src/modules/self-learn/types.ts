@@ -3,6 +3,9 @@ import { z } from 'zod';
 export const TIME_BUDGETS = ['30m', '1h', '2h', '4h', 'custom'] as const;
 export type TimeBudget = (typeof TIME_BUDGETS)[number];
 
+/** One course is capped so a single generation run stays reviewable and affordable. */
+export const SINGLE_COURSE_MAX_HOURS = 20;
+
 export const EXPLANATION_STYLES = ['examples', 'steps', 'theory', 'cases'] as const;
 export type ExplanationStyle = (typeof EXPLANATION_STYLES)[number];
 
@@ -48,7 +51,7 @@ export const outlineLessonSchema = z.object({
   title: z.string().min(1).max(120),
   objective: z.string().min(1).max(300),
   keyPoints: z.array(z.string().min(1).max(200)).min(2).max(5),
-  estimatedMinutes: z.number().int().min(5).max(60),
+  estimatedMinutes: z.number().int().min(5).max(240),
   activityTypes: z.array(z.string().min(1)).min(1).max(3),
 });
 

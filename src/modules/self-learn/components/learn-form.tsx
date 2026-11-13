@@ -9,15 +9,24 @@ import { Button, Card, Field, Input, Notice, PipSays, Select } from '@/component
 import { useT } from '@/i18n/client';
 import { fmt } from '@/i18n/format';
 import { generateLearnerOutline } from '../actions';
+import { SINGLE_COURSE_MAX_HOURS } from '../types';
 
 export function LearnForm({ remaining, limit }: { remaining: number; limit: number }) {
   const t = useT();
   const [state, dispatch, pending] = useActionState<ActionResult | null, FormData>(generateLearnerOutline, null);
   const [topic, setTopic] = useState('');
   const [timeBudget, setTimeBudget] = useState('1h');
+  const [customHours, setCustomHours] = useState(2);
+  const needsSplit = timeBudget === 'custom' && customHours > SINGLE_COURSE_MAX_HOURS;
+  const splitOptions = needsSplit
+    ? [2, 3]
+        .map((parts) => ({ parts, hours: customHours / parts }))
+        .filter((option) => option.hours <= SINGLE_COURSE_MAX_HOURS && option.hours >= 0.25)
+    : [];
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (needsSplit) return;
     const formData = new FormData(event.currentTarget);
     startTransition(() => dispatch(formData));
   }
@@ -94,9 +103,10 @@ export function LearnForm({ remaining, limit }: { remaining: number; limit: numb
                   name="customHours"
                   type="number"
                   min={0.25}
-                  max={20}
+                  max={60}
                   step={0.25}
-                  defaultValue={2}
+                  value={customHours}
+                  onChange={(event) => setCustomHours(Number(event.target.value))}
                   aria-label={t.selfLearn.form.customHoursLabel}
                   disabled={pending}
                   className="max-w-28"
@@ -104,7 +114,29 @@ export function LearnForm({ remaining, limit }: { remaining: number; limit: numb
                 <span className="text-sm text-ink-soft">{t.selfLearn.form.customHoursUnit}</span>
               </div>
             ) : null}
-            {timeBudget === 'custom' ? (
+            {timeBudget === 'custom' && needsSplit ? (
+              <div className="mt-2 rounded-xl border-2 border-line bg-sky-soft p-3 text-sm">
+                <p className="font-bold">{fmt(t.selfLearn.form.splitTitle, { hours: customHours })}</p>
+                <p className="mt-1 text-ink-soft">{fmt(t.selfLearn.form.splitBody, { hours: SINGLE_COURSE_MAX_HOURS })}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {splitOptions.map((option) => (
+                    <button
+                      key={option.parts}
+                      type="button"
+                      className="rounded-pill border-2 border-line bg-paper px-3 py-1 text-xs font-semibold hover:bg-butter-soft"
+                      onClick={() => setCustomHours(Number(option.hours.toFixed(2)))}
+                    >
+                      {fmt(t.selfLearn.form.splitOption, {
+                        parts: option.parts,
+                        hours: Number(option.hours.toFixed(1)),
+                      })}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-ink-soft">{t.selfLearn.form.splitNote}</p>
+              </div>
+            ) : null}
+            {timeBudget === 'custom' && !needsSplit ? (
               <p className="mt-1 text-xs text-ink-soft">{t.selfLearn.form.customHoursHint}</p>
             ) : null}
           </Field>
@@ -155,7 +187,7 @@ export function LearnForm({ remaining, limit }: { remaining: number; limit: numb
         ) : null}
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" variant="primary" size="lg" disabled={pending || remaining <= 0} aria-busy={pending}>
+          <Button type="submit" variant="primary" size="lg" disabled={pending || remaining <= 0 || needsSplit} aria-busy={pending}>
             <WandSparkles className="h-4 w-4" aria-hidden />
             {pending ? t.selfLearn.form.writingButton : t.selfLearn.form.makeCourse}
           </Button>

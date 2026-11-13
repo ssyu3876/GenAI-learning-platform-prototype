@@ -98,6 +98,19 @@ export async function generateLearnerOutline(
 ): Promise<ActionResult> {
   const user = await requireUser(['learner']);
   const { locale } = await getT();
+  const requestedHours = Number(formData.get('customHours'));
+  if (formData.get('timeBudget') === 'custom' && requestedHours > 20) {
+    const parts = Math.min(3, Math.max(2, Math.ceil(requestedHours / 20)));
+    const hours = Number((requestedHours / parts).toFixed(1));
+    return {
+      ok: false,
+      error: byLocale(
+        locale,
+        `A single course is capped at 20 hours. Split ${requestedHours} hours into ${parts} courses of about ${hours} hours each.`,
+        `单门课程最多 20 小时。建议把 ${requestedHours} 小时拆成 ${parts} 门课，每门约 ${hours} 小时。`,
+      ),
+    };
+  }
   const parsed = requestSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     return {

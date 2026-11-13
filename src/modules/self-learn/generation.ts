@@ -83,6 +83,7 @@ export async function generateOutline(input: GenerateOutlineInput): Promise<Cour
   const { request, profile, specs } = input;
   const count = lessonCountForRequest(request);
   const minutes = minutesPerLessonForRequest(request);
+  const totalMinutes = totalMinutesForRequest(request);
   const audience = buildAudienceNote(profile, request.why);
   const allowed = allowedTypes(specs);
 
@@ -97,12 +98,13 @@ export async function generateOutline(input: GenerateOutlineInput): Promise<Cour
     '  "assessment": string (how the learner proves they learned it), "videoPlan": string (short; narrated slides + diagrams unless told otherwise) }',
     `Allowed activity types: ${allowed}.`,
     'Every lesson must have a distinct purpose and build on the previous one. Do not repeat the same title pattern.',
+    `Vary the lesson lengths: make 1-2 applied/lab-style lessons longer (up to about ${Math.min(240, Math.round(minutes * 2))} minutes) and several core lessons shorter. The estimatedMinutes must add up to about ${totalMinutes} minutes.`,
   ].join('\n');
 
   const user = [
     `Topic: ${request.topic}`,
     `Learner level: ${request.level}`,
-    `Time budget: ${budgetLabel(request)}; exactly ${count} lessons, about ${minutes} minutes each.`,
+    `Time budget: ${budgetLabel(request)} total; exactly ${count} lessons. Target about ${totalMinutes} minutes across all lessons, with varied lengths, not ${minutes} minutes each.`,
     `Explanation style: ${styleLabel(request.explanationStyle)}.`,
     `Content format: ${formatLabel(request.contentFormat)}.`,
     `Assessment preference: ${assessmentLabel(request.assessment)}.`,
@@ -139,7 +141,7 @@ export async function generateOutline(input: GenerateOutlineInput): Promise<Cour
         { role: 'assistant', content: JSON.stringify(outline) },
         {
           role: 'user',
-          content: `That framework has ${outline.lessons.length} lessons, but this request requires exactly ${count}. Rewrite the full JSON with exactly ${count} distinct lessons, about ${minutes} minutes each. Keep the topic, level, outcomes and preferences unchanged. Do not explain; reply with JSON only.`,
+          content: `That framework has ${outline.lessons.length} lessons, but this request requires exactly ${count}. Rewrite the full JSON with exactly ${count} distinct lessons and varied durations that add up to about ${totalMinutes} minutes. Keep the topic, level, outcomes and preferences unchanged. Do not explain; reply with JSON only.`,
         },
       ],
       courseOutlineSchema,
@@ -160,14 +162,14 @@ export async function generateOutline(input: GenerateOutlineInput): Promise<Cour
 
 function normalizeOutline(outline: CourseOutline, request: GenerationRequest, specs: ActivitySpec[]): CourseOutline {
   const count = lessonCountForRequest(request);
-  const minutes = minutesPerLessonForRequest(request);
+  const totalMinutes = totalMinutesForRequest(request);
   const installed = new Set(specs.map((spec) => spec.type));
   const fallbackTypes = preferredActivityTypes(request.contentFormat, request.assessment).filter((type) => installed.has(type));
   const normalized: CourseOutline = {
     ...outline,
     lessons: outline.lessons.slice(0, count).map((lesson) => ({
       ...lesson,
-      estimatedMinutes: minutes,
+      estimatedMinutes: Math.min(240, Math.max(5, Math.round(lesson.estimatedMinutes || 25))),
       activityTypes: (lesson.activityTypes.filter((type) => installed.has(type)).slice(0, 3).length
         ? lesson.activityTypes.filter((type) => installed.has(type)).slice(0, 3)
         : fallbackTypes.slice(0, 2)),
@@ -179,7 +181,26 @@ function normalizeOutline(outline: CourseOutline, request: GenerationRequest, sp
     const filler = mockOutline(request, specs).lessons;
     normalized.lessons = [...normalized.lessons, ...filler.slice(normalized.lessons.length)].slice(0, count);
   }
+  normalized.lessons = balanceMinutes(normalized.lessons, totalMinutes);
   return normalized.lessons.length ? normalized : mockOutline(request, specs);
+}
+
+/** Keep the learner's varied lesson lengths but make their sum respect the total budget. */
+function balanceMinutes<T extends { estimatedMinutes: number }>(lessons: T[], totalMinutes: number): T[] {
+  if (!lessons.length) return lessons;
+  const raw = lessons.map((lesson) => Math.min(240, Math.max(5, lesson.estimatedMinutes || 25)));
+  const sum = raw.reduce((value, minutes) => value + minutes, 0) || 1;
+  const scaled = raw.map((minutes) => Math.min(240, Math.max(5, Math.round((minutes / sum) * totalMinutes))));
+  let difference = totalMinutes - scaled.reduce((value, minutes) => value + minutes, 0);
+  let index = scaled.indexOf(Math.max(...scaled));
+  while (difference !== 0) {
+    const next = Math.min(240, Math.max(5, scaled[index]! + difference));
+    difference -= next - scaled[index]!;
+    scaled[index] = next;
+    index = (index + 1) % scaled.length;
+    if (scaled.every((minutes) => minutes === 5 || minutes === 240)) break;
+  }
+  return lessons.map((lesson, i) => ({ ...lesson, estimatedMinutes: scaled[i]! }));
 }
 
 /** Full generation; one call, because the outline already fixed the structure. */

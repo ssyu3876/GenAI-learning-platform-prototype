@@ -8,6 +8,7 @@ import { getT } from '@/i18n';
 import { fmt } from '@/i18n/format';
 import { approveOutline, regenerateOutline } from '../actions';
 import { getGenerationSession } from '../queries';
+import { totalMinutesForRequest } from '../types';
 
 const ACTIVITY_KEYS = {
   quiz: 'quiz',
@@ -35,6 +36,10 @@ export async function OutlinePage({
   if (session.status === 'generating' && session.courseId) redirect(`/create/generate/${session.id}`);
 
   const { outline, request } = session;
+  const timeLabel =
+    request.timeBudget === 'custom'
+      ? `${Number((totalMinutesForRequest(request) / 60).toFixed(1))} ${t.selfLearn.form.customHoursUnit}`
+      : t.selfLearn.form.timeOptions[request.timeBudget];
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-5">
@@ -52,7 +57,7 @@ export async function OutlinePage({
 
       <div className="flex flex-wrap gap-2">
         <Badge tint="mint">
-          <Clock className="h-3 w-3" /> {t.selfLearn.form.timeOptions[request.timeBudget]}
+          <Clock className="h-3 w-3" /> {timeLabel}
         </Badge>
         <Badge tint="paper">{t.selfLearn.outline.lessonsCount.replace('{count}', String(outline.lessons.length))}</Badge>
         <Badge tint="paper">{t.selfLearn.form.styleOptions[request.explanationStyle]}</Badge>

@@ -34,8 +34,15 @@
       "30m": "30 分钟",
       "1h": "1 小时",
       "2h": "2 小时",
-      "4h": "4 小时"
+      "4h": "4 小时",
+      "custom": "自定义时间"
     },
+    "customHoursLabel": "自定义小时数",
+    "customHoursUnit": "小时",
+    "lessonCountLabel": "课程节数",
+    "lessonCountHint": "留空自动按时间推算；也可以直接指定 4–12 节。",
+    "lessonCountAuto": "自动",
+    "lessonCountUnit": "节",
     "styleLabel": "希望 Pip 怎么讲？",
     "styleHint": "选择最适合你的讲解方式。",
     "styleOptions": {

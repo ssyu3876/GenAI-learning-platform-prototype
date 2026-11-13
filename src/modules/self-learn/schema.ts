@@ -1,9 +1,28 @@
 import { index, integer, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 import { courses, users } from '../../core/db/schema';
-import type { CourseOutline, GenerationRequest } from './types';
+import type { CourseOutline, CourseSeriesPlan, GenerationRequest } from './types';
 
 export type GenerationStatus = 'outline' | 'generating' | 'generated';
 export type FeedbackStage = 'outline' | 'course' | 'lesson';
+
+/**
+ * A long programme split into 2–3 self-contained courses. The plan is reviewed as a whole
+ * before any one course is written.
+ */
+export const courseSeries = pgTable(
+  'course_series',
+  {
+    id: text().primaryKey(),
+    userId: text()
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    request: jsonb().$type<GenerationRequest>().notNull(),
+    plan: jsonb().$type<CourseSeriesPlan>().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('course_series_user_idx').on(t.userId, t.createdAt)],
+);
 
 /**
  * One learner request. The outline is stored before the full course exists, so the learner
@@ -20,10 +39,15 @@ export const courseGenerationSessions = pgTable(
     outline: jsonb().$type<CourseOutline>().notNull(),
     status: text().$type<GenerationStatus>().notNull().default('outline'),
     courseId: text().references(() => courses.id, { onDelete: 'set null' }),
+    seriesId: text().references(() => courseSeries.id, { onDelete: 'set null' }),
+    seriesPart: integer(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index('course_generation_sessions_user_idx').on(t.userId, t.createdAt)],
+  (t) => [
+    index('course_generation_sessions_user_idx').on(t.userId, t.createdAt),
+    index('course_generation_sessions_series_idx').on(t.seriesId),
+  ],
 );
 
 /** Both gates use this table: framework feedback and post-course feedback. */

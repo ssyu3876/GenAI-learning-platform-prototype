@@ -3,7 +3,8 @@ import { and, count, desc, eq, gte, inArray } from 'drizzle-orm';
 import { getDb } from '@/core/db/client';
 import { courses, learnerProfiles, lessons, type Course } from '@/core/db/schema';
 import type { AudienceProfile } from './audience';
-import { courseGenerationSessions, type CourseGenerationSession } from './schema';
+import { courseGenerationSessions, courseSeries, type CourseGenerationSession } from './schema';
+import type { CourseSeriesPlan } from './types';
 
 export const DAILY_COURSE_LIMIT = 5;
 
@@ -89,6 +90,50 @@ export async function getGenerationSession(
     .select()
     .from(courseGenerationSessions)
     .where(and(eq(courseGenerationSessions.id, sessionId), eq(courseGenerationSessions.userId, userId)))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function getCourseSeries(userId: string, seriesId: string): Promise<{
+  id: string;
+  plan: CourseSeriesPlan;
+  request: CourseGenerationSession['request'];
+} | null> {
+  const db = await getDb();
+  const [row] = await db
+    .select({ id: courseSeries.id, plan: courseSeries.plan, request: courseSeries.request })
+    .from(courseSeries)
+    .where(and(eq(courseSeries.id, seriesId), eq(courseSeries.userId, userId)))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function listSeriesSessions(seriesId: string): Promise<
+  Array<{ id: string; seriesPart: number | null; status: CourseGenerationSession['status']; courseId: string | null }>
+> {
+  const db = await getDb();
+  return db
+    .select({
+      id: courseGenerationSessions.id,
+      seriesPart: courseGenerationSessions.seriesPart,
+      status: courseGenerationSessions.status,
+      courseId: courseGenerationSessions.courseId,
+    })
+    .from(courseGenerationSessions)
+    .where(eq(courseGenerationSessions.seriesId, seriesId))
+    .orderBy(courseGenerationSessions.seriesPart);
+}
+
+export async function getSeriesForSession(session: CourseGenerationSession): Promise<{
+  id: string;
+  plan: CourseSeriesPlan;
+} | null> {
+  if (!session.seriesId) return null;
+  const db = await getDb();
+  const [row] = await db
+    .select({ id: courseSeries.id, plan: courseSeries.plan })
+    .from(courseSeries)
+    .where(eq(courseSeries.id, session.seriesId))
     .limit(1);
   return row ?? null;
 }

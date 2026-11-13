@@ -11,9 +11,10 @@ import type { Locale } from '@/i18n/config';
 import { buildAudienceNote, type AudienceProfile } from './audience';
 import {
   courseOutlineSchema,
-  lessonCountForBudget,
-  minutesPerLesson,
+  lessonCountForRequest,
+  minutesPerLessonForRequest,
   preferredActivityTypes,
+  totalMinutesForRequest,
   type CourseOutline,
   type GenerationRequest,
 } from './types';
@@ -35,8 +36,11 @@ export interface GenerateCourseInput {
 }
 
 /** Short label for prompt instructions, not UI copy. */
-function budgetLabel(budget: GenerationRequest['timeBudget']): string {
-  return { '30m': '30 minutes', '1h': '1 hour', '2h': '2 hours', '4h': '4 hours' }[budget];
+function budgetLabel(request: Pick<GenerationRequest, 'timeBudget' | 'customMinutes'>): string {
+  const minutes = totalMinutesForRequest(request);
+  if (minutes < 60) return `${minutes} minutes`;
+  const hours = minutes / 60;
+  return `${Number.isInteger(hours) ? hours : hours.toFixed(1)} hours`;
 }
 
 function styleLabel(style: GenerationRequest['explanationStyle']): string {
@@ -77,8 +81,8 @@ function allowedTypes(specs: ActivitySpec[]): string {
 /** The prompt keeps the outline small; the expensive call happens only after approval. */
 export async function generateOutline(input: GenerateOutlineInput): Promise<CourseOutline> {
   const { request, profile, specs } = input;
-  const count = lessonCountForBudget(request.timeBudget);
-  const minutes = minutesPerLesson(request.timeBudget);
+  const count = lessonCountForRequest(request);
+  const minutes = minutesPerLessonForRequest(request);
   const audience = buildAudienceNote(profile, request.why);
   const allowed = allowedTypes(specs);
 
@@ -98,7 +102,7 @@ export async function generateOutline(input: GenerateOutlineInput): Promise<Cour
   const user = [
     `Topic: ${request.topic}`,
     `Learner level: ${request.level}`,
-    `Time budget: ${budgetLabel(request.timeBudget)}; exactly ${count} lessons, about ${minutes} minutes each.`,
+    `Time budget: ${budgetLabel(request)}; exactly ${count} lessons, about ${minutes} minutes each.`,
     `Explanation style: ${styleLabel(request.explanationStyle)}.`,
     `Content format: ${formatLabel(request.contentFormat)}.`,
     `Assessment preference: ${assessmentLabel(request.assessment)}.`,
@@ -109,31 +113,54 @@ export async function generateOutline(input: GenerateOutlineInput): Promise<Cour
     .filter(Boolean)
     .join('\n');
 
-  const { data, mocked } = await generateJson(
-    [
-      { role: 'system', content: system },
-      { role: 'user', content: user },
-    ],
-    courseOutlineSchema,
-    {
-      feature: 'self_learn.generate_outline',
-      userId: input.userId,
-      tier: 'smart',
-      maxTokens: 6000,
-      temperature: 0.6,
-      mock: () => mockOutline(request, specs),
-    },
-  );
-  if (mocked && isAiConfigured()) {
+  const messages = [
+    { role: 'system' as const, content: system },
+    { role: 'user' as const, content: user },
+  ];
+  const first = await generateJson(messages, courseOutlineSchema, {
+    feature: 'self_learn.generate_outline',
+    userId: input.userId,
+    tier: 'smart',
+    maxTokens: 6000,
+    temperature: 0.6,
+    mock: () => mockOutline(request, specs),
+  });
+  if (first.mocked && isAiConfigured()) {
     throw new Error('Pip could not get a usable course framework from the model. Please try again.');
   }
 
-  return normalizeOutline(data, request, specs);
+  let outline = first.data;
+  // The old prompt allowed a fixed 8-lesson ceiling and the model kept returning 8 even
+  // when the learner asked for 10. Validate the count explicitly and make one corrective call.
+  if (outline.lessons.length !== count) {
+    const retry = await generateJson(
+      [
+        ...messages,
+        { role: 'assistant', content: JSON.stringify(outline) },
+        {
+          role: 'user',
+          content: `That framework has ${outline.lessons.length} lessons, but this request requires exactly ${count}. Rewrite the full JSON with exactly ${count} distinct lessons, about ${minutes} minutes each. Keep the topic, level, outcomes and preferences unchanged. Do not explain; reply with JSON only.`,
+        },
+      ],
+      courseOutlineSchema,
+      {
+        feature: 'self_learn.generate_outline_count_retry',
+        userId: input.userId,
+        tier: 'smart',
+        maxTokens: 6000,
+        temperature: 0.4,
+        mock: () => mockOutline(request, specs),
+      },
+    );
+    if (!retry.mocked) outline = retry.data;
+  }
+
+  return normalizeOutline(outline, request, specs);
 }
 
 function normalizeOutline(outline: CourseOutline, request: GenerationRequest, specs: ActivitySpec[]): CourseOutline {
-  const count = lessonCountForBudget(request.timeBudget);
-  const minutes = minutesPerLesson(request.timeBudget);
+  const count = lessonCountForRequest(request);
+  const minutes = minutesPerLessonForRequest(request);
   const installed = new Set(specs.map((spec) => spec.type));
   const fallbackTypes = preferredActivityTypes(request.contentFormat, request.assessment).filter((type) => installed.has(type));
   const normalized: CourseOutline = {
@@ -146,8 +173,12 @@ function normalizeOutline(outline: CourseOutline, request: GenerationRequest, sp
         : fallbackTypes.slice(0, 2)),
     })),
   };
-  // The schema allows 3-8; if the model returned fewer than requested, asking it again is
-  // better than silently promising a longer course than it wrote.
+  // If a corrective call still returns too few lessons, fill the tail from the deterministic
+  // outline rather than silently shipping a shorter course than the learner asked for.
+  if (normalized.lessons.length < count) {
+    const filler = mockOutline(request, specs).lessons;
+    normalized.lessons = [...normalized.lessons, ...filler.slice(normalized.lessons.length)].slice(0, count);
+  }
   return normalized.lessons.length ? normalized : mockOutline(request, specs);
 }
 
@@ -170,7 +201,7 @@ export async function generateFullCourse(input: GenerateCourseInput): Promise<Co
   const user = [
     `Topic: ${request.topic}`,
     `Learner level: ${request.level}`,
-    `Time budget: ${budgetLabel(request.timeBudget)}; exactly ${count} lessons.`,
+    `Time budget: ${budgetLabel(request)}; exactly ${count} lessons.`,
     `Explanation style: ${styleLabel(request.explanationStyle)}.`,
     `Content format: ${formatLabel(request.contentFormat)}.`,
     `Assessment: ${assessmentLabel(request.assessment)}.`,
@@ -232,7 +263,7 @@ export async function generateFullCourse(input: GenerateCourseInput): Promise<Co
 
 /** Cheap quality gate: the model must write a real course, not four headings. */
 export function qualityIssues(draft: CourseDraft, request: GenerationRequest): string[] {
-  const expected = lessonCountForBudget(request.timeBudget);
+  const expected = lessonCountForRequest(request);
   const issues: string[] = [];
   if (draft.lessons.length !== expected) issues.push(`expected ${expected} lessons, got ${draft.lessons.length}`);
   for (const [index, lesson] of draft.lessons.entries()) {
@@ -244,21 +275,21 @@ export function qualityIssues(draft: CourseDraft, request: GenerationRequest): s
 
 function mockOutline(request: GenerationRequest, specs: ActivitySpec[]): CourseOutline {
   const locale = request.locale;
-  const count = lessonCountForBudget(request.timeBudget);
-  const minutes = minutesPerLesson(request.timeBudget);
+  const count = lessonCountForRequest(request);
+  const minutes = minutesPerLessonForRequest(request);
   const installed = new Set(specs.map((spec) => spec.type));
   const types = preferredActivityTypes(request.contentFormat, request.assessment).filter((type) => installed.has(type));
   const patterns = byLocale(
     locale,
-    ['The big picture', 'The key idea', 'A worked example', 'Common mistakes', 'Practice', 'Going deeper', 'Putting it together', 'What next'],
-    ['先看全局', '核心概念', '一个完整例子', '常见错误', '动手练习', '再深入一点', '串起来', '接下来学什么'],
+    ['The big picture', 'The key idea', 'A worked example', 'Common mistakes', 'Practice', 'Going deeper', 'Putting it together', 'What next', 'A second example', 'Check your understanding', 'Apply it', 'Review'],
+    ['先看全局', '核心概念', '一个完整例子', '常见错误', '动手练习', '再深入一点', '串起来', '接下来学什么', '再看一个例子', '检查理解', '用起来', '复习'],
   );
   return {
     title: byLocale(locale, request.topic, request.topic),
     promise: byLocale(
       locale,
-      `A practical, ${budgetLabel(request.timeBudget)} introduction to ${request.topic}, built around examples and practice.`,
-      `一门围绕例子和练习展开的${budgetLabel(request.timeBudget)}入门课，主题是${request.topic}。`,
+      `A practical, ${budgetLabel(request)} introduction to ${request.topic}, built around examples and practice.`,
+      `一门围绕例子和练习展开的${budgetLabel(request)}入门课，主题是${request.topic}。`,
     ),
     outcomes: byLocale(
       locale,

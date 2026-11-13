@@ -4,7 +4,9 @@ import { qualityIssues } from './generation';
 import {
   courseOutlineSchema,
   lessonCountForBudget,
+  lessonCountForRequest,
   minutesPerLesson,
+  minutesPerLessonForRequest,
   preferredActivityTypes,
   requestSchema,
   type GenerationRequest,
@@ -26,8 +28,16 @@ describe('self-learn course shape', () => {
     expect(lessonCountForBudget('30m')).toBe(3);
     expect(lessonCountForBudget('1h')).toBe(4);
     expect(lessonCountForBudget('2h')).toBe(6);
-    expect(lessonCountForBudget('4h')).toBe(8);
-    expect(minutesPerLesson('4h')).toBe(30);
+    expect(lessonCountForBudget('4h')).toBe(10);
+    expect(minutesPerLesson('4h')).toBe(24);
+  });
+
+  it('honours a lesson-count override and a custom duration', () => {
+    expect(lessonCountForRequest({ timeBudget: '4h' })).toBe(10);
+    expect(lessonCountForRequest({ timeBudget: '4h', lessonCount: 7 })).toBe(7);
+    expect(lessonCountForRequest({ timeBudget: 'custom', customMinutes: 240 })).toBe(10);
+    expect(lessonCountForRequest({ timeBudget: 'custom', customMinutes: 90 })).toBe(4);
+    expect(minutesPerLessonForRequest({ timeBudget: 'custom', customMinutes: 240, lessonCount: 10 })).toBe(24);
   });
 
   it('chooses activity types from format and assessment', () => {

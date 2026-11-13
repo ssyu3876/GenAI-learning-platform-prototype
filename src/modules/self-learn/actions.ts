@@ -69,6 +69,28 @@ async function ownSession(userId: string, sessionId: string) {
   return session;
 }
 
+/**
+ * A learner often writes "make it 10 lessons" or "I have 6 hours" in the framework feedback.
+ * Apply those numbers before prompting, otherwise the fixed budget silently wins.
+ */
+function requestWithFeedback(request: GenerationRequest, comment?: string): GenerationRequest {
+  if (!comment) return request;
+  let next = { ...request };
+  const count = comment.match(/(\d{1,2})\s*(?:lessons?|节(?:课)?|门课|课)/i);
+  if (count) {
+    const value = Number(count[1]);
+    if (Number.isInteger(value) && value >= 3 && value <= 12) next = { ...next, lessonCount: value };
+  }
+  const hours = comment.match(/(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h|小时)/i);
+  if (hours) {
+    const minutes = Math.round(Number(hours[1]) * 60);
+    if (minutes >= 15 && minutes <= 20 * 60) {
+      next = { ...next, timeBudget: 'custom', customMinutes: minutes };
+    }
+  }
+  return next;
+}
+
 /** Step 1: requirements -> framework. The full course is not written yet. */
 export async function generateLearnerOutline(
   _prev: ActionResult | null,
@@ -98,7 +120,12 @@ export async function generateLearnerOutline(
     };
   }
 
-  const request: GenerationRequest = { ...parsed.data, locale };
+  const { customHours, ...base } = parsed.data;
+  const request: GenerationRequest = {
+    ...base,
+    customMinutes: base.timeBudget === 'custom' ? Math.round((customHours ?? 1) * 60) : undefined,
+    locale,
+  };
   const profile = await getAudienceProfile(user.id);
   const specs = specsFor(request);
   try {
@@ -134,10 +161,11 @@ export async function regenerateOutline(formData: FormData): Promise<void> {
   const sessionId = z.string().min(1).parse(formData.get('sessionId'));
   const comment = (formData.get('comment') as string | null)?.trim() || undefined;
   const session = await ownSession(user.id, sessionId);
-  const specs = specsFor(session.request);
+  const request = requestWithFeedback(session.request, comment);
+  const specs = specsFor(request);
   const profile = await getAudienceProfile(user.id);
   const outline = await generateOutline({
-    request: session.request,
+    request,
     profile,
     specs,
     userId: user.id,
@@ -146,7 +174,7 @@ export async function regenerateOutline(formData: FormData): Promise<void> {
   const db = await getDb();
   await db
     .update(courseGenerationSessions)
-    .set({ outline, updatedAt: new Date() })
+    .set({ request, outline, updatedAt: new Date() })
     .where(eq(courseGenerationSessions.id, session.id));
   if (comment) {
     await db.insert(courseFeedback).values({

@@ -14,6 +14,7 @@ export function LearnForm({ remaining, limit }: { remaining: number; limit: numb
   const t = useT();
   const [state, dispatch, pending] = useActionState<ActionResult | null, FormData>(generateLearnerOutline, null);
   const [topic, setTopic] = useState('');
+  const [timeBudget, setTimeBudget] = useState('1h');
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -74,10 +75,45 @@ export function LearnForm({ remaining, limit }: { remaining: number; limit: numb
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={t.selfLearn.form.timeLabel} htmlFor="timeBudget" hint={t.selfLearn.form.timeHint}>
-            <Select id="timeBudget" name="timeBudget" defaultValue="1h" disabled={pending}>
+            <Select
+              id="timeBudget"
+              name="timeBudget"
+              value={timeBudget}
+              onChange={(event) => setTimeBudget(event.target.value)}
+              disabled={pending}
+            >
               {Object.entries(t.selfLearn.form.timeOptions).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
+                </option>
+              ))}
+            </Select>
+            {timeBudget === 'custom' ? (
+              <div className="mt-2 flex items-center gap-2">
+                <Input
+                  name="customHours"
+                  type="number"
+                  min={0.25}
+                  max={20}
+                  step={0.25}
+                  defaultValue={2}
+                  aria-label={t.selfLearn.form.customHoursLabel}
+                  disabled={pending}
+                  className="max-w-28"
+                />
+                <span className="text-sm text-ink-soft">{t.selfLearn.form.customHoursUnit}</span>
+              </div>
+            ) : null}
+            {timeBudget === 'custom' ? (
+              <p className="mt-1 text-xs text-ink-soft">{t.selfLearn.form.customHoursHint}</p>
+            ) : null}
+          </Field>
+          <Field label={t.selfLearn.form.lessonCountLabel} htmlFor="lessonCount" hint={t.selfLearn.form.lessonCountHint}>
+            <Select id="lessonCount" name="lessonCount" defaultValue="" disabled={pending}>
+              <option value="">{t.selfLearn.form.lessonCountAuto}</option>
+              {[4, 6, 8, 10, 12].map((value) => (
+                <option key={value} value={value}>
+                  {value} {t.selfLearn.form.lessonCountUnit}
                 </option>
               ))}
             </Select>

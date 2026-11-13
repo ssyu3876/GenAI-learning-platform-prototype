@@ -34,8 +34,16 @@
       "30m": "30 minutes",
       "1h": "1 hour",
       "2h": "2 hours",
-      "4h": "4 hours"
+      "4h": "4 hours",
+      "custom": "Custom duration"
     },
+    "customHoursLabel": "Custom length in hours",
+    "customHoursUnit": "hours",
+    "customHoursHint": "0.25–20 hours per course. For a longer programme, split it into 2–3 courses.",
+    "lessonCountLabel": "Number of lessons",
+    "lessonCountHint": "Leave it on automatic to derive the count from your time.",
+    "lessonCountAuto": "Automatic",
+    "lessonCountUnit": "lessons",
     "styleLabel": "How should Pip explain it?",
     "styleHint": "Choose the teaching style that keeps you engaged.",
     "styleOptions": {

@@ -41,8 +41,8 @@ export async function CreatePage({ user }: { user: SessionUser }) {
           <ul className="grid gap-3 sm:grid-cols-2">
             {own.map((course) => (
               <li key={course.id}>
-                <Link href={`/courses/${course.slug}`} className="block h-full rounded-blob">
-                  <Card interactive className="flex h-full items-start gap-3 p-4">
+                <Card className="flex h-full flex-col p-4">
+                  <Link href={`/courses/${course.slug}`} className="flex items-start gap-3 rounded-xl">
                     <span
                       aria-hidden
                       className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl border-2 border-line text-2xl ${TINT_SOLID[asTint(course.color)]}`}
@@ -57,8 +57,16 @@ export async function CreatePage({ user }: { user: SessionUser }) {
                         })}
                       </span>
                     </span>
-                  </Card>
-                </Link>
+                  </Link>
+                  {course.sessionId ? (
+                    <Link
+                      href={`/create/feedback/${course.sessionId}`}
+                      className="mt-3 inline-flex w-fit items-center gap-1 rounded-pill bg-butter-soft px-2.5 py-1 text-xs font-semibold hover:bg-butter"
+                    >
+                      {t.selfLearn.reviseCourse}
+                    </Link>
+                  ) : null}
+                </Card>
               </li>
             ))}
           </ul>

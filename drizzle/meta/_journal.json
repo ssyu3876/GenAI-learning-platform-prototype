@@ -43,6 +43,13 @@
       "when": 1794483325577,
       "tag": "0005_outstanding_nebula",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794533370978,
+      "tag": "0006_tan_korath",
+      "breakpoints": true
     }
   ]
 }

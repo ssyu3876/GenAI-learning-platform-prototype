@@ -16,16 +16,23 @@ import type { ActionResult } from '@/core/types';
 import { getT } from '@/i18n';
 import { byLocale } from '@/i18n/ai';
 import { ACTIVITY_TYPES, activitySpecs } from '@/registry/activities';
-import { generateOutline, regenerateOneLesson } from './generation';
+import { generateOutline, generateSeriesCourseOutline, generateSeriesPlan, regenerateOneLesson } from './generation';
 import {
   countCoursesGeneratedToday,
   DAILY_COURSE_LIMIT,
   getAudienceProfile,
+  getCourseSeries,
   getGeneratedCourse,
   getGenerationSession,
+  listSeriesSessions,
 } from './queries';
-import { courseFeedback, courseGenerationSessions } from './schema';
-import { preferredActivityTypes, requestSchema, type GenerationRequest } from './types';
+import { courseFeedback, courseGenerationSessions, courseSeries } from './schema';
+import {
+  preferredActivityTypes,
+  requestSchema,
+  seriesStartSchema,
+  type GenerationRequest,
+} from './types';
 
 const feedbackSchema = z.object({
   sessionId: z.string().min(1),
@@ -166,6 +173,144 @@ export async function generateLearnerOutline(
       ),
     };
   }
+}
+
+/** Start a 2–3 course programme for a request longer than one course. */
+export async function startCourseSeries(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireUser(['learner']);
+  const { locale } = await getT();
+  const parsed = seriesStartSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: byLocale(locale, 'Please check the series inputs.', '请检查系列课程设置。'),
+    };
+  }
+  const { customHours, seriesParts, ...base } = parsed.data;
+  const totalMinutes = Math.round(customHours * 60);
+  const perCourseMinutes = Math.round(totalMinutes / seriesParts);
+  if (perCourseMinutes > 20 * 60) {
+    return {
+      ok: false,
+      error: byLocale(locale, 'Each course in the series must be 20 hours or less.', '系列中每门课都不能超过 20 小时。'),
+    };
+  }
+  const request: GenerationRequest = {
+    ...base,
+    timeBudget: 'custom',
+    customMinutes: totalMinutes,
+    locale,
+  };
+  try {
+    const profile = await getAudienceProfile(user.id);
+    const plan = await generateSeriesPlan({ request, parts: seriesParts, profile, userId: user.id });
+    const db = await getDb();
+    const seriesId = newId('courseSeries');
+    await db.insert(courseSeries).values({ id: seriesId, userId: user.id, request, plan });
+    revalidatePath('/create');
+    redirect(`/create/series/${seriesId}`);
+  } catch (error) {
+    const digest = error && typeof error === 'object' && 'digest' in error ? String(error.digest) : '';
+    if (digest.startsWith('NEXT_REDIRECT')) throw error;
+    return {
+      ok: false,
+      error: byLocale(
+        locale,
+        error instanceof Error ? error.message : 'Pip could not plan this series.',
+        'Pip 规划系列课程时出错了，请再试一次。',
+      ),
+    };
+  }
+}
+
+/** Regenerate the whole programme after the learner's overall review. */
+export async function regenerateSeries(formData: FormData): Promise<void> {
+  const user = await requireUser(['learner']);
+  const seriesId = z.string().min(1).parse(formData.get('seriesId'));
+  const comment = (formData.get('comment') as string | null)?.trim() || undefined;
+  const series = await getCourseSeries(user.id, seriesId);
+  if (!series) throw new Error('Series not found.');
+  const plan = await generateSeriesPlan({
+    request: series.request,
+    parts: series.plan.courses.length,
+    profile: await getAudienceProfile(user.id),
+    userId: user.id,
+    feedback: comment,
+  });
+  const db = await getDb();
+  await db.update(courseSeries).set({ plan, updatedAt: new Date() }).where(eq(courseSeries.id, series.id));
+  revalidatePath(`/create/series/${series.id}`);
+  redirect(`/create/series/${series.id}`);
+}
+
+/** Start/resume one course in the series. Parts must be completed in order. */
+export async function startSeriesPart(formData: FormData): Promise<void> {
+  const user = await requireUser(['learner']);
+  const seriesId = z.string().min(1).parse(formData.get('seriesId'));
+  const part = z.coerce.number().int().min(0).max(2).parse(formData.get('part'));
+  const series = await getCourseSeries(user.id, seriesId);
+  if (!series) throw new Error('Series not found.');
+  const course = series.plan.courses[part];
+  if (!course) throw new Error('Series part not found.');
+
+  const sessions = await listSeriesSessions(series.id);
+  const current = sessions.find((session) => session.seriesPart === part);
+  if (current?.status === 'generated') redirect(`/create/feedback/${current.id}`);
+  if (current?.status === 'generating') redirect(`/create/generate/${current.id}`);
+  if (part > 0 && sessions.find((session) => session.seriesPart === part - 1)?.status !== 'generated') {
+    redirect(`/create/series/${series.id}?error=order`);
+  }
+
+  const partRequest: GenerationRequest = {
+    ...series.request,
+    topic: course.title,
+    why: `${series.plan.title} / ${course.focus}`,
+    timeBudget: 'custom',
+    customMinutes: course.estimatedMinutes,
+    lessonCount: course.lessonCount,
+  };
+  const specs = specsFor(partRequest);
+  const outline = await generateSeriesCourseOutline({
+    series: series.plan,
+    courseIndex: part,
+    request: partRequest,
+    specs,
+    userId: user.id,
+  });
+  const shell: CourseDraft = {
+    title: outline.title,
+    summary: outline.promise,
+    subject: course.focus.slice(0, 60),
+    level: partRequest.level,
+    audience: 'everyone',
+    tags: [series.plan.title.toLowerCase().slice(0, 30)],
+    emoji: '🌱',
+    color: 'mint',
+    lessons: [],
+  };
+  const saved = await saveCourseDraft(shell, {
+    ownerId: user.id,
+    source: 'learner_ai',
+    status: 'published',
+    visibility: 'private',
+  });
+  const db = await getDb();
+  const sessionId = newId('courseGen');
+  await db.insert(courseGenerationSessions).values({
+    id: sessionId,
+    userId: user.id,
+    request: partRequest,
+    outline,
+    status: 'generating',
+    courseId: saved.id,
+    seriesId: series.id,
+    seriesPart: part,
+  });
+  revalidatePath(`/create/series/${series.id}`);
+  redirect(`/create/generate/${sessionId}`);
 }
 
 /** Step 2a: learner wants a different direction. */

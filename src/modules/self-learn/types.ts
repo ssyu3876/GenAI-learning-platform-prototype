@@ -67,6 +67,43 @@ export const courseOutlineSchema = z.object({
 export type CourseOutline = z.infer<typeof courseOutlineSchema>;
 export type OutlineLesson = z.infer<typeof outlineLessonSchema>;
 
+export const seriesCourseSchema = z.object({
+  title: z.string().min(3).max(100),
+  focus: z.string().min(1).max(400),
+  promise: z.string().min(1).max(400),
+  outcomes: z.array(z.string().min(1).max(200)).min(2).max(5),
+  chapters: z.array(z.string().min(1).max(160)).min(2).max(8),
+  relationship: z.string().min(1).max(400),
+  estimatedMinutes: z.number().int().min(60).max(1200),
+  lessonCount: z.number().int().min(3).max(12),
+});
+
+export const seriesPlanSchema = z.object({
+  title: z.string().min(3).max(120),
+  promise: z.string().min(1).max(500),
+  outcomes: z.array(z.string().min(1).max(200)).min(2).max(6),
+  courses: z.array(seriesCourseSchema).min(2).max(3),
+});
+
+export type SeriesCourse = z.infer<typeof seriesCourseSchema>;
+export type CourseSeriesPlan = z.infer<typeof seriesPlanSchema>;
+
+export const seriesStartSchema = z.object({
+  topic: z.string().trim().min(3).max(200),
+  why: z
+    .string()
+    .trim()
+    .max(300)
+    .optional()
+    .transform((value) => (value ? value : undefined)),
+  level: z.enum(['beginner', 'intermediate', 'advanced']).catch('beginner'),
+  customHours: z.coerce.number().min(20.01).max(60),
+  seriesParts: z.coerce.number().int().min(2).max(3),
+  explanationStyle: z.enum(EXPLANATION_STYLES).catch('examples'),
+  contentFormat: z.enum(CONTENT_FORMATS).catch('mixed'),
+  assessment: z.enum(ASSESSMENTS).catch('mixed'),
+});
+
 /** Exact lesson count for a fixed budget. A 4-hour course defaults to 10 short lessons. */
 export function lessonCountForBudget(budget: TimeBudget): number {
   return { '30m': 3, '1h': 4, '2h': 6, '4h': 10, custom: 4 }[budget];

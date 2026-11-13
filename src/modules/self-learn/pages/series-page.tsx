@@ -80,6 +80,8 @@ export async function SeriesPage({
                   <Badge tint="mint">
                     <Check className="h-3 w-3" /> {t.selfLearn.series.done}
                   </Badge>
+                ) : session?.status === 'outline' ? (
+                  <Badge tint="butter">{t.selfLearn.series.awaitingReview}</Badge>
                 ) : session?.status === 'generating' ? (
                   <Badge tint="sky">{t.selfLearn.series.inProgress}</Badge>
                 ) : null}
@@ -104,6 +106,13 @@ export async function SeriesPage({
                     className="inline-flex items-center gap-2 rounded-pill border-2 border-line bg-paper px-4 py-2 text-sm font-bold shadow-sticker-sm hover:bg-butter-soft"
                   >
                     <Check className="h-4 w-4" /> {t.selfLearn.series.openFeedback}
+                  </Link>
+                ) : session?.status === 'outline' ? (
+                  <Link
+                    href={`/create/outline/${session.id}`}
+                    className="inline-flex items-center gap-2 rounded-pill border-2 border-line bg-paper px-4 py-2 text-sm font-bold shadow-sticker-sm hover:bg-butter-soft"
+                  >
+                    <ListChecks className="h-4 w-4" /> {t.selfLearn.series.reviewFramework}
                   </Link>
                 ) : session?.status === 'generating' ? (
                   <Link

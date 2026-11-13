@@ -28,11 +28,13 @@ export async function FeedbackPage({
   const generated = await getGeneratedCourse(session);
   if (!generated) notFound();
   const series = await getSeriesForSession(session);
+  const backHref = series ? `/create/series/${series.id}` : '/create';
+  const backLabel = series ? t.selfLearn.series.backSeries : t.selfLearn.feedback.back;
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-5">
-      <Link href="/create" className="inline-flex items-center gap-1 text-sm font-semibold text-ink-soft hover:text-ink">
-        <ChevronLeft className="h-4 w-4" /> {t.selfLearn.feedback.back}
+      <Link href={backHref} className="inline-flex items-center gap-1 text-sm font-semibold text-ink-soft hover:text-ink">
+        <ChevronLeft className="h-4 w-4" /> {backLabel}
       </Link>
 
       {series ? (

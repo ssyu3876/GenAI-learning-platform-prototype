@@ -21,6 +21,8 @@ export function LearnForm({ remaining, limit }: { remaining: number; limit: numb
   const [topic, setTopic] = useState('');
   const [timeBudget, setTimeBudget] = useState('1h');
   const [customHours, setCustomHours] = useState(2);
+  const [seriesParts, setSeriesParts] = useState<number | null>(null);
+  const [seriesChoiceError, setSeriesChoiceError] = useState<string | null>(null);
   const needsSplit = timeBudget === 'custom' && customHours > SINGLE_COURSE_MAX_HOURS;
   const splitOptions = needsSplit
     ? [2, 3]
@@ -28,18 +30,20 @@ export function LearnForm({ remaining, limit }: { remaining: number; limit: numb
         .filter((option) => option.hours <= SINGLE_COURSE_MAX_HOURS && option.hours >= 0.25)
     : [];
 
-  function startSeries(parts: number) {
-    const form = document.getElementById('topic')?.closest('form');
-    if (!form) return;
-    const formData = new FormData(form);
-    formData.set('customHours', String(customHours));
-    formData.set('seriesParts', String(parts));
-    startTransition(() => seriesDispatch(formData));
-  }
-
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (needsSplit) return;
+    if (needsSplit) {
+      if (!seriesParts) {
+        setSeriesChoiceError(t.selfLearn.form.chooseSeriesPrompt);
+        return;
+      }
+      const formData = new FormData(event.currentTarget);
+      formData.set('customHours', String(customHours));
+      formData.set('seriesParts', String(seriesParts));
+      setSeriesChoiceError(null);
+      startTransition(() => seriesDispatch(formData));
+      return;
+    }
     const formData = new FormData(event.currentTarget);
     startTransition(() => dispatch(formData));
   }
@@ -101,7 +105,11 @@ export function LearnForm({ remaining, limit }: { remaining: number; limit: numb
               id="timeBudget"
               name="timeBudget"
               value={timeBudget}
-              onChange={(event) => setTimeBudget(event.target.value)}
+              onChange={(event) => {
+                setTimeBudget(event.target.value);
+                setSeriesParts(null);
+                setSeriesChoiceError(null);
+              }}
               disabled={pending}
             >
               {Object.entries(t.selfLearn.form.timeOptions).map(([value, label]) => (
@@ -119,7 +127,11 @@ export function LearnForm({ remaining, limit }: { remaining: number; limit: numb
                   max={60}
                   step={0.25}
                   value={customHours}
-                  onChange={(event) => setCustomHours(Number(event.target.value))}
+                  onChange={(event) => {
+                    setCustomHours(Number(event.target.value));
+                    setSeriesParts(null);
+                    setSeriesChoiceError(null);
+                  }}
                   aria-label={t.selfLearn.form.customHoursLabel}
                   disabled={pending}
                   className="max-w-28"
@@ -132,21 +144,33 @@ export function LearnForm({ remaining, limit }: { remaining: number; limit: numb
                 <p className="font-bold">{fmt(t.selfLearn.form.splitTitle, { hours: customHours })}</p>
                 <p className="mt-1 text-ink-soft">{fmt(t.selfLearn.form.splitBody, { hours: SINGLE_COURSE_MAX_HOURS })}</p>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {splitOptions.map((option) => (
-                    <button
-                      key={option.parts}
-                      type="button"
-                      disabled={seriesPending || pending}
-                      className="rounded-pill border-2 border-line bg-paper px-3 py-1 text-xs font-semibold hover:bg-butter-soft disabled:opacity-60"
-                      onClick={() => startSeries(option.parts)}
-                    >
-                      {fmt(t.selfLearn.form.startSeriesOption, {
-                        parts: option.parts,
-                        hours: Number(option.hours.toFixed(1)),
-                      })}
-                    </button>
-                  ))}
+                  {splitOptions.map((option) => {
+                    const active = seriesParts === option.parts;
+                    return (
+                      <button
+                        key={option.parts}
+                        type="button"
+                        disabled={seriesPending || pending}
+                        aria-pressed={active}
+                        className={`rounded-pill border-2 px-3 py-1 text-xs font-semibold disabled:opacity-60 ${
+                          active
+                            ? 'border-ink bg-butter text-ink shadow-sticker-sm'
+                            : 'border-line bg-paper hover:bg-butter-soft'
+                        }`}
+                        onClick={() => {
+                          setSeriesParts(option.parts);
+                          setSeriesChoiceError(null);
+                        }}
+                      >
+                        {fmt(t.selfLearn.form.startSeriesOption, {
+                          parts: option.parts,
+                          hours: Number(option.hours.toFixed(1)),
+                        })}
+                      </button>
+                    );
+                  })}
                 </div>
+                {seriesChoiceError ? <Notice tone="error">{seriesChoiceError}</Notice> : null}
                 {seriesState && !seriesState.ok ? <Notice tone="error">{seriesState.error}</Notice> : null}
                 <p className="mt-2 text-xs text-ink-soft">
                   {seriesPending ? t.selfLearn.form.seriesPlanning : t.selfLearn.form.splitNote}
@@ -196,17 +220,25 @@ export function LearnForm({ remaining, limit }: { remaining: number; limit: numb
           </Field>
         </div>
 
-        {pending ? (
+        {pending || seriesPending ? (
           <PipSays mood="think" size={64}>
-            <p className="font-display font-bold">{t.selfLearn.form.planningTitle}</p>
+            <p className="font-display font-bold">
+              {seriesPending ? t.selfLearn.form.seriesPlanning : t.selfLearn.form.planningTitle}
+            </p>
             <p className="text-sm text-ink-soft">{t.selfLearn.form.planningNote}</p>
           </PipSays>
         ) : null}
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" variant="primary" size="lg" disabled={pending || remaining <= 0 || needsSplit || seriesPending} aria-busy={pending}>
+          <Button type="submit" variant="primary" size="lg" disabled={pending || remaining <= 0 || seriesPending} aria-busy={pending || seriesPending}>
             <WandSparkles className="h-4 w-4" aria-hidden />
-            {pending ? t.selfLearn.form.writingButton : t.selfLearn.form.makeCourse}
+            {seriesPending
+              ? t.selfLearn.form.seriesPlanning
+              : pending
+                ? t.selfLearn.form.writingButton
+                : needsSplit
+                  ? t.selfLearn.form.generateSeriesButton
+                  : t.selfLearn.form.makeCourse}
           </Button>
           <p className="text-sm text-ink-soft">
             {remaining > 0

@@ -36,6 +36,8 @@ export async function OutlinePage({
   if (session.status === 'generating' && session.courseId) redirect(`/create/generate/${session.id}`);
 
   const { outline, request } = session;
+  const backHref = session.seriesId ? `/create/series/${session.seriesId}` : '/create';
+  const backLabel = session.seriesId ? t.selfLearn.series.backSeries : t.selfLearn.outline.back;
   const timeLabel =
     request.timeBudget === 'custom'
       ? `${Number((totalMinutesForRequest(request) / 60).toFixed(1))} ${t.selfLearn.form.customHoursUnit}`
@@ -43,8 +45,8 @@ export async function OutlinePage({
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-5">
-      <Link href="/create" className="inline-flex items-center gap-1 text-sm font-semibold text-ink-soft hover:text-ink">
-        <ChevronLeft className="h-4 w-4" /> {t.selfLearn.outline.back}
+      <Link href={backHref} className="inline-flex items-center gap-1 text-sm font-semibold text-ink-soft hover:text-ink">
+        <ChevronLeft className="h-4 w-4" /> {backLabel}
       </Link>
 
       <div>

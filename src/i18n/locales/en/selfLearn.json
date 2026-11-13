@@ -39,6 +39,7 @@
     },
     "customHoursLabel": "Custom length in hours",
     "customHoursUnit": "hours",
+    "customHoursHint": "0.25–20 hours per course. For a longer programme, split it into 2–3 courses.",
     "lessonCountLabel": "Number of lessons",
     "lessonCountHint": "Leave it on automatic to derive the count from your time.",
     "lessonCountAuto": "Automatic",

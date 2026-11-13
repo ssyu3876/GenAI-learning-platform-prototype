@@ -39,6 +39,7 @@
     },
     "customHoursLabel": "自定义小时数",
     "customHoursUnit": "小时",
+    "customHoursHint": "单门课程 0.25–20 小时；更长的学习计划建议拆成 2–3 门课。",
     "lessonCountLabel": "课程节数",
     "lessonCountHint": "留空自动按时间推算；也可以直接指定 4–12 节。",
     "lessonCountAuto": "自动",

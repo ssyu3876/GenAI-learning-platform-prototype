@@ -104,6 +104,9 @@ export function LearnForm({ remaining, limit }: { remaining: number; limit: numb
                 <span className="text-sm text-ink-soft">{t.selfLearn.form.customHoursUnit}</span>
               </div>
             ) : null}
+            {timeBudget === 'custom' ? (
+              <p className="mt-1 text-xs text-ink-soft">{t.selfLearn.form.customHoursHint}</p>
+            ) : null}
           </Field>
           <Field label={t.selfLearn.form.lessonCountLabel} htmlFor="lessonCount" hint={t.selfLearn.form.lessonCountHint}>
             <Select id="lessonCount" name="lessonCount" defaultValue="" disabled={pending}>

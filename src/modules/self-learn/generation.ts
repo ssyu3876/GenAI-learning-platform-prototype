@@ -364,7 +364,11 @@ export async function regenerateOneLesson(input: {
     },
   );
   if (mocked && isAiConfigured()) {
-    throw new Error('Pip could not write this lesson. Please retry.');
+    // A complex lesson (often a coding/project activity) can exhaust the model's output
+    // budget. Do not strand the learner at 7/8: fall back to a complete, safe lesson that
+    // uses only reading/slides/quiz-style activities.
+    console.warn('[self-learn] lesson generation fell back to a safe template:', lesson.title);
+    return fallbackLesson(input);
   }
 
   const sanitized = sanitizeDraft(
@@ -396,4 +400,38 @@ export async function regenerateOneLesson(input: {
     }
   }
   return result;
+}
+
+/**
+ * Last-resort lesson. This keeps the course completable when the model returns unusable JSON
+ * for one complex lesson; it deliberately avoids coding/role-play configs so it cannot fail
+ * activity validation.
+ */
+function fallbackLesson(input: {
+  request: GenerationRequest;
+  outline: CourseOutline;
+  lessonIndex: number;
+  specs: ActivitySpec[];
+}): CourseDraft['lessons'][number] {
+  const lesson = input.outline.lessons[input.lessonIndex]!;
+  const locale = input.request.locale;
+  const safeSpecs = input.specs.filter((spec) => spec.type !== 'coding' && spec.type !== 'roleplay');
+  const specs = (safeSpecs.length ? safeSpecs : input.specs).slice(0, 2);
+  const content = byLocale(
+    locale,
+    `## ${lesson.title}\n\n**Why this matters:** ${lesson.objective}\n\n${lesson.keyPoints.map((point, index) => `### ${index + 1}. ${point}\n\nLook at one concrete situation and write down what you expect before you check it. Notice which detail changes the result.\n`).join('\n')}\n\n### A worked example\n\nTake one small case from **${input.request.topic}**. Write the starting numbers or facts, make one change, and record what happens. Do the same calculation twice so a slip is visible.\n\n### Common mistake\n\nDoing the steps without checking the result against the situation. Pause and ask: does this number make sense?\n\n### Try this\n\nUse one example from your own work or study, then explain the result in two sentences.`,
+    `## ${lesson.title}\n\n**为什么重要：** ${lesson.objective}\n\n${lesson.keyPoints.map((point, index) => `### ${index + 1}. ${point}\n\n找一个具体情境，先写下你的预期，再对照实际结果，注意哪个细节改变了结果。\n`).join('\n')}\n\n### 一个完整例子\n\n从**${input.request.topic}**里挑一个小案例。写下初始数字或事实，改变一个条件，记录结果。同样的计算做两遍，方便发现疏漏。\n\n### 常见错误\n\n只按步骤算，不检查结果是否符合情境。停一下，问自己：这个数字说得通吗？\n\n### 试一试\n\n用你工作或学习中的一个例子做一遍，再用两句话解释结果。`,
+  );
+  const activities = specs.map((spec) => ({
+    type: spec.type,
+    title: byLocale(locale, `Check-in: ${lesson.title}`, `小测：${lesson.title}`),
+    config: spec.mock({ topic: input.request.topic, lessonTitle: lesson.title, locale }),
+    xpReward: 20,
+  }));
+  return {
+    title: lesson.title,
+    estimatedMinutes: lesson.estimatedMinutes,
+    content,
+    activities,
+  };
 }

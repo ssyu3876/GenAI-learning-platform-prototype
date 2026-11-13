@@ -52,10 +52,11 @@ const lessonFeedbackSchema = z.object({
 
 function activityTypesFor(request: GenerationRequest): string[] {
   const installed = ACTIVITY_TYPES.map((item) => item.type);
-  const preferred = preferredActivityTypes(request.contentFormat, request.assessment).filter((type) =>
-    installed.includes(type),
+  const isCodeTopic = /\b(code|coding|program|python|javascript|typescript|java|sql|git|react|html|css)\b/i.test(request.topic);
+  const preferred = preferredActivityTypes(request.contentFormat, request.assessment).filter(
+    (type) => installed.includes(type) && (isCodeTopic || type !== 'coding'),
   );
-  return preferred.length ? preferred : installed;
+  return preferred.length ? preferred : installed.filter((type) => isCodeTopic || type !== 'coding');
 }
 
 function specsFor(request: GenerationRequest) {
@@ -221,14 +222,27 @@ export async function generateLessonForSession(
 
   const outlineLesson = session.outline.lessons[nextIndex]!;
   const specs = specsFor(session.request);
-  const rewritten = await regenerateOneLesson({
-    request: session.request,
-    outline: session.outline,
-    lessonIndex: nextIndex,
-    specs,
-    userId: user.id,
-    feedback: 'Write this lesson now as part of the approved course.',
-  });
+  let rewritten: Awaited<ReturnType<typeof regenerateOneLesson>>;
+  try {
+    rewritten = await regenerateOneLesson({
+      request: session.request,
+      outline: session.outline,
+      lessonIndex: nextIndex,
+      specs,
+      userId: user.id,
+      feedback: 'Write this lesson now as part of the approved course.',
+    });
+  } catch (error) {
+    const { locale } = await getT();
+    return {
+      ok: false,
+      error: byLocale(
+        locale,
+        error instanceof Error ? error.message : 'Pip could not write this lesson. Please retry.',
+        'Pip 这一节没写成功，请点重试。',
+      ),
+    };
+  }
   const db = await getDb();
   const lessonId = newId('lesson');
   await db.insert(lessons).values({

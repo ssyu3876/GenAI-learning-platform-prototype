@@ -31,9 +31,12 @@ const config = () => ({
   apiKey: process.env.AI_API_KEY ?? '',
   baseUrl: (process.env.AI_BASE_URL ?? 'https://api.deepseek.com').replace(/\/$/, ''),
   models: {
-    fast: process.env.AI_MODEL_FAST ?? 'deepseek-chat',
-    smart: process.env.AI_MODEL_SMART ?? process.env.AI_MODEL_FAST ?? 'deepseek-chat',
+    fast: process.env.AI_MODEL_FAST ?? 'deepseek-flash',
+    smart: process.env.AI_MODEL_SMART ?? process.env.AI_MODEL_FAST ?? 'deepseek-flash',
   },
+  // DeepSeek-V4.1-Flash supports low/high/max. "max" is slower but the best fit for
+  // course generation, which is the one feature where quality matters more than latency.
+  reasoningEffort: process.env.AI_REASONING_EFFORT ?? 'max',
   jsonMode: process.env.AI_JSON_MODE !== 'false',
   dailyLimit: Number(process.env.AI_DAILY_LIMIT_PER_USER ?? 200),
 });
@@ -96,6 +99,7 @@ async function callProvider(
   };
   if (opts.stream) body.stream_options = { include_usage: true };
   if (opts.json && cfg.jsonMode) body.response_format = { type: 'json_object' };
+  if (cfg.reasoningEffort) body.reasoning_effort = cfg.reasoningEffort;
   const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.apiKey}` },

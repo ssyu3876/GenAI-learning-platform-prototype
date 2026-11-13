@@ -8,11 +8,11 @@ import type { ActionResult } from '@/core/types';
 import { Button, Card, Field, Input, Notice, PipSays, Select } from '@/components/ui';
 import { useT } from '@/i18n/client';
 import { fmt } from '@/i18n/format';
-import { generateLearnerCourse } from '../actions';
+import { generateLearnerOutline } from '../actions';
 
 export function LearnForm({ remaining, limit }: { remaining: number; limit: number }) {
   const t = useT();
-  const [state, dispatch, pending] = useActionState<ActionResult | null, FormData>(generateLearnerCourse, null);
+  const [state, dispatch, pending] = useActionState<ActionResult | null, FormData>(generateLearnerOutline, null);
   const [topic, setTopic] = useState('');
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -72,10 +72,49 @@ export function LearnForm({ remaining, limit }: { remaining: number; limit: numb
           </Field>
         </div>
 
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label={t.selfLearn.form.timeLabel} htmlFor="timeBudget" hint={t.selfLearn.form.timeHint}>
+            <Select id="timeBudget" name="timeBudget" defaultValue="1h" disabled={pending}>
+              {Object.entries(t.selfLearn.form.timeOptions).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label={t.selfLearn.form.styleLabel} htmlFor="explanationStyle" hint={t.selfLearn.form.styleHint}>
+            <Select id="explanationStyle" name="explanationStyle" defaultValue="examples" disabled={pending}>
+              {Object.entries(t.selfLearn.form.styleOptions).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label={t.selfLearn.form.formatLabel} htmlFor="contentFormat" hint={t.selfLearn.form.formatHint}>
+            <Select id="contentFormat" name="contentFormat" defaultValue="mixed" disabled={pending}>
+              {Object.entries(t.selfLearn.form.formatOptions).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label={t.selfLearn.form.assessmentLabel} htmlFor="assessment" hint={t.selfLearn.form.assessmentHint}>
+            <Select id="assessment" name="assessment" defaultValue="mixed" disabled={pending}>
+              {Object.entries(t.selfLearn.form.assessmentOptions).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </div>
+
         {pending ? (
           <PipSays mood="think" size={64}>
-            <p className="font-display font-bold">{t.selfLearn.form.writingTitle}</p>
-            <p className="text-sm text-ink-soft">{t.selfLearn.form.writingNote}</p>
+            <p className="font-display font-bold">{t.selfLearn.form.planningTitle}</p>
+            <p className="text-sm text-ink-soft">{t.selfLearn.form.planningNote}</p>
           </PipSays>
         ) : null}
 

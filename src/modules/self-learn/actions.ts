@@ -260,6 +260,7 @@ export async function startSeriesPart(formData: FormData): Promise<void> {
   const current = sessions.find((session) => session.seriesPart === part);
   if (current?.status === 'generated') redirect(`/create/feedback/${current.id}`);
   if (current?.status === 'generating') redirect(`/create/generate/${current.id}`);
+  if (current?.status === 'outline') redirect(`/create/outline/${current.id}`);
   if (part > 0 && sessions.find((session) => session.seriesPart === part - 1)?.status !== 'generated') {
     redirect(`/create/series/${series.id}?error=order`);
   }
@@ -280,23 +281,6 @@ export async function startSeriesPart(formData: FormData): Promise<void> {
     specs,
     userId: user.id,
   });
-  const shell: CourseDraft = {
-    title: outline.title,
-    summary: outline.promise,
-    subject: course.focus.slice(0, 60),
-    level: partRequest.level,
-    audience: 'everyone',
-    tags: [series.plan.title.toLowerCase().slice(0, 30)],
-    emoji: '🌱',
-    color: 'mint',
-    lessons: [],
-  };
-  const saved = await saveCourseDraft(shell, {
-    ownerId: user.id,
-    source: 'learner_ai',
-    status: 'published',
-    visibility: 'private',
-  });
   const db = await getDb();
   const sessionId = newId('courseGen');
   await db.insert(courseGenerationSessions).values({
@@ -304,13 +288,12 @@ export async function startSeriesPart(formData: FormData): Promise<void> {
     userId: user.id,
     request: partRequest,
     outline,
-    status: 'generating',
-    courseId: saved.id,
+    status: 'outline',
     seriesId: series.id,
     seriesPart: part,
   });
   revalidatePath(`/create/series/${series.id}`);
-  redirect(`/create/generate/${sessionId}`);
+  redirect(`/create/outline/${sessionId}`);
 }
 
 /** Step 2a: learner wants a different direction. */

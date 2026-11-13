@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { recordDungeonRun } from '../actions';
 import {
   ArrowRight,
   Coins,
@@ -13,7 +14,6 @@ import { Badge, Button, cn } from '@/components/ui';
 import type { Difficulty, DungeonContent } from '../content/dungeon';
 import type { DungeonMap, Room } from '../content/dungeon-engine';
 import {
-  ACHIEVEMENTS,
   CHARACTERS,
   MODIFIERS,
   TALENTS,
@@ -97,6 +97,8 @@ function breakSound() {
 
 export function AgentDungeon({ copy }: { copy: Copy }) {
   const L = copy.labels as unknown as Record<string, string>;
+  // Copy that is shaped data (per-character, per-talent, per-tier) rather than one string.
+  const vocab = copy.labels;
   const [phase, setPhase] = useState<Phase>('menu');
   const [difficulty, setDifficulty] = useState<Difficulty>('normal');
   const [maps, setMaps] = useState<DungeonMap[]>([]);
@@ -143,6 +145,10 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
   const [questionBank, setQuestionBank] = useState<Copy['questions']>(copy.questions);
   const [awarded, setAwarded] = useState(false);
   const [result, setResult] = useState<{ score: number; points: number; unlocked: string[] } | null>(null);
+  /** Guards against reporting the same win twice when the victory effect re-runs. */
+  const reportedRun = useRef(false);
+  /** Whether the server accepted the run, shown on the result screen. */
+  const [runSave, setRunSave] = useState<'idle' | 'saving' | 'ok' | 'error'>('idle');
 
   useEffect(() => {
     const timer = window.setTimeout(() => setMeta(loadMeta()), 0);
@@ -185,6 +191,38 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     }, 0);
     return () => window.clearTimeout(timer);
   }, [phase, awarded, stats, tier, flawlessLayers, maxStreak, items.length, meta]);
+
+  // A win is the only thing the server hears about: the run itself lives in the browser.
+  // Badges for clearing the dungeon, its tiers and the daily/weekly board hang off this.
+  useEffect(() => {
+    if (phase !== 'victory' || reportedRun.current) return;
+    reportedRun.current = true;
+    setRunSave('saving');
+    void recordDungeonRun({
+      difficulty,
+      tier,
+      mode,
+      correct: stats.correct,
+      wrong: stats.wrong,
+      gold: stats.gold,
+      flawlessLayers,
+    })
+      .then((result) => {
+        // A silent failure used to mean the player finished a run and never got the badge,
+        // with nothing on screen to explain it. The result screen now says what happened.
+        if (result.ok) {
+          setRunSave('ok');
+          return;
+        }
+        reportedRun.current = false;
+        setRunSave('error');
+      })
+      .catch(() => {
+        reportedRun.current = false;
+        setRunSave('error');
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   const map = maps[layer];
   const currentRoom: Room | undefined = map?.rooms.find((r) => r.id === roomId);
@@ -260,6 +298,8 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     setDamageThisLayer(false);
     setModifier(MODIFIERS[Math.floor(Math.random() * MODIFIERS.length)] ?? null);
     setAwarded(false);
+    reportedRun.current = false;
+    setRunSave('idle');
     const start = nextMaps[0]!.rooms.find((r) => r.id === nextMaps[0]!.startRoomId)!;
     setRoomId(start.id);
     setVisited(new Set([start.id]));
@@ -667,10 +707,10 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     return (
       <div className="mx-auto flex max-w-2xl flex-col gap-4">
         <div className="rounded-blob border-2 border-line bg-ink p-6 text-cream shadow-sticker">
-          <p className="text-sm font-bold tracking-[0.2em] text-cream/60 uppercase">Agent Dungeon</p>
+          <p className="text-sm font-bold tracking-[0.2em] text-cream/60 uppercase">{L.eyebrow}</p>
           <h2 className="mt-2 font-display text-3xl font-bold">{L.title}</h2>
           <p className="mt-2 text-sm text-cream/80">{L.summary}</p>
-          <p className="mt-3 text-sm text-cream/60">{L.difficulty}: 3 layers · 3 bosses</p>
+          <p className="mt-3 text-sm text-cream/60">{L.difficulty}: {L.metaLine}</p>
         </div>
 
         <div className="rounded-blob border-2 border-line bg-paper p-3 shadow-sticker-sm">
@@ -680,17 +720,18 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
               {meta.points} {L.points}
             </span>
           </div>
-          <p className="mt-1 text-sm text-ink-soft">Characters</p>
+          <p className="mt-1 text-sm text-ink-soft">{L.charactersSection}</p>
           <div className="mt-1 grid grid-cols-5 gap-1">
             {CHARACTERS.map((character) => {
               const unlocked = meta.unlockedChars.includes(character.id);
               const selected = meta.character === character.id;
+              const characterCopy = vocab.characters[character.id] ?? character;
               return (
                 <button
                   key={character.id}
                   type="button"
                   onClick={() => chooseCharacter(character.id)}
-                  title={character.description}
+                  title={characterCopy.description}
                   className={cn(
                     'rounded-lg border-2 border-line px-1 py-1.5 text-center text-sm',
                     selected ? 'bg-butter' : 'bg-cream',
@@ -698,23 +739,24 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
                   )}
                 >
                   <span className="block text-lg">{character.icon}</span>
-                  <span className="block truncate">{character.name}</span>
+                  <span className="block truncate">{characterCopy.name}</span>
                   {!unlocked ? <span className="block text-sm text-ink-soft">{character.cost} {L.points}</span> : null}
                 </button>
               );
             })}
           </div>
-          <p className="mt-2 text-sm text-ink-soft">Talents (max 2)</p>
+          <p className="mt-2 text-sm text-ink-soft">{L.talentsSection}</p>
           <div className="mt-1 grid grid-cols-2 gap-1 sm:grid-cols-5">
             {TALENTS.map((talent) => {
               const unlocked = meta.unlockedTalents.includes(talent.id);
               const selected = meta.talents.includes(talent.id);
+              const talentCopy = vocab.talents[talent.id] ?? talent;
               return (
                 <button
                   key={talent.id}
                   type="button"
                   onClick={() => toggleTalent(talent.id)}
-                  title={talent.description}
+                  title={talentCopy.description}
                   className={cn(
                     'rounded-lg border-2 border-line px-1 py-1 text-left text-sm leading-tight',
                     selected ? 'bg-mint-soft' : 'bg-cream',
@@ -722,14 +764,14 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
                   )}
                 >
                   <span className="block text-base">{talent.icon}</span>
-                  {talent.name}
+                  {talentCopy.name}
                   {!unlocked ? <span className="block text-ink-soft">{talent.cost} {L.points}</span> : null}
                 </button>
               );
             })}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="text-sm font-bold text-ink-soft uppercase">Tier</span>
+            <span className="text-sm font-bold text-ink-soft uppercase">{L.tierSection}</span>
             {[1, 2, 3, 4, 5].map((value) => (
               <button
                 key={value}
@@ -744,10 +786,10 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
                 {value}
               </button>
             ))}
-            <span className="text-sm text-ink-soft">{TIER_PRESSURE[tier - 1]}</span>
+            <span className="text-sm text-ink-soft">{vocab.tierPressure[tier - 1] ?? TIER_PRESSURE[tier - 1]}</span>
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="text-sm font-bold text-ink-soft uppercase">Mode</span>
+            <span className="text-sm font-bold text-ink-soft uppercase">{L.modeSection}</span>
             {(['free', 'daily', 'weekly'] as const).map((value) => (
               <button
                 key={value}
@@ -758,7 +800,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
                   mode === value ? 'bg-butter' : 'bg-paper text-ink-soft',
                 )}
               >
-                {value}
+                {vocab.modes[value]}
               </button>
             ))}
             <button
@@ -774,7 +816,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
               max={1}
               step={0.1}
               value={volume}
-              aria-label="Volume"
+              aria-label={L.volumeLabel}
               onChange={(event) => setVolume(Number(event.target.value))}
               className="w-20"
             />
@@ -828,17 +870,25 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
           {result ? (
             <div className="mt-3 rounded-lg border-2 border-line/30 bg-cream p-2 text-sm">
               <p className="font-bold">
-                Score {result.score} · +{result.points} {L.points}
+                {L.scoreLabel} {result.score} · +{result.points} {L.points}
               </p>
               <p className="text-ink-soft">
-                Streak best {maxStreak} · Flawless layers {flawlessLayers} · Tier {tier}
+                {L.streakBestLabel} {maxStreak} · {L.flawlessLabel} {flawlessLayers} · {L.tierSection} {tier}
               </p>
               {result.unlocked.length ? (
                 <p className="mt-1 text-ink-soft">
-                  Achievement: {result.unlocked.map((id) => ACHIEVEMENTS.find((a) => a.id === id)?.name ?? id).join(', ')}
+                  {L.achievementLabel}: {result.unlocked.map((id) => vocab.achievements[id]?.name ?? id).join(', ')}
                 </p>
               ) : null}
             </div>
+          ) : null}
+          {runSave !== 'idle' ? (
+            <p
+              role="status"
+              className={cn('mt-2 text-sm', runSave === 'error' ? 'text-coral-deep' : 'text-ink-soft')}
+            >
+              {runSave === 'saving' ? L.saveSaving : runSave === 'ok' ? L.saveOk : L.saveFailed}
+            </p>
           ) : null}
         </div>
         <div className="flex gap-2">
@@ -1174,14 +1224,14 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
         <div className="flex flex-wrap items-center gap-2 rounded-blob border-2 border-line bg-ink px-3 py-2 text-cream shadow-sticker-sm">
           <MapIcon className="h-4 w-4" aria-hidden />
           <span className="text-sm font-bold">
-            {L.layer} {layer + 1}/3 · Tier {tier} · {L.boss}: {bossCopy?.name}
+            {L.layer} {layer + 1}/3 · {L.tierSection} {tier} · {L.boss}: {bossCopy?.name}
           </span>
           {modifier ? (
             <span
-              title={modifier.description}
+              title={vocab.modifiers[modifier.id]?.description ?? modifier.description}
               className="rounded-pill border-2 border-cream/30 px-2 py-0.5 text-sm font-semibold"
             >
-              {modifier.icon} {modifier.name}
+              {modifier.icon} {vocab.modifiers[modifier.id]?.name ?? modifier.name}
             </span>
           ) : null}
           <span className="ml-auto flex items-center gap-3 text-sm">

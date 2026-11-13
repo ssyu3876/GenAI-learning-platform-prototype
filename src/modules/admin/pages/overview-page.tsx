@@ -1,14 +1,15 @@
 // /admin: platform numbers and links into each part of the console.
 import Link from 'next/link';
-import { ArrowRight, BookOpen, Bot, Boxes, Users } from 'lucide-react';
+import { Award, ArrowRight, BookOpen, Bot, Compass, Users } from 'lucide-react';
 import { Card, CardBody, CardHeader, PageHeader, Stat } from '@/components/ui';
 import { fmt, getT } from '@/i18n';
 import { AdminNav } from '../components/admin-nav';
+import { AdminModuleList, type ModuleInfo } from '../components/module-list';
 import { getAdminOverview } from '../queries';
 
 const STATUSES = ['draft', 'pending_review', 'published', 'archived'] as const;
 
-export async function AdminOverviewPage() {
+export async function AdminOverviewPage({ modules }: { modules: ModuleInfo[] }) {
   const { t } = await getT();
   const o = await getAdminOverview();
   const links = [
@@ -27,7 +28,18 @@ export async function AdminOverviewPage() {
         : t.admin.overview.card.coursesClear,
     },
     { href: '/admin/ai-usage', icon: Bot, title: t.admin.overview.card.aiTitle, body: t.admin.overview.card.aiBody },
-    { href: '/admin/modules', icon: Boxes, title: t.admin.overview.card.modulesTitle, body: t.admin.overview.card.modulesBody },
+    {
+      href: '/admin/scenarios',
+      icon: Compass,
+      title: t.admin.overview.card.scenariosTitle,
+      body: t.admin.overview.card.scenariosBody,
+    },
+    {
+      href: '/admin/badges',
+      icon: Award,
+      title: t.admin.overview.card.badgesTitle,
+      body: t.admin.overview.card.badgesBody,
+    },
   ];
 
   return (
@@ -91,6 +103,14 @@ export async function AdminOverviewPage() {
           </li>
         ))}
       </ul>
+
+      <section aria-labelledby="build-heading" className="mt-8">
+        <h2 id="build-heading" className="text-xl font-bold">
+          {t.admin.modules.title}
+        </h2>
+        <p className="mt-1 mb-3 text-sm text-ink-soft">{t.admin.modules.subtitle}</p>
+        <AdminModuleList modules={modules} />
+      </section>
     </div>
   );
 }

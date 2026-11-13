@@ -34,7 +34,13 @@
   "card": {
     "minutes": "{minutes} min",
     "best": "Best {score}",
-    "progressLabel": "{title} progress"
+    "progressLabel": "{title} progress",
+    "closed": "Closed for now"
+  },
+  "closed": {
+    "title": "This scenario is closed",
+    "body": "An admin closed it for now. Your progress is kept, and the other scenarios still work.",
+    "back": "Back to scenarios"
   },
   "common": {
     "start": "Start",

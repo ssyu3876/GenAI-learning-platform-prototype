@@ -4,7 +4,9 @@
     "users": "Users · Admin",
     "courses": "Courses · Admin",
     "aiUsage": "AI usage · Admin",
-    "modules": "Modules · Admin"
+    "scenarios": "Scenarios · Admin",
+    "badges": "Badges · Admin",
+    "activity": "Activity · Admin"
   },
   "nav": {
     "label": "Admin sections",
@@ -12,7 +14,9 @@
     "users": "Users",
     "courses": "Courses",
     "aiUsage": "AI usage",
-    "modules": "Modules"
+    "scenarios": "Scenarios",
+    "badges": "Badges",
+    "activity": "Activity"
   },
   "roles": {
     "learner": "Learner",
@@ -66,8 +70,10 @@
       "coursesClear": "Nothing waiting. Browse every course with filters.",
       "aiTitle": "AI usage",
       "aiBody": "Calls per feature, real vs demo mode, tokens and speed.",
-      "modulesTitle": "Modules",
-      "modulesBody": "Feature modules installed in this build."
+      "scenariosTitle": "Scenarios",
+      "scenariosBody": "Who is playing the long-form practice runs, and who is not.",
+      "badgesTitle": "Badges",
+      "badgesBody": "How many learners hold each badge, and which ones nobody reaches."
     }
   },
   "widget": {
@@ -123,6 +129,13 @@
     },
     "emptyTitle": "No courses match",
     "emptyBody": "Try a different filter.",
+    "archive": "Take offline",
+    "archiving": "Taking offline…",
+    "archiveConfirm": "Take {title} out of the catalog? Learners keep their progress.",
+    "archiveLabel": "Take {title} offline",
+    "restore": "Restore",
+    "restoring": "Restoring…",
+    "restoreLabel": "Restore {title} as a draft",
     "columns": {
       "course": "Course",
       "status": "Status",
@@ -130,7 +143,8 @@
       "source": "Source",
       "owner": "Owner",
       "lessons": "Lessons",
-      "updated": "Updated"
+      "updated": "Updated",
+      "actions": "Actions"
     }
   },
   "review": {
@@ -174,9 +188,73 @@
       "caption": "Last {days} days: {real} real AI calls and {mock} mock calls."
     }
   },
+  "scenarios": {
+    "title": "Scenarios",
+    "subtitle": "Read-only: scenario content ships with the code, not the database.",
+    "startedRuns": "Runs started",
+    "byPeople": "by {count} people",
+    "finishedRuns": "Runs finished",
+    "finishRate": "finish rate",
+    "untouched": "Never opened",
+    "untouchedHint": "Scenarios with no runs at all.",
+    "never": "Never",
+    "retired": "not in the catalogue",
+    "badRequest": "That scenario could not be recognised.",
+    "open": "Open",
+    "close": "Close",
+    "toggling": "Saving…",
+    "opened": "{name} is open again.",
+    "closed": "{name} is closed. Learners see a notice instead.",
+    "closedBadge": "Closed",
+    "emptyTitle": "No scenarios yet",
+    "emptyBody": "This table fills up as people play.",
+    "columns": {
+      "scenario": "Scenario",
+      "learners": "Learners",
+      "started": "Started",
+      "finished": "Finished",
+      "avgBest": "Avg best",
+      "lastPlayed": "Last played",
+      "status": "Status"
+    }
+  },
+  "badges": {
+    "title": "Badges",
+    "subtitle": "Read-only: a badge is computed from the event log, never stored.",
+    "learners": "Learners",
+    "activeHint": "{count} of them have done something",
+    "neverEarned": "Nobody has these",
+    "neverHint": "Too hard, or broken.",
+    "everyoneHas": "Everybody has these",
+    "everyoneHint": "They no longer tell learners apart.",
+    "never": "Never earned",
+    "emptyTitle": "No learners yet",
+    "emptyBody": "Badge reach appears once people start using the platform.",
+    "columns": {
+      "badge": "Badge",
+      "group": "Group",
+      "earnedBy": "Learners",
+      "share": "Share"
+    }
+  },
+  "activity": {
+    "title": "Activity",
+    "subtitle": "Changes admins have made. Newest first.",
+    "emptyTitle": "Nothing yet",
+    "emptyBody": "Role changes, course reviews and closed scenarios show up here.",
+    "actions": {
+      "user.role_changed": "made {target} a {role}",
+      "course.approved": "published {target}",
+      "course.sent_back": "sent {target} back to its author",
+      "course.archived": "took {target} out of the catalog",
+      "course.restored": "restored {target} as a draft",
+      "scenario.closed": "closed {target}",
+      "scenario.opened": "reopened {target}"
+    }
+  },
   "modules": {
-    "title": "Modules",
-    "subtitle": "Each feature is a module listed once in src/registry/modules.ts. Remove the line and it disappears.",
+    "title": "Feature modules",
+    "subtitle": "What this build ships. Each one is a line in src/registry/modules.ts.",
     "empty": "No modules installed",
     "navItemsOne": "{count} nav item",
     "navItemsMany": "{count} nav items",
@@ -235,6 +313,10 @@
     "courseNotPending": "This course is no longer waiting for review.",
     "thisCourse": "The course",
     "approved": "{title} is now in the public catalog.",
-    "rejected": "{title} went back to its author as a draft."
+    "rejected": "{title} went back to its author as a draft.",
+    "notPublished": "That course is not published.",
+    "notArchived": "That course is not archived.",
+    "archived": "{title} is out of the catalog.",
+    "restored": "{title} is back as a draft."
   }
 }

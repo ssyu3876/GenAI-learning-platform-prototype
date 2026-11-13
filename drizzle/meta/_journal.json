@@ -36,6 +36,13 @@
       "when": 1792481906728,
       "tag": "0004_class_insight_summaries",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794483325577,
+      "tag": "0005_outstanding_nebula",
+      "breakpoints": true
     }
   ]
 }

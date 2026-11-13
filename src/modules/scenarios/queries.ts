@@ -1,8 +1,8 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { getDb } from '@/core/db/client';
 import type { SessionUser } from '@/core/types';
 import { getTotalXp } from '@/core/progress/service';
-import { scenarioRuns, type RunStatus } from './schema';
+import { scenarioRuns, scenarioSettings, type RunStatus } from './schema';
 import type { InterviewRunState, ShipState, SprintState } from './engine';
 import { INTERVIEW_TYPES } from './content/interview';
 import { SHIP_IT } from './content/ship-it';
@@ -31,6 +31,8 @@ const COMPAT_VERSION = 3;
 function isCompatible(key: string, state: unknown): boolean {
   if (!state || typeof state !== 'object') return false;
   const s = state as { version?: number; kind?: string; drawn?: unknown; allHistory?: unknown; interview?: unknown };
+  // The dungeon keeps its real state in the browser; the row only records the result.
+  if (key === 'agent-dungeon') return s.kind === 'dungeon';
   if (s.version !== COMPAT_VERSION) return false;
   // The version alone was not enough: an earlier build also used 2 but had no `drawn`.
   // Check the fields the page actually reads, so a shape change can never crash a render.
@@ -113,12 +115,20 @@ export function runProgress(key: string, run: StoredRun | undefined, zh = false)
   }
 
   if (key === 'agent-dungeon') {
+    // Only a cleared run is stored, so "completions > 0" means the dungeon was beaten.
+    const cleared = (run?.completions ?? 0) > 0;
     return {
-      started: false,
-      label: zh ? '3 层' : '3 layers',
-      percent: 0,
-      best: 0,
-      completions: 0,
+      started: cleared,
+      label: cleared
+        ? zh
+          ? `最佳 ${run!.bestScore}`
+          : `Best ${run!.bestScore}`
+        : zh
+          ? '3 层'
+          : '3 layers',
+      percent: cleared ? 100 : 0,
+      best: run?.bestScore ?? 0,
+      completions: run?.completions ?? 0,
     };
   }
 
@@ -167,12 +177,60 @@ export interface ScenarioCardData {
   minutes: number;
   href: string;
   progress: Progress;
+  /** An admin closed this scenario. It stays listed, but nobody can start a new run. */
+  closed: boolean;
+}
+
+/**
+ * The seven interview formats share one switch. Closing them one by one is busywork, and an
+ * admin thinks of "practice interviews" as one thing, so the console shows one row for it.
+ */
+export const INTERVIEW_GROUP = 'interview';
+
+/** Keys an admin has closed. A scenario with no row is open: the catalogue is code. */
+export async function getClosedScenarios(): Promise<Set<string>> {
+  const db = await getDb();
+  const rows = await db
+    .select({ key: scenarioSettings.scenarioKey })
+    .from(scenarioSettings)
+    .where(eq(scenarioSettings.enabled, false));
+  const closed = new Set(rows.map((row) => row.key));
+  // The group and its formats are one switch in both directions: a closed group closes every
+  // format, and a closed format (a row written by an older build) marks the group as closed.
+  const formatsClosed = [...closed].some((key) => key.startsWith('interview:'));
+  if (closed.has(INTERVIEW_GROUP) || formatsClosed) {
+    closed.add(INTERVIEW_GROUP);
+    for (const type of INTERVIEW_TYPES) closed.add(`interview:${type.id}`);
+  }
+  return closed;
+}
+
+/**
+ * The settings rows that decide whether `key` may run.
+ *
+ * An interview format answers to the whole group, including rows written for a sibling format
+ * by an older build, when closing one format was still possible. Keeping this pure means the
+ * rule is testable without a database.
+ */
+export function scenarioCheckKeys(key: string): string[] {
+  if (!key.startsWith('interview:')) return [key];
+  return [INTERVIEW_GROUP, ...INTERVIEW_TYPES.map((type) => `interview:${type.id}`)];
+}
+
+/** Whether one scenario is playable. Used by the runner before it renders anything. */
+export async function isScenarioOpen(key: string): Promise<boolean> {
+  const db = await getDb();
+  const rows = await db
+    .select({ enabled: scenarioSettings.enabled })
+    .from(scenarioSettings)
+    .where(inArray(scenarioSettings.scenarioKey, scenarioCheckKeys(key)));
+  return rows.every((row) => row.enabled);
 }
 
 export async function getScenarioCards(userId: string): Promise<ScenarioCardData[]> {
   const locale = await getLocale();
   const zh = locale === 'zh';
-  const runs = await getAllRuns(userId);
+  const [runs, closed] = await Promise.all([getAllRuns(userId), getClosedScenarios()]);
   const ship = localizeContent(SHIP_IT, locale);
   const sprint = localizeContent(SPRINT_ZERO, locale);
   const farm = localizeContent(DUNGEON, locale);
@@ -188,6 +246,7 @@ export async function getScenarioCards(userId: string): Promise<ScenarioCardData
       minutes: ship.minutes,
       href: '/scenarios/ship-it',
       progress: runProgress('ship-it', runs.get('ship-it'), zh),
+      closed: closed.has('ship-it'),
     },
     {
       key: 'sprint-zero',
@@ -198,6 +257,7 @@ export async function getScenarioCards(userId: string): Promise<ScenarioCardData
       minutes: sprint.minutes,
       href: '/scenarios/sprint-zero',
       progress: runProgress('sprint-zero', runs.get('sprint-zero'), zh),
+      closed: closed.has('sprint-zero'),
     },
     {
       key: 'agent-dungeon',
@@ -208,6 +268,7 @@ export async function getScenarioCards(userId: string): Promise<ScenarioCardData
       minutes: 10,
       href: '/scenarios/agent-dungeon',
       progress: runProgress('agent-dungeon', runs.get('agent-dungeon'), zh),
+      closed: closed.has('agent-dungeon'),
     },
   ];
 
@@ -222,6 +283,7 @@ export async function getScenarioCards(userId: string): Promise<ScenarioCardData
       minutes: 10,
       href: `/scenarios/interview?type=${type.id}`,
       progress: runProgress(key, runs.get(key), zh),
+      closed: closed.has(key),
     };
   });
 

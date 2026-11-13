@@ -12,6 +12,7 @@ import { getT } from '@/i18n';
 import { byLocale } from '@/i18n/ai';
 import { localizeContent } from '@/i18n/content';
 import { INTERVIEW_TYPES, interviewType } from './content/interview';
+import { runScore } from './content/dungeon-meta';
 import {
   analyseAnswer,
   buildInterviewReport,
@@ -56,7 +57,7 @@ async function saveState(
   userId: string,
   key: string,
   state: unknown,
-  patch: { status?: 'active' | 'finished'; score?: number; completions?: number } = {},
+  patch: { status?: 'active' | 'finished'; score?: number; completions?: number; incrementCompletions?: boolean } = {},
 ): Promise<void> {
   const db = await getDb();
   const [existing] = await db
@@ -66,7 +67,9 @@ async function saveState(
     .limit(1);
 
   const bestScore = Math.max(existing?.bestScore ?? 0, patch.score ?? 0);
-  const completions = patch.completions ?? existing?.completions ?? 0;
+  const completions =
+    patch.completions ??
+    (patch.incrementCompletions ? (existing?.completions ?? 0) + 1 : (existing?.completions ?? 0));
 
   if (existing) {
     await db
@@ -112,14 +115,14 @@ async function awardIfFinished(userId: string, key: string, state: AnyState): Pr
 
   const existing = await getRun(userId, key);
   const gained = Math.max(0, score - (existing?.bestScore ?? 0));
-  if (gained > 0) {
-    await recordEvent({
-      userId,
-      type: 'scenario.completed',
-      xp: gained,
-      payload: { scenarioKey: key, score },
-    });
-  }
+  // Recorded on every finish, not only on a new best: the run count feeds the badges, and the
+  // XP still only goes up when the score improves.
+  await recordEvent({
+    userId,
+    type: 'scenario.completed',
+    xp: gained,
+    payload: { scenarioKey: key, score },
+  });
 
   const marked = { ...state, awarded: true } as AnyState;
   await saveState(userId, key, marked, {
@@ -390,3 +393,64 @@ export async function skipInterviewQuestion(input: z.infer<typeof skipSchema>): 
   return persist(user.id, key, next);
 }
 
+
+// ---------------------------------------------------------------------------
+// Agent Dungeon
+// ---------------------------------------------------------------------------
+
+/**
+ * Agent Dungeon runs entirely in the browser (its meta progression is localStorage), so this
+ * is the only thing that reaches the server: one call when a run is won.
+ *
+ * The score is recomputed here from the stats instead of trusting a score from the client,
+ * and XP stays at 0 because the dungeon never awarded XP before — badges are the point here,
+ * not the leaderboard.
+ */
+const dungeonRunSchema = z.object({
+  difficulty: z.enum(['easy', 'normal', 'hard']),
+  tier: z.number().int().min(1).max(5),
+  mode: z.enum(['free', 'daily', 'weekly']),
+  correct: z.number().int().min(0).max(500),
+  wrong: z.number().int().min(0).max(500),
+  gold: z.number().int().min(0).max(1_000_000),
+  flawlessLayers: z.number().int().min(0).max(3),
+});
+
+export type DungeonRunInput = z.infer<typeof dungeonRunSchema>;
+
+export async function recordDungeonRun(input: DungeonRunInput): Promise<ActionResult> {
+  const user = await requireUser();
+  const parsed = dungeonRunSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Unknown run.' };
+  const { difficulty, tier, mode, correct, wrong, gold, flawlessLayers } = parsed.data;
+
+  const score = runScore({ layers: 3, correct, wrong, gold, tier, victory: true, flawlessLayers });
+
+  await recordEvent({
+    userId: user.id,
+    type: 'scenario.completed',
+    xp: 0,
+    payload: {
+      scenarioKey: 'agent-dungeon',
+      score,
+      tier,
+      difficulty,
+      mode,
+      flawless: flawlessLayers > 0,
+      layers: 3,
+    },
+  });
+  await saveState(
+    user.id,
+    'agent-dungeon',
+    { kind: 'dungeon', tier, score, difficulty, mode },
+    { status: 'finished', score, incrementCompletions: true },
+  );
+
+  revalidatePath('/scenarios');
+  revalidatePath('/scenarios/agent-dungeon');
+  revalidatePath('/admin/scenarios');
+  revalidatePath('/badges');
+  revalidatePath('/home');
+  return { ok: true };
+}

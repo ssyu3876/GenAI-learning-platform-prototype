@@ -41,13 +41,9 @@
       "name": "Steady",
       "description": "Finish twenty-five activities."
     },
-    "perfect-one": {
-      "name": "Perfect run",
-      "description": "Score 100 on any activity."
-    },
-    "perfect-five": {
-      "name": "Five clean",
-      "description": "Score 100 on five different activities."
+    "fifty-activities": {
+      "name": "In the habit",
+      "description": "Finish fifty activities."
     },
     "first-lesson": {
       "name": "First lesson",
@@ -57,53 +53,157 @@
       "name": "Ten lessons",
       "description": "Complete ten lessons."
     },
+    "perfect-one": {
+      "name": "Perfect run",
+      "description": "Score 100 on any activity."
+    },
+    "perfect-five": {
+      "name": "Five clean",
+      "description": "Score 100 on five different activities."
+    },
+    "perfect-ten": {
+      "name": "Spotless ten",
+      "description": "Score 100 on ten different activities."
+    },
     "first-course": {
       "name": "One course down",
-      "description": "Finish a whole course."
+      "description": "Complete a course."
     },
-    "three-courses": {
-      "name": "Three courses",
-      "description": "Finish three courses."
+    "two-courses": {
+      "name": "Two courses down",
+      "description": "Complete two courses."
     },
     "first-scenario": {
-      "name": "Played through",
-      "description": "Finish any scenario."
+      "name": "Into the story",
+      "description": "Finish any scenario once."
     },
-    "both-long": {
-      "name": "Both long ones",
-      "description": "Finish Ship It and Sprint Zero."
+    "ship-it-finish": {
+      "name": "Shipped it",
+      "description": "Finish Ship It."
     },
-    "clean-release": {
+    "ship-it-high": {
       "name": "Clean release",
-      "description": "Score 80 or more in Ship It."
+      "description": "Finish Ship It with 80 or more."
     },
-    "still-standing": {
+    "ship-it-ace": {
+      "name": "Nothing slipped",
+      "description": "Finish Ship It with 95 or more."
+    },
+    "sprint-zero-finish": {
+      "name": "Sprint done",
+      "description": "Finish Sprint Zero."
+    },
+    "sprint-zero-high": {
       "name": "Still standing",
-      "description": "Score 80 or more in Sprint Zero."
+      "description": "Finish Sprint Zero with 80 or more."
+    },
+    "dungeon-clear": {
+      "name": "Dungeon cleared",
+      "description": "Beat all three layers of Agent Dungeon."
+    },
+    "dungeon-tier-3": {
+      "name": "Deeper down",
+      "description": "Clear Agent Dungeon on tier 3 or higher."
+    },
+    "dungeon-tier-5": {
+      "name": "Nothing left to fear",
+      "description": "Clear Agent Dungeon on tier 5."
+    },
+    "dungeon-score-80": {
+      "name": "Efficient run",
+      "description": "Score 80 or more in Agent Dungeon."
+    },
+    "dungeon-flawless": {
+      "name": "Untouched",
+      "description": "Clear a dungeon layer without taking damage."
+    },
+    "dungeon-daily": {
+      "name": "Today's dungeon",
+      "description": "Clear a daily run."
+    },
+    "dungeon-weekly": {
+      "name": "This week's dungeon",
+      "description": "Clear a weekly run."
     },
     "interviewed": {
-      "name": "In the chair",
+      "name": "First interview",
       "description": "Finish one practice interview."
     },
-    "all-formats": {
-      "name": "Every format",
-      "description": "Finish all seven interview types."
+    "interview-three": {
+      "name": "Three formats",
+      "description": "Finish three interview formats."
+    },
+    "interview-all": {
+      "name": "All seven",
+      "description": "Finish every interview format."
+    },
+    "all-scenarios": {
+      "name": "All four ways",
+      "description": "Finish Ship It, Sprint Zero, Agent Dungeon and an interview."
+    },
+    "scenario-runs-10": {
+      "name": "Ten runs",
+      "description": "Finish ten scenario runs, replays included."
     },
     "streak-3": {
       "name": "Three days",
       "description": "Learn three days in a row."
     },
     "streak-7": {
-      "name": "A full week",
+      "name": "A whole week",
       "description": "Learn seven days in a row."
     },
+    "streak-14": {
+      "name": "Two weeks",
+      "description": "Learn fourteen days in a row."
+    },
+    "streak-30": {
+      "name": "A month",
+      "description": "Learn thirty days in a row."
+    },
+    "stage-2": {
+      "name": "Sapling",
+      "description": "Reach 250 XP."
+    },
     "stage-3": {
-      "name": "Young tree",
-      "description": "Grow Pip to stage 3."
+      "name": "Small tree",
+      "description": "Reach 900 XP."
     },
     "stage-4": {
-      "name": "Grove",
-      "description": "Grow Pip to the last stage."
+      "name": "Little forest",
+      "description": "Reach 2100 XP."
+    },
+    "xp-1500": {
+      "name": "1500 XP",
+      "description": "Earn 1500 XP in total."
+    },
+    "xp-3000": {
+      "name": "3000 XP",
+      "description": "Earn 3000 XP in total."
+    },
+    "dungeon-tier-4": {
+      "name": "No shortcuts",
+      "description": "Clear Agent Dungeon on tier 4 or higher."
+    },
+    "scenario-runs-25": {
+      "name": "Twenty-five runs",
+      "description": "Finish twenty-five scenario runs, replays included."
+    },
+    "streak-60": {
+      "name": "Two months",
+      "description": "Learn sixty days in a row."
+    },
+    "sixty-activities": {
+      "name": "Deep practice",
+      "description": "Finish sixty activities."
+    },
+    "twenty-lessons": {
+      "name": "Twenty lessons",
+      "description": "Complete twenty lessons."
+    },
+    "three-courses": {
+      "name": "Three courses down",
+      "description": "Complete three courses."
     }
   },
   "closest": {

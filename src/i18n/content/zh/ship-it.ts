@@ -957,11 +957,11 @@ const TURNS: ShipTurn[] = [
 
 export const SHIP_IT_ZH: ShipScenario = {
   key: 'ship-it',
-  title: '发布时刻',
-  tagline: '花评审时间，守住项目质量',
+  title: '发布评审',
+  tagline: '当一次评审人，看住这次发布',
   summary:
-    '三十个评审回合，每局抽九个，三种判定各三个。通过不花时间，退回要花一点，读测试会花时间但从不伤质量，修复花得最多。三分之一的回合本来就写对了。',
-  meta: '30 个回合中抽 9 个',
+    '一次发布，九份改动，评审时间永远不够用。每份 diff 你可以直接通过、退回、读测试，或者自己上手修；每个选择不是在花时间，就是在花质量。',
+  meta: '每局 9 份评审',
   minutes: 30,
   weights: { quality: 0.65, time: 0.35 },
   drawCount: 9,

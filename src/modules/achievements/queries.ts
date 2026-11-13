@@ -1,8 +1,72 @@
-import { and, count, eq, isNotNull } from 'drizzle-orm';
+import { and, count, eq, isNotNull, sql, sum } from 'drizzle-orm';
 import { getDb } from '@/core/db/client';
-import { activityAttempts, enrollments, learningEvents, lessonCompletions } from '@/core/db/schema';
+import { activityAttempts, enrollments, learningEvents, lessonCompletions, users } from '@/core/db/schema';
 import { getUserStats } from '@/core/progress/service';
-import { BADGES, type BadgeDef, type BadgeSnapshot } from './definitions';
+import { computeStreak, getLevel } from '@/core/progress/xp';
+import { BADGES, type BadgeDef, type BadgeGroup, type BadgeId, type BadgeSnapshot } from './definitions';
+
+/** The fields a `scenario.completed` payload can carry. Older rows only have the first two. */
+export interface ScenarioPayload {
+  scenarioKey?: string;
+  score?: number;
+  /** Agent Dungeon only: the tier cleared and how the run was seeded. */
+  tier?: number;
+  flawless?: boolean;
+  mode?: string;
+}
+
+/** The part of a snapshot that comes from `scenario.completed` events. */
+export function scenarioTotals(payloads: ScenarioPayload[]) {
+  const finished = new Set<string>();
+  const interviews = new Set<string>();
+  let shipItBest = 0;
+  let sprintBest = 0;
+  let dungeonBest = 0;
+  let dungeonBestTier = 0;
+  let dungeonCleared = false;
+  let dungeonFlawless = false;
+  let dungeonDaily = false;
+  let dungeonWeekly = false;
+  let scenarioRuns = 0;
+
+  for (const payload of payloads) {
+    const key = payload.scenarioKey;
+    if (!key) continue;
+    scenarioRuns += 1;
+    finished.add(key);
+    const score = Number(payload.score ?? 0);
+
+    if (key === 'ship-it') {
+      shipItBest = Math.max(shipItBest, score);
+    } else if (key === 'sprint-zero') {
+      sprintBest = Math.max(sprintBest, score);
+    } else if (key === 'agent-dungeon') {
+      // A dungeon event is only written on a win, so seeing one is a clear.
+      dungeonCleared = true;
+      dungeonBest = Math.max(dungeonBest, score);
+      dungeonBestTier = Math.max(dungeonBestTier, Number(payload.tier ?? 0));
+      if (payload.flawless) dungeonFlawless = true;
+      if (payload.mode === 'daily') dungeonDaily = true;
+      if (payload.mode === 'weekly') dungeonWeekly = true;
+    } else if (key.startsWith('interview:')) {
+      interviews.add(key);
+    }
+  }
+
+  return {
+    finishedScenarios: [...finished],
+    scenarioRuns,
+    shipItBest,
+    sprintBest,
+    dungeonCleared,
+    dungeonBestTier,
+    dungeonBest,
+    dungeonFlawless,
+    dungeonDaily,
+    dungeonWeekly,
+    interviewsFinished: interviews.size,
+  };
+}
 
 /** Everything a badge needs, in one round trip. */
 export async function getBadgeSnapshot(userId: string): Promise<BadgeSnapshot> {
@@ -30,25 +94,6 @@ export async function getBadgeSnapshot(userId: string): Promise<BadgeSnapshot> {
       and(eq(learningEvents.userId, userId), eq(learningEvents.type, 'scenario.completed')),
     );
 
-  const finished = new Set<string>();
-  const interviewKeys = new Set<string>();
-  let shipItBest = 0;
-  let sprintBest = 0;
-
-  for (const row of scenarioEvents) {
-    const payload = (row.payload ?? {}) as { scenarioKey?: string; score?: number };
-    const key = payload.scenarioKey;
-    if (!key) continue;
-    finished.add(key);
-    const score = Number(payload.score ?? 0);
-    if (key === 'ship-it') shipItBest = Math.max(shipItBest, score);
-    if (key === 'sprint-zero') sprintBest = Math.max(sprintBest, score);
-    if (key.startsWith('interview:')) interviewKeys.add(key);
-  }
-
-  const longScenariosFinished =
-    (finished.has('ship-it') ? 1 : 0) + (finished.has('sprint-zero') ? 1 : 0);
-
   return {
     totalXp: stats.totalXp,
     level: stats.level.level,
@@ -57,11 +102,9 @@ export async function getBadgeSnapshot(userId: string): Promise<BadgeSnapshot> {
     perfectActivities: perfect[0]?.n ?? 0,
     lessonsCompleted: lessons[0]?.n ?? 0,
     coursesCompleted: courses[0]?.n ?? 0,
-    scenariosFinished: finished.size,
-    longScenariosFinished,
-    shipItBest,
-    sprintBest,
-    interviewsFinished: interviewKeys.size,
+    ...scenarioTotals(
+      scenarioEvents.map((row) => (row.payload ?? {}) as ScenarioPayload),
+    ),
   };
 }
 
@@ -116,3 +159,105 @@ export function growthProgress(snapshot: BadgeSnapshot) {
   const percent = to === null ? 100 : Math.min(100, Math.round(((snapshot.totalXp - from) / (to - from)) * 100));
   return { stage: stage as 0 | 1 | 2 | 3 | 4, from, to, percent };
 }
+
+export interface BadgeDistributionRow {
+  id: BadgeId;
+  group: BadgeGroup;
+  /** Learners whose snapshot satisfies this badge right now. */
+  earnedBy: number;
+}
+
+export interface BadgeDistribution {
+  /** Every learner account: the denominator for a percentage. */
+  learners: number;
+  /** Learners with at least one event, so the rest are people who never started. */
+  activeLearners: number;
+  rows: BadgeDistributionRow[];
+}
+
+/**
+ * How many learners hold each badge, for /admin/badges.
+ *
+ * Badges are not stored, so this rebuilds every learner's snapshot from the same tables
+ * `getBadgeSnapshot` reads, but in a fixed number of aggregate queries instead of one round
+ * trip per person. It is a full scan of the event log: fine for a demo cohort, and the
+ * console page is admin-only.
+ */
+export async function getBadgeDistribution(): Promise<BadgeDistribution> {
+  const db = await getDb();
+  const [learnerRows, xpRows, dayRows, attemptRows, perfectRows, lessonRows, courseRows, scenarioRows] =
+    await Promise.all([
+      db.select({ id: users.id }).from(users).where(eq(users.role, 'learner')),
+      db
+        .select({ userId: learningEvents.userId, total: sum(learningEvents.xp) })
+        .from(learningEvents)
+        .groupBy(learningEvents.userId),
+      db
+        .selectDistinct({
+          userId: learningEvents.userId,
+          day: sql<string>`to_char(${learningEvents.createdAt} at time zone 'UTC', 'YYYY-MM-DD')`,
+        })
+        .from(learningEvents),
+      db.select({ userId: activityAttempts.userId, n: count() }).from(activityAttempts).groupBy(activityAttempts.userId),
+      db
+        .select({ userId: activityAttempts.userId, n: count() })
+        .from(activityAttempts)
+        .where(eq(activityAttempts.bestScore, 100))
+        .groupBy(activityAttempts.userId),
+      db.select({ userId: lessonCompletions.userId, n: count() }).from(lessonCompletions).groupBy(lessonCompletions.userId),
+      db
+        .select({ userId: enrollments.userId, n: count() })
+        .from(enrollments)
+        .where(isNotNull(enrollments.completedAt))
+        .groupBy(enrollments.userId),
+      db
+        .select({ userId: learningEvents.userId, payload: learningEvents.payload })
+        .from(learningEvents)
+        .where(eq(learningEvents.type, 'scenario.completed')),
+    ]);
+
+  const push = <T,>(map: Map<string, T[]>, key: string, value: T) => {
+    const list = map.get(key);
+    if (list) list.push(value);
+    else map.set(key, [value]);
+  };
+
+  const xpByUser = new Map(xpRows.map((row) => [row.userId, Number(row.total ?? 0)]));
+  const daysByUser = new Map<string, string[]>();
+  for (const row of dayRows) push(daysByUser, row.userId, row.day);
+  const scenariosByUser = new Map<string, ScenarioPayload[]>();
+  for (const row of scenarioRows) {
+    push(scenariosByUser, row.userId, (row.payload ?? {}) as ScenarioPayload);
+  }
+  const perUser = (rows: Array<{ userId: string; n: number }>) => new Map(rows.map((row) => [row.userId, row.n]));
+
+  const attempts = perUser(attemptRows);
+  const perfect = perUser(perfectRows);
+  const lessons = perUser(lessonRows);
+  const courses = perUser(courseRows);
+
+  const snapshots: BadgeSnapshot[] = learnerRows.map(({ id }) => {
+    const totalXp = xpByUser.get(id) ?? 0;
+    return {
+      totalXp,
+      level: getLevel(totalXp).level,
+      streak: computeStreak(daysByUser.get(id) ?? []),
+      activitiesCompleted: attempts.get(id) ?? 0,
+      perfectActivities: perfect.get(id) ?? 0,
+      lessonsCompleted: lessons.get(id) ?? 0,
+      coursesCompleted: courses.get(id) ?? 0,
+      ...scenarioTotals(scenariosByUser.get(id) ?? []),
+    };
+  });
+
+  return {
+    learners: learnerRows.length,
+    activeLearners: learnerRows.filter(({ id }) => xpByUser.has(id)).length,
+    rows: BADGES.map((def) => ({
+      id: def.id,
+      group: def.group,
+      earnedBy: snapshots.filter((snapshot) => def.earned(snapshot)).length,
+    })),
+  };
+}
+

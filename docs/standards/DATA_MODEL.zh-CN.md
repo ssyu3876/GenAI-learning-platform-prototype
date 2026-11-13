@@ -4,7 +4,7 @@
 
 ## 1. 约定
 
-- 主键：`newId()` 生成的带前缀文本 id：`usr_`、`crs_`、`lsn_`、`act_`、`att_`、`evt_`、`cls_`、`aiu_`。
+- 主键：`newId()` 生成的带前缀文本 id：`usr_`、`crs_`、`lsn_`、`act_`、`att_`、`evt_`、`cls_`、`aiu_`、`aud_`。
 - 每张表都有 `createdAt`；可变表还有 `updatedAt`（每次更新都要设置）。
 - 枚举存成 `text` + TypeScript 联合类型（比 Postgres enum 更容易扩展）。
 - 灵活的、类型特定的数据放在 `jsonb` 里，用 zod 在边界验证（`activities.config`、`activity_attempts.detail`、`learning_events.payload`）。
@@ -27,6 +27,7 @@
 | `class_members` | 学生 ↔ 班级 | PK（`classId`、`userId`） |
 | `class_courses` | 分配给班级的课程 | PK（`classId`、`courseId`） |
 | `ai_usage` | 每次 AI 调用一行 | `userId?`、`feature`、`model`、`mocked`、`promptTokens`、`completionTokens`、`latencyMs` |
+| `admin_audit` | 管理员操作的追加式日志 | `actorId?`（删除时置空）、`actorName`、`action`（稳定键，如 `course.archived`）、`targetType`、`targetId`、`targetName`、`detail`（jsonb） |
 
 谁能看到一门课程（`src/core/content/queries.ts`）：published + public → 所有人；分配给你的班级 → 班级成员；`ownerId` = 你 → 你；admin → 全部。
 
@@ -45,6 +46,10 @@ XP **永远不存在 user 表上**。总 XP = `sum(learning_events.xp)`。周 XP
 | `tutor.asked` | AI 助教 | 0 | `{ lessonId? }` |
 | `class.joined` | 班级 | 0 | `{ classId }` |
 | `review.answered` | review | 到期卡片答对得 2，否则 0 | `{ itemId, questionIndex, correct, box }` |
+| `scenario.completed` | 场景 | 本局得分 0-100 | `{ scenarioKey, score, tier?, difficulty?, mode?, flawless?, layers? }` |
+
+`scenario.completed` 每次完成都会写入，所以行数就是游玩次数；XP 仍然只在刷新最高分时增加。
+`tier`、`mode`、`flawless` 只有 Agent Dungeon 才有。
 
 XP 规则（`src/core/progress/xp.ts`）：分数 ≥ 60 获得活动的 `xpReward`，100 分获得 120%，低于 60 按比例获得。等级：Seed 0、Sprout 100、Seedling 250、Sapling 500、Young Tree 900、Tree 1400、Grove 2100、Forest 3000。连续天数按 UTC 天计算，只要有任何事件就算。
 
@@ -72,5 +77,7 @@ XP 规则（`src/core/progress/xp.ts`）：分数 ≥ 60 获得活动的 `xpRewa
 | `lesson_adaptations` | courses | 缓存的"换个方式讲"改写，按 lesson × 学生 track |
 | `review_items` | review | 每个学生答错的测验题，含 Leitner 盒子和下次复习时间（来自 `activity_attempts.detail.answers`） |
 | `class_insight_summaries` | classes | 每个班级最新一次 AI 常见误区总结，及其依据的作答数 |
+| `scenario_runs` | scenarios | 每个学生每个场景键一行：`state` jsonb（步骤、数值、历史）、`bestScore`、`completions`。Agent Dungeon 只在这里存一个摘要（`{ kind: 'dungeon', tier, score }`），真正的状态留在浏览器 |
+| `scenario_settings` | scenarios | 管理员关闭过的场景：`scenarioKey`（主键）、`enabled`、`updatedBy?`。没有行就是开放，所以新库是空的，也不会和内容文件脱节 |
 
 添加新表时，在同一个 PR 里给这里加一行。

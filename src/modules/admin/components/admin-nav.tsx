@@ -8,7 +8,9 @@ export const ADMIN_SECTIONS = [
   { href: '/admin/users', key: 'users' },
   { href: '/admin/courses', key: 'courses' },
   { href: '/admin/ai-usage', key: 'aiUsage' },
-  { href: '/admin/modules', key: 'modules' },
+  { href: '/admin/scenarios', key: 'scenarios' },
+  { href: '/admin/badges', key: 'badges' },
+  { href: '/admin/activity', key: 'activity' },
 ] as const;
 
 export type AdminSection = (typeof ADMIN_SECTIONS)[number]['href'];

@@ -568,11 +568,11 @@ export interface SprintZeroCopy {
 
 export const SPRINT_ZERO_COPY_ZH: SprintZeroCopy = {
   key: 'sprint-zero',
-  title: '第零个冲刺',
-  tagline: '选一周，跑一遍，然后和这些数字过日子',
+  title: '三周小队',
+  tagline: '带一支三个人的新小队，过完头三周',
   summary:
-    '三周，每周八个决定，从一个十二题的题库里抽。每一周都从上一周结束时的数字开始，每周结束时总结哪些数字动了。有些选项会当场结束这一局。',
-  meta: '3 周，36 题抽 24',
+    '你是这支小队的新负责人。每周八个决定——砍范围、招人、要不要让 AI 智能体接手——这周结束时的数字，就是你下周的起点。',
+  meta: '3 周 · 24 个决定',
   minutes: 20,
   stats: [
     { key: 'budget', label: '预算', max: 160, danger: 25 },

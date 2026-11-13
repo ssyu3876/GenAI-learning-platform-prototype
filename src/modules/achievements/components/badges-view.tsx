@@ -27,7 +27,7 @@ export async function BadgesView({ user }: { user: SessionUser }) {
         <Stat label={t.achievements.badgesLabel} value={`${earnedCount} / ${badges.length}`} icon={<Trophy className="h-5 w-5" aria-hidden />} tint="butter" />
         <Stat label={t.achievements.totalXp} value={snapshot.totalXp} icon={<Zap className="h-5 w-5" aria-hidden />} tint="butter" />
         <Stat label={t.achievements.streak} value={fmt(t.achievements.streakValue, { days: snapshot.streak })} icon={<Flame className="h-5 w-5" aria-hidden />} tint="coral" />
-        <Stat label={t.achievements.scenarios} value={snapshot.scenariosFinished} tint="lilac" />
+        <Stat label={t.achievements.scenarios} value={snapshot.finishedScenarios.length} tint="lilac" />
       </div>
 
       <GrowthCard snapshot={snapshot} />

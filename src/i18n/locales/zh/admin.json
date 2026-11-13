@@ -4,7 +4,9 @@
     "users": "用户 · 管理控制台",
     "courses": "课程 · 管理控制台",
     "aiUsage": "AI 用量 · 管理控制台",
-    "modules": "模块 · 管理控制台"
+    "scenarios": "场景 · 管理控制台",
+    "badges": "徽章 · 管理控制台",
+    "activity": "操作记录 · 管理控制台"
   },
   "nav": {
     "label": "管理后台导航",
@@ -12,7 +14,9 @@
     "users": "用户",
     "courses": "课程",
     "aiUsage": "AI 用量",
-    "modules": "模块"
+    "scenarios": "场景",
+    "badges": "徽章",
+    "activity": "操作记录"
   },
   "roles": {
     "learner": "学习者",
@@ -66,8 +70,10 @@
       "coursesClear": "没有待审核的课程。可以用筛选浏览所有课程。",
       "aiTitle": "AI 用量",
       "aiBody": "按功能查看调用量、真实与演示模式、Token 和耗时。",
-      "modulesTitle": "模块",
-      "modulesBody": "当前版本已安装的功能模块。"
+      "scenariosTitle": "场景",
+      "scenariosBody": "谁在玩长线练习场景，谁完全没碰过。",
+      "badgesTitle": "徽章",
+      "badgesBody": "每个徽章有多少人拿到，哪些没人能拿到。"
     }
   },
   "widget": {
@@ -123,6 +129,13 @@
     },
     "emptyTitle": "没有匹配的课程",
     "emptyBody": "换个筛选条件试试。",
+    "archive": "下架",
+    "archiving": "正在下架…",
+    "archiveConfirm": "把《{title}》从课程目录下线？学习者的进度会保留。",
+    "archiveLabel": "下架《{title}》",
+    "restore": "恢复",
+    "restoring": "正在恢复…",
+    "restoreLabel": "把《{title}》恢复为草稿",
     "columns": {
       "course": "课程",
       "status": "状态",
@@ -130,7 +143,8 @@
       "source": "来源",
       "owner": "作者",
       "lessons": "课节数",
-      "updated": "更新时间"
+      "updated": "更新时间",
+      "actions": "操作"
     }
   },
   "review": {
@@ -174,9 +188,73 @@
       "caption": "最近 {days} 天：{real} 次真实 AI 调用，{mock} 次模拟调用。"
     }
   },
+  "scenarios": {
+    "title": "场景",
+    "subtitle": "只读：场景内容随代码发布，不在数据库里。",
+    "startedRuns": "已开始的局数",
+    "byPeople": "来自 {count} 位用户",
+    "finishedRuns": "已完成的局数",
+    "finishRate": "完成率",
+    "untouched": "无人打开",
+    "untouchedHint": "一局都没有跑过的场景。",
+    "never": "从未",
+    "retired": "不在当前目录中",
+    "badRequest": "无法识别这个场景。",
+    "open": "开放",
+    "close": "关闭",
+    "toggling": "保存中…",
+    "opened": "{name} 已重新开放。",
+    "closed": "{name} 已关闭，学习者会看到提示页。",
+    "closedBadge": "已关闭",
+    "emptyTitle": "还没有场景记录",
+    "emptyBody": "有人开始玩之后，这张表才会有数据。",
+    "columns": {
+      "scenario": "场景",
+      "learners": "学习者",
+      "started": "开始",
+      "finished": "完成",
+      "avgBest": "平均最高分",
+      "lastPlayed": "最近一次",
+      "status": "状态"
+    }
+  },
+  "badges": {
+    "title": "徽章",
+    "subtitle": "只读：徽章由事件日志实时计算，不存储。",
+    "learners": "学习者",
+    "activeHint": "其中 {count} 人有过活动",
+    "neverEarned": "无人获得",
+    "neverHint": "可能太难，或者判定写错了。",
+    "everyoneHas": "人人都有",
+    "everyoneHint": "这些徽章已经失去区分度。",
+    "never": "无人获得",
+    "emptyTitle": "还没有学习者",
+    "emptyBody": "有人开始使用平台后，这里才会显示徽章获得情况。",
+    "columns": {
+      "badge": "徽章",
+      "group": "分组",
+      "earnedBy": "学习者",
+      "share": "占比"
+    }
+  },
+  "activity": {
+    "title": "操作记录",
+    "subtitle": "管理员做过的改动，最新的在最上面。",
+    "emptyTitle": "还没有记录",
+    "emptyBody": "改角色、审课程、开关场景都会记录在这里。",
+    "actions": {
+      "user.role_changed": "把 {target} 设为{role}",
+      "course.approved": "通过了《{target}》",
+      "course.sent_back": "把《{target}》退回给作者",
+      "course.archived": "把《{target}》从目录下架",
+      "course.restored": "把《{target}》恢复为草稿",
+      "scenario.closed": "关闭了场景「{target}」",
+      "scenario.opened": "重新开放了场景「{target}」"
+    }
+  },
   "modules": {
-    "title": "模块",
-    "subtitle": "每个功能都是一个模块，在 src/registry/modules.ts 里只需登记一次。删掉那一行，它就会消失。",
+    "title": "功能模块",
+    "subtitle": "当前版本包含的功能。每项对应 src/registry/modules.ts 里的一行。",
     "empty": "没有安装任何模块",
     "navItemsOne": "{count} 个导航项",
     "navItemsMany": "{count} 个导航项",
@@ -235,6 +313,10 @@
     "courseNotPending": "这门课程已经不在等待审核了。",
     "thisCourse": "这门课程",
     "approved": "{title} 已进入公开课程目录。",
-    "rejected": "{title} 已作为草稿退回给作者。"
+    "rejected": "{title} 已作为草稿退回给作者。",
+    "notPublished": "这门课程不是已发布状态。",
+    "notArchived": "这门课程不在已下架状态。",
+    "archived": "{title} 已从课程目录下架。",
+    "restored": "{title} 已恢复为草稿。"
   }
 }

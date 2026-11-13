@@ -58,9 +58,13 @@ export async function ScenarioCard({ data }: { data: ScenarioCardData }) {
           />
           <Link
             href={data.href}
-            className={buttonClasses(progress.started ? 'secondary' : 'primary', 'sm', 'mt-2 w-full')}
+            aria-disabled={data.closed || undefined}
+            className={cn(
+              buttonClasses(data.closed ? 'ghost' : progress.started ? 'secondary' : 'primary', 'sm', 'mt-2 w-full'),
+              data.closed && 'pointer-events-none opacity-60',
+            )}
           >
-            {progress.started ? t.scenarios.common.continue : t.scenarios.common.start}{' '}
+            {data.closed ? t.scenarios.card.closed : progress.started ? t.scenarios.common.continue : t.scenarios.common.start}{' '}
             <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
         </div>

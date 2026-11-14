@@ -68,8 +68,7 @@ interface BattleState {
   gold: number;
 }
 
-const DIFFS: Array<{ id: Difficulty; labelKey: string }> = [
-  { id: 'easy', labelKey: 'easy' },
+const DIFFS: Array<{ id: Difficulty; labelKey: string }> = [  { id: 'easy', labelKey: 'easy' },
   { id: 'normal', labelKey: 'normal' },
   { id: 'hard', labelKey: 'hard' },
 ];
@@ -93,6 +92,35 @@ function seededModifier(seed: number, layerIndex: number) {
 function randomModifier() {
   return MODIFIERS[Math.floor(Math.random() * MODIFIERS.length)] ?? null;
 }
+
+/**
+ * The map tiles are drawn as raised blocks rather than flat cards: a hard offset shadow gives
+ * the thickness, a wide soft shadow lifts the block off the board, and the two inset shadows
+ * brighten the top edge while darkening the bottom, which is what makes the eye read a cube.
+ */
+const TILE_DEPTH = {
+  backgroundImage:
+    'linear-gradient(180deg, var(--color-paper) 0%, var(--color-cream) 58%, #f0e4cc 100%)',
+  boxShadow: [
+    '0 6px 0 -1px var(--color-line)',
+    '0 14px 22px -12px rgba(43, 34, 64, 0.55)',
+    'inset 0 3px 0 rgba(255, 255, 255, 0.95)',
+    'inset 0 -12px 16px -10px rgba(43, 34, 64, 0.28)',
+  ].join(', '),
+};
+
+/** Same block, lit coral, for the room the player is standing in. */
+const TILE_DEPTH_HERE = {
+  backgroundImage:
+    'linear-gradient(180deg, var(--color-paper) 0%, var(--color-coral-soft) 55%, #f6c3b6 100%)',
+  boxShadow: TILE_DEPTH.boxShadow,
+};
+
+/** Empty cells are holes in the board, so they get the inverse treatment: pressed in. */
+const SLOT_DEPTH = {
+  boxShadow:
+    'inset 0 4px 8px -3px rgba(43, 34, 64, 0.22), inset 0 -2px 0 rgba(255, 255, 255, 0.6)',
+};
 
 export function AgentDungeon({ copy }: { copy: Copy }) {
   const L = copy.labels as unknown as Record<string, string>;
@@ -1328,7 +1356,14 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
               const x = i % 4;
               const y = Math.floor(i / 4);
               const room = map.rooms.find((r) => r.pos[0] === x && r.pos[1] === y);
-              if (!room) return <div key={i} className="aspect-square rounded-lg border-2 border-dashed border-line/20" />;
+              if (!room)
+                return (
+                  <div
+                    key={i}
+                    style={SLOT_DEPTH}
+                    className="aspect-square rounded-lg border-2 border-dashed border-line/20 bg-cream/40"
+                  />
+                );
               const here = room.id === roomId;
               const reachable = availableRooms.has(room.id);
               const isCleared = cleared.has(room.id);
@@ -1339,25 +1374,27 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
                   type="button"
                   disabled={!reachable && !here}
                   onClick={() => moveTo(room)}
-                  style={{
-                    boxShadow:
-                      '0 5px 0 0 var(--color-line), inset 0 2px 0 0 rgba(255,255,255,.55)',
-                  }}
+                  style={here ? TILE_DEPTH_HERE : TILE_DEPTH}
                   className={cn(
-                    'relative grid aspect-square place-items-center rounded-lg border-2 border-line bg-gradient-to-b from-paper to-cream text-2xl transition-all duration-150 hover:-translate-y-0.5',
-                    here ? 'border-coral from-coral-soft to-paper shadow-sticker' : '',
-                    reachable && !here && 'animate-pulse border-butter from-butter-soft to-paper',
+                    'relative grid aspect-square place-items-center rounded-lg border-2 border-line text-2xl transition-all duration-150',
+                    'hover:-translate-y-1 active:translate-y-0.5',
+                    reachable && !here && 'animate-pulse border-butter',
                     isCleared && 'opacity-60',
                   )}
                 >
-                  <span className={cn(known ? 'text-3xl' : 'text-lg font-bold text-ink-soft')}>
+                  <span
+                    className={cn(
+                      'relative z-10 drop-shadow-[0_1px_0_rgba(255,255,255,.8)]',
+                      known ? 'text-3xl' : 'text-lg font-bold text-ink-soft',
+                    )}
+                  >
                     {known ? roomIcon[room.type] : '?'}
                   </span>
                   {isCleared ? (
-                    <span className="absolute right-1 bottom-1 text-sm text-mint-deep">✓</span>
+                    <span className="absolute right-1 bottom-1 z-10 text-sm text-mint-deep">✓</span>
                   ) : null}
                   {reachable && !here ? (
-                    <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-coral" aria-hidden />
+                    <span className="absolute -top-1 -right-1 z-10 h-2 w-2 rounded-full bg-coral" aria-hidden />
                   ) : null}
                 </button>
               );

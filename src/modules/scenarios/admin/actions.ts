@@ -17,8 +17,10 @@ const toggleSchema = z.object({
   scenarioKey: z.string().min(1).max(80),
   // A display label for the audit log; the catalogue name is localised at render time, so
   // the admin sends the one they are looking at.
-  scenarioName: z.string().min(1).max(120),
-  enabled: z.enum(['true', 'false']),
+  scenarioName: z.string().min(1).max(120),
+  enabled: z.enum(['true', 'false']),
+  // Optional note for the audit row: why the scenario was closed.
+  reason: z.string().trim().max(200).optional(),
 });
 
 export async function setScenarioEnabled(
@@ -29,8 +31,9 @@ export async function setScenarioEnabled(
   const { t } = await getT();
   const parsed = toggleSchema.safeParse({
     scenarioKey: formData.get('scenarioKey'),
-    scenarioName: formData.get('scenarioName'),
-    enabled: formData.get('enabled'),
+    scenarioName: formData.get('scenarioName'),
+    enabled: formData.get('enabled'),
+    reason: formData.get('reason') ?? undefined,
   });
   if (!parsed.success) return { ok: false, error: t.admin.scenarios.badRequest };
 
@@ -56,7 +59,7 @@ export async function setScenarioEnabled(
     targetType: 'scenario',
     targetId: scenarioKey,
     targetName: scenarioName,
-    detail: { enabled },
+    detail: parsed.data.reason ? { enabled, reason: parsed.data.reason } : { enabled },
   });
 
   revalidatePath('/scenarios');

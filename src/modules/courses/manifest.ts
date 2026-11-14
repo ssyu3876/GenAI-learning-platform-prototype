@@ -7,7 +7,7 @@ export const coursesManifest: ModuleManifest = {
   name: 'Course catalog & player',
   description: 'Browse mini-courses, enrol, and learn lesson by lesson.',
   navItems: [
-    { href: '/courses', label: 'Courses', icon: BookOpen, roles: ['learner', 'instructor', 'admin'], order: 10 },
+    { href: '/courses', label: 'Courses', icon: BookOpen, roles: ['learner', 'instructor'], order: 10 },
   ],
   homeWidgets: [
     { id: 'courses.continue', roles: ['learner'], order: 20, size: 'half', component: ContinueWidget },

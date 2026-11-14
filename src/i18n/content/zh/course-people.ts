@@ -1,6 +1,7 @@
 import type { CourseDraft } from '@/core/content/draft';
 import { releaseGameConfig } from '@/modules/scenarios/content/release-week';
 import { RELEASE_COPY_ZH } from './release-week';
+import { morePeopleLessonsZh } from './course-people-more';
 
 export const peopleCourseZh: CourseDraft = {
   title: '技术团队里的软技能',
@@ -592,7 +593,7 @@ export const peopleCourseZh: CourseDraft = {
     },
     {
       title: '在一个用 AI 的团队里工作',
-      estimatedMinutes: 8,
+      estimatedMinutes: 10,
       content: `当每个人都有 AI 助手，团队协作的方式就变了。三个人、三个 agent，一个下午就能做出三种风格的代码。让事情不乱，靠的是几个团队习惯：
 
 - **把共享规则定一次**（技术栈、命名、目录结构），然后交给每个 agent。我们这个项目把它们放在 \`AGENTS.md\` 里。
@@ -962,5 +963,6 @@ export const peopleCourseZh: CourseDraft = {
         },
       ],
     },
+    ...morePeopleLessonsZh,
   ],
 };

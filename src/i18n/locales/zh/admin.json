@@ -2,6 +2,7 @@
   "metadata": {
     "overview": "管理控制台",
     "users": "用户 · 管理控制台",
+    "classes": "班级 · 管理控制台",
     "courses": "课程 · 管理控制台",
     "aiUsage": "AI 用量 · 管理控制台",
     "scenarios": "场景 · 管理控制台",
@@ -12,11 +13,18 @@
     "label": "管理后台导航",
     "overview": "总览",
     "users": "用户",
+    "classes": "班级",
     "courses": "课程",
     "aiUsage": "AI 用量",
     "scenarios": "场景",
     "badges": "徽章",
     "activity": "操作记录"
+  },
+  "list": {
+    "showing": "显示第 {from}–{to} 条，共 {total} 条",
+    "pageOf": "第 {page} 页，共 {pages} 页",
+    "previous": "上一页",
+    "next": "下一页"
   },
   "roles": {
     "learner": "学习者",
@@ -81,6 +89,7 @@
     "subtitle": "Sprout 一览",
     "admin": "管理后台",
     "users": "用户",
+    "classes": "班级",
     "events7Days": "7 天事件数",
     "aiCallsToday": "今日 AI 调用",
     "waitingReview": "待审核",
@@ -97,7 +106,12 @@
     "matchOne": "找到 {count} 位与“{query}”匹配的用户",
     "matchMany": "找到 {count} 位与“{query}”匹配的用户",
     "newest": "最近注册的 {count} 位用户",
-    "showingFirst": "（只显示前 {limit} 位）",
+    "exportCsv": "导出 CSV",
+    "filterRole": "按角色筛选",
+    "anyRole": "全部角色",
+    "sortLabel": "排序",
+    "sortNewest": "最新注册",
+    "sortActive": "最近活跃",
     "never": "从未登录",
     "roleLabel": "为 {name} 选择角色",
     "saveRoleLabel": "保存 {name} 的角色",
@@ -109,9 +123,29 @@
       "role": "角色"
     }
   },
+  "classes": {
+    "title": "班级",
+    "subtitle": "全平台的班级，以及每个班的排行榜是否对学生可见。",
+    "emptyTitle": "还没有班级",
+    "emptyBody": "教师或管理员可以在「班级」页创建班级。",
+    "invite": "邀请码",
+    "boardVisible": "对学生可见",
+    "boardHidden": "对学生隐藏",
+    "show": "对学生显示",
+    "hide": "对学生隐藏",
+    "columns": {
+      "name": "班级",
+      "instructor": "教师",
+      "students": "学生",
+      "courses": "课程",
+      "board": "排行榜",
+      "action": "操作"
+    }
+  },
   "courses": {
     "title": "课程",
     "subtitle": "审核用户想发布的课程，也可以浏览其他所有课程。",
+    "exportCsv": "导出 CSV",
     "reviewQueue": "审核队列",
     "queueEmptyTitle": "队列是空的",
     "queueEmptyBody": "目前没有等待审核的课程。",
@@ -121,11 +155,20 @@
     "preview": "预览课程",
     "allCourses": "所有课程",
     "filters": {
+      "search": "搜索",
+      "searchPlaceholder": "课程名或 #编号",
       "status": "状态",
       "source": "来源",
       "owner": "作者",
       "apply": "应用筛选",
       "clear": "清除"
+    },
+    "bulk": {
+      "reason": "原因",
+      "reasonPlaceholder": "为什么要下架",
+      "archive": "下架所选课程",
+      "hint": "只有已发布的课程可以勾选。",
+      "select": "选择"
     },
     "emptyTitle": "没有匹配的课程",
     "emptyBody": "换个筛选条件试试。",
@@ -203,6 +246,8 @@
     "open": "开放",
     "close": "关闭",
     "toggling": "保存中…",
+    "reasonLabel": "变更原因（可选）",
+    "reasonPlaceholder": "写进记录的原因",
     "opened": "{name} 已重新开放。",
     "closed": "{name} 已关闭，学习者会看到提示页。",
     "closedBadge": "已关闭",
@@ -240,10 +285,25 @@
   "activity": {
     "title": "操作记录",
     "subtitle": "管理员做过的改动，最新的在最上面。",
+    "exportCsv": "导出 CSV",
+    "filters": {
+      "action": "操作类型",
+      "anyAction": "全部操作",
+      "actor": "操作人",
+      "actorPlaceholder": "姓名",
+      "period": "时间范围",
+      "anyTime": "全部时间",
+      "day": "最近 24 小时",
+      "week": "最近 7 天",
+      "month": "最近 30 天",
+      "apply": "应用筛选",
+      "clear": "清除"
+    },
     "emptyTitle": "还没有记录",
     "emptyBody": "改角色、审课程、开关场景都会记录在这里。",
     "actions": {
       "user.role_changed": "把 {target} 设为{role}",
+      "user.role_changed_from": "把 {target} 从{from}改为{role}",
       "course.approved": "通过了《{target}》",
       "course.sent_back": "把《{target}》退回给作者",
       "course.archived": "把《{target}》从目录下架",
@@ -303,7 +363,13 @@
     "userGone": "这位用户已经不存在了。",
     "roleChanged": "{name} 现在是{role}。",
     "roleChangedAdmin": "{name} 现在是管理员。",
-    "roles": {
+    "list": {
+    "showing": "显示第 {from}–{to} 条，共 {total} 条",
+    "pageOf": "第 {page} 页，共 {pages} 页",
+    "previous": "上一页",
+    "next": "下一页"
+  },
+  "roles": {
       "learner": "学习者",
       "instructor": "教师",
       "admin": "管理员"
@@ -316,6 +382,9 @@
     "rejected": "{title} 已作为草稿退回给作者。",
     "notPublished": "这门课程不是已发布状态。",
     "notArchived": "这门课程不在已下架状态。",
+    "badReason": "原因请控制在 200 字以内。",
+    "archivedMany": "已将 {count} 门课程从目录下架。",
+    "archivedManyWithReason": "已将 {count} 门课程从目录下架。原因：{reason}",
     "archived": "{title} 已从课程目录下架。",
     "restored": "{title} 已恢复为草稿。"
   }

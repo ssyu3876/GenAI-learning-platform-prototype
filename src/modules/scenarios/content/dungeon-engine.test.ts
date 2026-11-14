@@ -4,11 +4,20 @@ import {
   drawQuestion,
   generateMap,
   generateMapPool,
+  generateSeededMaps,
+  itemCap,
   monsterGold,
   pickMonster,
   DUNGEON_CONFIG,
 } from './dungeon-engine';
 import { DUNGEON } from './dungeon';
+
+function layoutOf(map: ReturnType<typeof generateMap>) {
+  return map.rooms
+    .map((room) => `${room.pos.join(',')}:${room.type}`)
+    .sort()
+    .join(' ');
+}
 
 function checkMap(map: ReturnType<typeof generateMap>) {
   const degrees = map.rooms.map((r) => r.connections.length);
@@ -64,5 +73,42 @@ describe('questions and monsters', () => {
     expect(monsterGold(monster, 'hard', 1)).toBeGreaterThan(monsterGold(monster, 'easy', 1));
     expect(monsterGold(monster, 'normal', 2)).toBeGreaterThan(monsterGold(monster, 'normal', 1));
     expect(DUNGEON_CONFIG.hp.hard).toBe(80);
+  });
+});
+
+describe('daily and weekly maps', () => {
+  it('is the same three layouts for everyone on a given seed', () => {
+    const today = generateSeededMaps(20261112, 3);
+    const again = generateSeededMaps(20261112, 3);
+    expect(today.map(layoutOf)).toEqual(again.map(layoutOf));
+  });
+
+  it('gives each layer its own map instead of repeating the hand-built one', () => {
+    const maps = generateSeededMaps(20261112, 3);
+    expect(maps).toHaveLength(3);
+    expect(new Set(maps.map(layoutOf)).size).toBe(3);
+  });
+
+  it('changes the maps from one day to the next', () => {
+    expect(layoutOf(generateSeededMaps(20261112, 1)[0]!)).not.toBe(
+      layoutOf(generateSeededMaps(20261113, 1)[0]!),
+    );
+  });
+
+  it('still produces valid maps', () => {
+    for (const seed of [1, 20261112, 202545]) {
+      for (const map of generateSeededMaps(seed, 3)) checkMap(map);
+    }
+  });
+});
+
+describe('item cap', () => {
+  it('is the normal backpack size without a modifier', () => {
+    expect(itemCap(undefined)).toBe(DUNGEON_CONFIG.maxItems);
+    expect(itemCap('heavy')).toBe(DUNGEON_CONFIG.maxItems);
+  });
+
+  it('drops to two slots with the thin modifier', () => {
+    expect(itemCap('thin')).toBe(2);
   });
 });

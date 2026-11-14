@@ -1,5 +1,6 @@
 import type { CourseDraft } from '@/core/content/draft';
 import { releaseGameConfig } from '@/modules/scenarios/content/release-week';
+import { morePeopleLessons } from './course-people-more';
 
 export const peopleCourse: CourseDraft = {
   title: 'People Skills for Tech Teams',
@@ -593,7 +594,7 @@ Notice the details that make it believable: a number in the situation, a boundar
     },
     {
       title: 'Working on a team that uses AI',
-      estimatedMinutes: 8,
+      estimatedMinutes: 10,
       content: `When everyone has an AI assistant, teamwork changes. Three people with three agents can produce three different styles of code in an afternoon. A few team habits keep things sane:
 
 - **Agree on shared rules once** (stack, naming, folder structure) and give them to every agent. Our project keeps them in \`AGENTS.md\`.
@@ -968,5 +969,6 @@ The trade is not a trick to avoid the work. It makes the cost visible to the per
         },
       ],
     },
+    ...morePeopleLessons,
   ],
 };

@@ -89,7 +89,14 @@ export async function listStaffClasses(user: SessionUser): Promise<StaffClassSum
   const assigned = await db
     .select({ classId: classCourses.classId, n: count() })
     .from(classCourses)
-    .where(inArray(classCourses.classId, ids))
+    .innerJoin(courses, eq(courses.id, classCourses.courseId))
+    .where(
+      and(
+        inArray(classCourses.classId, ids),
+        eq(courses.status, 'published'),
+        inArray(courses.visibility, ['class', 'public']),
+      ),
+    )
     .groupBy(classCourses.classId);
   const memberMap = new Map(members.map((m) => [m.classId, m.n]));
   const courseMap = new Map(assigned.map((c) => [c.classId, c.n]));
@@ -234,7 +241,13 @@ export async function listAssignedCourses(classId: string): Promise<ClassCourseR
     .select({ id: courses.id, title: courses.title, emoji: courses.emoji, color: courses.color, status: courses.status })
     .from(classCourses)
     .innerJoin(courses, eq(courses.id, classCourses.courseId))
-    .where(eq(classCourses.classId, classId))
+    .where(
+      and(
+        eq(classCourses.classId, classId),
+        eq(courses.status, 'published'),
+        inArray(courses.visibility, ['class', 'public']),
+      ),
+    )
     .orderBy(asc(classCourses.assignedAt));
   const counts = await lessonCounts(rows.map((r) => r.id));
   const locale = await getLocale();
@@ -505,7 +518,14 @@ export async function getClassQuestionInsights(classId: string): Promise<ClassQu
   const assigned = await db
     .select({ courseId: classCourses.courseId })
     .from(classCourses)
-    .where(eq(classCourses.classId, classId));
+    .innerJoin(courses, eq(courses.id, classCourses.courseId))
+    .where(
+      and(
+        eq(classCourses.classId, classId),
+        eq(courses.status, 'published'),
+        inArray(courses.visibility, ['class', 'public']),
+      ),
+    );
   const courseIds = assigned.map((a) => a.courseId);
   const rows = await db
     .select({

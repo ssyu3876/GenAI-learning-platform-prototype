@@ -12,6 +12,7 @@ import { addLesson, deleteLesson, moveLesson, setCourseStatus } from '../actions
 import { ActionButton } from '../components/action-button';
 import { StatusBadge, VisibilityBadge } from '../components/course-badges';
 import { CourseMetaForm } from '../components/course-meta-form';
+import { listCourseClassUsage } from '../queries';
 
 function lessonsLabel(t: Translations, n: number) {
   return fmt(plural(n, t.studio.common.lessonsOne, t.studio.common.lessonsMany), { count: n });
@@ -115,10 +116,27 @@ async function LessonList({ course }: { course: CourseOutline }) {
   );
 }
 
-async function PublishPanel({ course }: { course: CourseOutline }) {
-  const { t } = await getT();
+async function PublishPanel({ course, classNames }: { course: CourseOutline; classNames: string[] }) {
+  const { t, locale } = await getT();
   const fields = (intent: string) => ({ courseId: course.id, intent });
   const isLive = course.status === 'published';
+  const isPending = course.status === 'pending_review';
+  const isClassLive = isLive && course.visibility === 'class';
+  const isPublicLive = isLive && course.visibility === 'public';
+  const hasClassAssignments = classNames.length > 0;
+  const classList = classNames.join(locale === 'zh' ? '、' : ', ');
+  // Only warn when an actual audience exists. A published-but-unassigned class course
+  // has no student impact; a pending public request has not been approved yet.
+  const unpublishConfirm =
+    isClassLive && hasClassAssignments
+      ? fmt(t.studio.publish.unpublishConfirm, { classes: classList })
+      : isPublicLive
+        ? t.studio.publish.unpublishPublicConfirm
+        : undefined;
+  const unpublishTitle = isPublicLive ? t.studio.publish.unpublishPublicTitle : t.studio.publish.unpublishTitle;
+  const unpublishConfirmLabel = isPublicLive
+    ? t.studio.publish.unpublishPublicConfirmLabel
+    : t.studio.publish.unpublishConfirmLabel;
   return (
     <Card tint="sky">
       <CardHeader title={t.studio.publish.title} subtitle={t.studio.publish.subtitle} />
@@ -127,11 +145,13 @@ async function PublishPanel({ course }: { course: CourseOutline }) {
           <StatusBadge status={course.status} />
           <VisibilityBadge visibility={course.visibility} />
         </div>
-        {course.status === 'pending_review' ? <Notice>{t.studio.publish.pendingNotice}</Notice> : null}
+        <p className="text-xs leading-relaxed text-ink-soft">{t.studio.publish.accessHint}</p>
+        {isClassLive && !hasClassAssignments ? <Notice>{t.studio.publish.classNotAssigned}</Notice> : null}
+        {isPending ? <Notice>{t.studio.publish.pendingNotice}</Notice> : null}
         {course.status === 'archived' ? <Notice>{t.studio.publish.archivedNotice}</Notice> : null}
 
         <div className="flex flex-col items-stretch gap-2">
-          {!(isLive && course.visibility === 'class') ? (
+          {!isClassLive ? (
             <ActionButton
               action={setCourseStatus}
               fields={fields('publish_class')}
@@ -143,7 +163,15 @@ async function PublishPanel({ course }: { course: CourseOutline }) {
               {t.studio.publish.publishClass}
             </ActionButton>
           ) : null}
-          {course.status !== 'pending_review' && !(isLive && course.visibility === 'public') ? (
+          {isClassLive ? (
+            <Link
+              href="/classes"
+              className="inline-flex items-center justify-center gap-1.5 rounded-pill border-2 border-line bg-paper px-4 py-2 text-sm font-bold shadow-sticker-sm hover:bg-butter-soft"
+            >
+              {t.studio.publish.goAssign}
+            </Link>
+          ) : null}
+          {!isPending && !isPublicLive ? (
             <ActionButton
               action={setCourseStatus}
               fields={fields('submit_public')}
@@ -161,9 +189,12 @@ async function PublishPanel({ course }: { course: CourseOutline }) {
               fields={fields('unpublish')}
               variant="secondary"
               pendingText={t.chrome.common.saving}
+              confirmText={unpublishConfirm}
+              confirmTitle={unpublishTitle}
+              confirmLabel={unpublishConfirmLabel}
               showMessage
             >
-              {t.studio.publish.unpublish}
+              {isPending ? t.studio.publish.withdrawPublic : t.studio.publish.unpublish}
             </ActionButton>
           ) : null}
           {course.status !== 'archived' ? (
@@ -173,6 +204,8 @@ async function PublishPanel({ course }: { course: CourseOutline }) {
               variant="ghost"
               pendingText={t.studio.publish.archiving}
               confirmText={t.studio.publish.archiveConfirm}
+              confirmTitle={t.studio.publish.archiveTitle}
+              confirmLabel={t.studio.publish.archiveConfirmLabel}
               showMessage
             >
               {t.studio.publish.archive}
@@ -207,6 +240,7 @@ export async function CourseEditorPage({
   const { locale, t } = await getT();
   const rawCourse = await getCourseOutline(courseId);
   if (!rawCourse || !(await canEditCourse(user, rawCourse))) notFound();
+  const classUsage = await listCourseClassUsage(courseId);
   // Display only: saving an untouched field writes the original English back (see actions).
   const course = localizeContent(rawCourse, locale);
 
@@ -252,7 +286,7 @@ export async function CourseEditorPage({
           </Card>
           <LessonList course={course} />
         </div>
-        <PublishPanel course={course} />
+        <PublishPanel course={course} classNames={classUsage.map((item) => item.name)} />
       </div>
     </div>
   );

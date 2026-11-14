@@ -1,7 +1,8 @@
 // Read functions for the course studio (server only).
-import { and, count, desc, eq, inArray, isNull, ne, or, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray, isNull, ne, or, type SQL } from 'drizzle-orm';
 import { getDb } from '@/core/db/client';
-import { courses, lessons, type Course } from '@/core/db/schema';
+import { classCourses, classes, courses, lessons, type Course } from '@/core/db/schema';
+import { ensureCourseCodes } from '@/core/content/draft';
 import type { SessionUser } from '@/core/types';
 import { getLocale } from '@/i18n';
 import { localizeContent } from '@/i18n/content';
@@ -31,14 +32,24 @@ function studioScope(user: SessionUser): SQL | undefined {
   return eq(courses.ownerId, user.id);
 }
 
-export async function listStudioCourses(user: SessionUser): Promise<StudioCourse[]> {
+export async function listStudioCourses(user: SessionUser, query?: string): Promise<StudioCourse[]> {
   const db = await getDb();
-  const rows = await db.select().from(courses).where(studioScope(user)).orderBy(desc(courses.updatedAt));
+  await ensureCourseCodes();
+  const filters: SQL[] = [studioScope(user)].filter((value): value is SQL => Boolean(value));
+  const search = query?.trim().replace(/^#/, '');
+  if (search) {
+    filters.push(or(ilike(courses.title, `%${search}%`), ilike(courses.code, `%${search}%`))!);
+  }
+  const rows = await db
+    .select()
+    .from(courses)
+    .where(and(...filters))
+    .orderBy(desc(courses.updatedAt));
   const locale = await getLocale();
   return localizeContent(await withLessonCounts(rows), locale);
 }
 
-/** Published catalog courses (public or class) the user does not own, to duplicate and customise. */
+/** Published public catalogue courses, to duplicate and customise. */
 export async function listForkableCourses(user: SessionUser): Promise<StudioCourse[]> {
   const db = await getDb();
   const rows = await db
@@ -47,7 +58,7 @@ export async function listForkableCourses(user: SessionUser): Promise<StudioCour
     .where(
       and(
         eq(courses.status, 'published'),
-        or(eq(courses.visibility, 'public'), eq(courses.visibility, 'class')),
+        eq(courses.visibility, 'public'),
         ne(courses.source, 'learner_ai'),
         // seed courses have no owner, and ne() never matches null
         or(isNull(courses.ownerId), ne(courses.ownerId, user.id)),
@@ -63,6 +74,17 @@ export interface StudioOverview {
   published: number;
   pending: number;
   lastEdited: Pick<Course, 'id' | 'title' | 'emoji' | 'updatedAt'> | null;
+}
+
+/** Classes currently using a course, for the unpublish confirmation. */
+export async function listCourseClassUsage(courseId: string): Promise<Array<{ id: string; name: string }>> {
+  const db = await getDb();
+  return db
+    .select({ id: classes.id, name: classes.name })
+    .from(classCourses)
+    .innerJoin(classes, eq(classes.id, classCourses.classId))
+    .where(eq(classCourses.courseId, courseId))
+    .orderBy(asc(classes.name));
 }
 
 export async function getStudioOverview(user: SessionUser): Promise<StudioOverview> {

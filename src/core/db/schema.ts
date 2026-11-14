@@ -67,6 +67,8 @@ export const courses = pgTable(
   {
     id: text().primaryKey(),
     slug: text().notNull().unique(),
+    /** Human-friendly four-digit code for quick search in Studio. */
+    code: text().unique(),
     title: text().notNull(),
     summary: text().notNull().default(''),
     // Free text, e.g. "Software Engineering", "History", "Biology"

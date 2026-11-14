@@ -52,7 +52,7 @@ export async function AppShell({ user, children }: { user: SessionUser; children
           <div className="flex items-center gap-2">
             <Avatar seed={user.avatarSeed} name={user.name} size={36} />
             <div className="min-w-0">
-              <div className="truncate font-display font-semibold">{user.name}</div>
+              <div className="break-words font-display font-semibold leading-tight" title={user.name}>{user.name}</div>
               <Badge tint="sky">{ROLE_LABEL[user.role]}</Badge>
             </div>
           </div>

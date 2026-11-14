@@ -57,6 +57,13 @@
       "when": 1794597483055,
       "tag": "0007_remarkable_dreadnoughts",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794615396387,
+      "tag": "0008_yummy_chat",
+      "breakpoints": true
     }
   ]
 }

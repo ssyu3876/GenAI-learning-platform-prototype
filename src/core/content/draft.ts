@@ -1,6 +1,6 @@
 // A "course draft" is the JSON shape AI (or a human) produces before it is saved.
 // Shared by the studio (instructors), self-learn (learners) and the seed script.
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { generateJson } from '@/core/ai/client';
 import { getDb } from '@/core/db/client';
@@ -74,6 +74,34 @@ export async function uniqueSlug(title: string): Promise<string> {
   return `${base}-${randomString(8)}`;
 }
 
+/** A four-digit code that is easy to read and search in Studio. */
+export async function uniqueCourseCode(): Promise<string> {
+  const db = await getDb();
+  for (let i = 0; i < 50; i++) {
+    const code = String(Math.floor(1000 + Math.random() * 9000));
+    const [hit] = await db.select({ id: courses.id }).from(courses).where(eq(courses.code, code)).limit(1);
+    if (!hit) return code;
+  }
+  throw new Error('Could not allocate a unique course code.');
+}
+
+/** Backfill codes for courses created before the code column existed. */
+export async function ensureCourseCodes(): Promise<void> {
+  const db = await getDb();
+  const rows = await db.select({ id: courses.id }).from(courses).where(isNull(courses.code));
+  for (const row of rows) {
+    try {
+      const code = await uniqueCourseCode();
+      await db
+        .update(courses)
+        .set({ code })
+        .where(and(eq(courses.id, row.id), isNull(courses.code)));
+    } catch (error) {
+      console.warn('[courses] could not backfill course code', row.id, error);
+    }
+  }
+}
+
 export async function saveCourseDraft(
   draft: CourseDraft,
   opts: {
@@ -88,10 +116,12 @@ export async function saveCourseDraft(
   const db = await getDb();
   const id = newId('course');
   const slug = opts.slug ?? (await uniqueSlug(draft.title));
+  const code = await uniqueCourseCode();
   const minutes = draft.lessons.reduce((m, l) => m + (l.estimatedMinutes ?? 10), 0);
   await db.insert(courses).values({
     id,
     slug,
+    code,
     title: draft.title,
     summary: draft.summary,
     subject: draft.subject,
@@ -262,7 +292,9 @@ export async function generateCourseDraft(
       feature: input.feature,
       userId: input.userId,
       tier: 'smart',
-      maxTokens: 6000,
+      // A full course JSON (lessons + activities) needs room for reasoning and the final
+      // JSON. 6k was regularly exhausted by max-effort reasoning, producing empty output.
+      maxTokens: 16000,
       temperature: 0.6,
       mock: () => mockDraft(input),
     },

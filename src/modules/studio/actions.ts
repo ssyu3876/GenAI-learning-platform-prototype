@@ -11,6 +11,7 @@ import {
   COURSE_COLORS,
   generateCourseDraft,
   saveCourseDraft,
+  uniqueCourseCode,
   uniqueSlug,
   type CourseDraft,
 } from '@/core/content/draft';
@@ -18,6 +19,7 @@ import { canViewCourse, getCourseById, getCourseOutline } from '@/core/content/q
 import { getDb } from '@/core/db/client';
 import {
   activities,
+  classCourses,
   courses,
   lessons,
   type CourseStatus,
@@ -137,6 +139,11 @@ export async function generateCourse(_prev: ActionResult | null, formData: FormD
     userId: user.id,
     locale,
   });
+  if (mocked) {
+    // Never persist demo content as if it were the teacher's course. A failed model call
+    // must be visible and retryable; the blank-course path remains available.
+    return { ok: false, error: t.studio.actions.aiGenerationFailed };
+  }
   const saved = await saveCourseDraft(draft, {
     ownerId: user.id,
     source: 'ai',
@@ -144,7 +151,7 @@ export async function generateCourse(_prev: ActionResult | null, formData: FormD
     visibility: 'private',
   });
   revalidatePath('/studio');
-  redirect(`/studio/${saved.id}${mocked ? '?demo=1' : ''}`);
+  redirect(`/studio/${saved.id}`);
 }
 
 const blankSchema = (t: Translations) =>
@@ -255,7 +262,10 @@ const statusSchema = z.object({
 
 const STATUS_CHANGES = (
   t: Translations,
-): Record<z.infer<typeof statusSchema>['intent'], { status: CourseStatus; visibility?: CourseVisibility; message: string }> => ({
+): Record<
+  z.infer<typeof statusSchema>['intent'],
+  { status: CourseStatus; visibility?: CourseVisibility; message: string; clearClassAssignments?: boolean }
+> => ({
   publish_class: {
     status: 'published',
     visibility: 'class',
@@ -266,8 +276,20 @@ const STATUS_CHANGES = (
     visibility: 'public',
     message: t.studio.actions.submitPublicMessage,
   },
-  unpublish: { status: 'draft', message: t.studio.actions.unpublishMessage },
-  archive: { status: 'archived', message: t.studio.actions.archiveMessage },
+  unpublish: {
+    status: 'draft',
+    visibility: 'private',
+    message: t.studio.actions.unpublishMessage,
+    // Taking a course offline must also remove it from every class. Keeping the
+    // class_courses rows would make it reappear later and leave the class count stale.
+    clearClassAssignments: true,
+  },
+  archive: {
+    status: 'archived',
+    visibility: 'private',
+    message: t.studio.actions.archiveMessage,
+    clearClassAssignments: true,
+  },
 });
 
 export async function setCourseStatus(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
@@ -283,16 +305,22 @@ export async function setCourseStatus(_prev: ActionResult | null, formData: Form
     const [row] = await db.select({ n: count() }).from(lessons).where(eq(lessons.courseId, course.id));
     if (!row?.n) return { ok: false, error: t.studio.actions.addLessonFirst };
   }
-  await db
-    .update(courses)
-    .set({
-      status: change.status,
-      ...(change.visibility ? { visibility: change.visibility } : {}),
-      updatedAt: new Date(),
-    })
-    .where(eq(courses.id, course.id));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(courses)
+      .set({
+        status: change.status,
+        ...(change.visibility ? { visibility: change.visibility } : {}),
+        updatedAt: new Date(),
+      })
+      .where(eq(courses.id, course.id));
+    if (change.clearClassAssignments) {
+      await tx.delete(classCourses).where(eq(classCourses.courseId, course.id));
+    }
+  });
   revalidateCourse(course);
   revalidatePath('/courses');
+  revalidatePath('/classes', 'layout');
   return { ok: true, message: change.message };
 }
 
@@ -317,6 +345,7 @@ export async function duplicateCourse(_prev: ActionResult | null, formData: Form
   await db.insert(courses).values({
     id,
     slug: await uniqueSlug(title),
+    code: await uniqueCourseCode(),
     title,
     summary: source.summary,
     subject: source.subject,

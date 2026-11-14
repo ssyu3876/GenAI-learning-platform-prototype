@@ -34,7 +34,9 @@ export async function listVisibleCourses(user: SessionUser): Promise<Course[]> {
     and(eq(courses.status, 'published'), eq(courses.visibility, 'public')),
     eq(courses.ownerId, user.id),
   ];
-  if (assigned.length) conditions.push(inArray(courses.id, assigned));
+  if (assigned.length) {
+    conditions.push(and(eq(courses.status, 'published'), inArray(courses.id, assigned)));
+  }
   if (user.role === 'admin') conditions.push(eq(courses.status, 'published'));
   return db
     .select()
@@ -45,8 +47,10 @@ export async function listVisibleCourses(user: SessionUser): Promise<Course[]> {
 
 export async function canViewCourse(user: SessionUser, course: Course): Promise<boolean> {
   if (user.role === 'admin' || course.ownerId === user.id) return true;
-  if (course.status === 'published' && course.visibility === 'public') return true;
-  if (user.role === 'instructor' && course.status === 'published') return true;
+  if (course.status !== 'published') return false;
+  if (course.visibility === 'public') return true;
+  // "class" means learners of assigned classes, not every instructor. Other instructors
+  // may only discover public catalogue courses; class courses stay inside the cohort.
   return (await classCourseIdsFor(user.id)).includes(course.id);
 }
 

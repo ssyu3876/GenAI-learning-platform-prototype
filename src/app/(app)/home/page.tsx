@@ -6,8 +6,17 @@ import { homeWidgetsFor } from '@/registry/modules';
 import { getT } from '@/i18n';
 import { fmt } from '@/i18n/format';
 
+function displayName(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  // Keep academic/professional titles with the surname: "Dr. Chan" must not become "Dr.".
+  if (parts.length > 1 && /^(dr|mr|mrs|ms|prof|professor)\.?$/i.test(parts[0]!)) {
+    return `${parts[0]} ${parts[1]}`;
+  }
+  return parts[0] ?? name;
+}
+
 function greeting(name: string, hour: number, t: Awaited<ReturnType<typeof getT>>['t']) {
-  const first = name.split(' ')[0];
+  const first = displayName(name);
   if (hour < 5) return fmt(t.chrome.home.greeting.stillUp, { name: first! });
   if (hour < 12) return fmt(t.chrome.home.greeting.morning, { name: first! });
   if (hour < 18) return fmt(t.chrome.home.greeting.afternoon, { name: first! });

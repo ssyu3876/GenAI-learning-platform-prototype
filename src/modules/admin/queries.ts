@@ -16,6 +16,7 @@ import {
 } from '@/core/db/schema';
 import { getLocale } from '@/i18n';
 import { localizeContent } from '@/i18n/content';
+import { ensureCourseCodes } from '@/core/content/draft';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 export const COURSE_STATUSES: CourseStatus[] = ['draft', 'pending_review', 'published', 'archived'];
@@ -74,14 +75,80 @@ export interface AdminUserRow {
   lastActiveAt: Date | null;
 }
 
-export const USER_LIST_LIMIT = 100;
+/** Rows per page in the console lists. */
+export const PAGE_SIZE = 25;
 
-/** Users matching `q` (name or email), newest first. */
-export async function searchUsers(q: string): Promise<AdminUserRow[]> {
+/** Safety cap for the CSV downloads: enough for a class, small enough to stay one query. */
+export const EXPORT_LIMIT = 5000;
+
+export interface Page<T> {
+  rows: T[];
+  total: number;
+  page: number;
+  pageCount: number;
+}
+
+function clampPage(page: number, pageCount: number): number {
+  if (!Number.isFinite(page)) return 1;
+  return Math.min(Math.max(1, Math.floor(page)), pageCount);
+}
+
+function userWhere(term: string, role?: UserRole): SQL | undefined {
+  const conditions: SQL[] = [];
+  if (role) conditions.push(eq(users.role, role));
+  if (term) {
+    // Escape LIKE wildcards so "%" in a search is treated literally.
+    const pattern = `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+    const search = or(ilike(users.name, pattern), ilike(users.email, pattern));
+    if (search) conditions.push(search);
+  }
+  if (conditions.length === 0) return undefined;
+  return conditions.length === 1 ? conditions[0] : and(...conditions);
+}
+
+export interface UserFilters {
+  role?: UserRole;
+  /** newest = when they joined, active = when they were last seen. */
+  sort?: 'newest' | 'active';
+}
+
+function userOrder(sort: UserFilters['sort']) {
+  return sort === 'active' ? desc(users.lastActiveAt) : desc(users.createdAt);
+}
+
+/** Users matching `q` (name or email), newest first unless sorted by activity. */
+export async function searchUsers(
+  q: string,
+  requestedPage = 1,
+  filters: UserFilters = {},
+): Promise<Page<AdminUserRow>> {
   const db = await getDb();
-  const term = q.trim().slice(0, 100);
-  // Escape LIKE wildcards so "%" in a search is treated literally.
-  const pattern = `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+  const where = userWhere(q.trim().slice(0, 100), filters.role);
+  const [counted] = await db.select({ n: count() }).from(users).where(where);
+  const total = Number(counted?.n ?? 0);
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = clampPage(requestedPage, pageCount);
+  const rows = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      role: users.role,
+      avatarSeed: users.avatarSeed,
+      createdAt: users.createdAt,
+      lastActiveAt: users.lastActiveAt,
+    })
+    .from(users)
+    .where(where)
+    .orderBy(userOrder(filters.sort))
+    .limit(PAGE_SIZE)
+    .offset((page - 1) * PAGE_SIZE);
+  return { rows, total, page, pageCount };
+}
+
+/** The same rows as searchUsers, without paging, for the CSV download. */
+export async function listUsersForExport(q: string, filters: UserFilters = {}): Promise<AdminUserRow[]> {
+  const db = await getDb();
   return db
     .select({
       id: users.id,
@@ -93,14 +160,15 @@ export async function searchUsers(q: string): Promise<AdminUserRow[]> {
       lastActiveAt: users.lastActiveAt,
     })
     .from(users)
-    .where(term ? or(ilike(users.name, pattern), ilike(users.email, pattern)) : undefined)
-    .orderBy(desc(users.createdAt))
-    .limit(USER_LIST_LIMIT);
+    .where(userWhere(q.trim().slice(0, 100), filters.role))
+    .orderBy(userOrder(filters.sort))
+    .limit(EXPORT_LIMIT);
 }
 
 export interface AdminCourseRow {
   id: string;
   slug: string;
+  code: string | null;
   title: string;
   summary: string;
   emoji: string;
@@ -119,6 +187,8 @@ export interface CourseFilters {
   status?: CourseStatus;
   source?: CourseSource;
   ownerId?: string;
+  /** Matches the title or the four-digit course code, so an admin can paste "#1042". */
+  q?: string;
 }
 
 async function selectCourses(where: SQL | undefined): Promise<AdminCourseRow[]> {
@@ -127,6 +197,7 @@ async function selectCourses(where: SQL | undefined): Promise<AdminCourseRow[]> 
     .select({
       id: courses.id,
       slug: courses.slug,
+      code: courses.code,
       title: courses.title,
       summary: courses.summary,
       emoji: courses.emoji,
@@ -168,7 +239,20 @@ export function listCourses(filters: CourseFilters): Promise<AdminCourseRow[]> {
   if (filters.status) conditions.push(eq(courses.status, filters.status));
   if (filters.source) conditions.push(eq(courses.source, filters.source));
   if (filters.ownerId) conditions.push(eq(courses.ownerId, filters.ownerId));
+  const term = filters.q?.trim().replace(/^#/, '').slice(0, 60);
+  if (term) {
+    const pattern = `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+    const search = or(ilike(courses.title, pattern), ilike(courses.code, pattern));
+    if (search) conditions.push(search);
+  }
   return selectCourses(conditions.length ? and(...conditions) : undefined);
+}
+
+/** Every course code, for the admin column and the search hint. */
+export async function ensureCodesBeforeSearch(): Promise<void> {
+  // The studio fills missing codes on read; the console has to do the same or a search by code
+  // silently finds nothing on a database that was seeded before codes existed.
+  await ensureCourseCodes();
 }
 
 /** People who own at least one course, for the owner filter. */
@@ -182,7 +266,6 @@ export async function listCourseOwners(): Promise<{ id: string; name: string }[]
 }
 
 /** How many audit rows the console shows at once. */
-export const AUDIT_PAGE_SIZE = 100;
 
 export interface AuditRow {
   id: string;
@@ -196,7 +279,59 @@ export interface AuditRow {
 }
 
 /** Newest first. The audit table is append-only, so this is the whole history view. */
-export async function getAuditLog(limit = AUDIT_PAGE_SIZE): Promise<AuditRow[]> {
+export interface AuditFilters {
+  /** Exact action key, for example course.archived. */
+  action?: string;
+  /** Part of the actor's name. */
+  actor?: string;
+  /** How far back to look. */
+  since?: 'day' | 'week' | 'month';
+}
+
+function auditWhere(filters: AuditFilters): SQL | undefined {
+  const conditions: SQL[] = [];
+  if (filters.action) conditions.push(eq(adminAudit.action, filters.action));
+  if (filters.actor) {
+    const pattern = `%${filters.actor.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+    const search = ilike(adminAudit.actorName, pattern);
+    if (search) conditions.push(search);
+  }
+  if (filters.since) {
+    const days = filters.since === 'day' ? 1 : filters.since === 'week' ? 7 : 30;
+    conditions.push(gte(adminAudit.createdAt, new Date(Date.now() - days * DAY_MS)));
+  }
+  if (conditions.length === 0) return undefined;
+  return conditions.length === 1 ? conditions[0] : and(...conditions);
+}
+
+export async function getAuditLog(requestedPage = 1, filters: AuditFilters = {}): Promise<Page<AuditRow>> {
+  const db = await getDb();
+  const where = auditWhere(filters);
+  const [counted] = await db.select({ n: count() }).from(adminAudit).where(where);
+  const total = Number(counted?.n ?? 0);
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = clampPage(requestedPage, pageCount);
+  const rows = await db
+    .select({
+      id: adminAudit.id,
+      actorName: adminAudit.actorName,
+      action: adminAudit.action,
+      targetType: adminAudit.targetType,
+      targetId: adminAudit.targetId,
+      targetName: adminAudit.targetName,
+      detail: adminAudit.detail,
+      createdAt: adminAudit.createdAt,
+    })
+    .from(adminAudit)
+    .where(where)
+    .orderBy(desc(adminAudit.createdAt))
+    .limit(PAGE_SIZE)
+    .offset((page - 1) * PAGE_SIZE);
+  return { rows, total, page, pageCount };
+}
+
+/** Every audit row, for the CSV download. */
+export async function listAuditForExport(filters: AuditFilters = {}): Promise<AuditRow[]> {
   const db = await getDb();
   return db
     .select({
@@ -210,8 +345,20 @@ export async function getAuditLog(limit = AUDIT_PAGE_SIZE): Promise<AuditRow[]> 
       createdAt: adminAudit.createdAt,
     })
     .from(adminAudit)
+    .where(auditWhere(filters))
     .orderBy(desc(adminAudit.createdAt))
-    .limit(limit);
+    .limit(EXPORT_LIMIT);
+}
+
+/** The action keys that actually appear in the log, for the filter dropdown. */
+export async function listAuditActions(): Promise<string[]> {
+  const db = await getDb();
+  const rows = await db
+    .select({ action: adminAudit.action, n: count() })
+    .from(adminAudit)
+    .groupBy(adminAudit.action)
+    .orderBy(asc(adminAudit.action));
+  return rows.map((r) => r.action);
 }
 
 export interface AiFeatureRow {

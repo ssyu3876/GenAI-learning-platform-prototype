@@ -2,7 +2,7 @@
 // Open / close button for one scenario row in /admin/scenarios.
 import { useActionState } from 'react';
 import { Lock, Unlock } from 'lucide-react';
-import { Notice } from '@/components/ui';
+import { Input, Notice } from '@/components/ui';
 import { SubmitButton } from '@/components/ui/submit-button';
 import { useT } from '@/i18n/client';
 import { setScenarioEnabled } from './actions';
@@ -24,6 +24,16 @@ export function ScenarioToggle({
       <input type="hidden" name="scenarioName" value={name} />
       {/* The action receives the state we want after the click, not the current one. */}
       <input type="hidden" name="enabled" value={closed ? 'true' : 'false'} />
+      <label className="sr-only" htmlFor={`reason-${scenarioKey}`}>
+        {t.admin.scenarios.reasonLabel}
+      </label>
+      <Input
+        id={`reason-${scenarioKey}`}
+        name="reason"
+        maxLength={200}
+        placeholder={t.admin.scenarios.reasonPlaceholder}
+        className="w-44 text-sm"
+      />
       <SubmitButton
         variant={closed ? 'secondary' : 'ghost'}
         size="sm"

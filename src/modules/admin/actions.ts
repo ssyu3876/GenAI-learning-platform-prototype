@@ -2,7 +2,7 @@
 // Admin mutations: change a user's role, approve or reject courses waiting for review, and
 // take a published course offline. Every one of them writes an audit row.
 
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { AUDIT_ACTIONS, recordAudit } from '@/core/audit';
@@ -24,6 +24,13 @@ export async function changeUserRole(_prev: ActionResult | null, formData: FormD
     return { ok: false, error: t.admin.actions.cannotChangeOwnRole };
   }
   const db = await getDb();
+  // Read the old role first: the audit row has to record both ends of the change.
+  const [before] = await db
+    .select({ name: users.name, role: users.role })
+    .from(users)
+    .where(eq(users.id, parsed.data.userId))
+    .limit(1);
+  if (!before) return { ok: false, error: t.admin.actions.userGone };
   const updated = await db
     .update(users)
     .set({ role: parsed.data.role })
@@ -36,7 +43,7 @@ export async function changeUserRole(_prev: ActionResult | null, formData: FormD
     targetType: 'user',
     targetId: parsed.data.userId,
     targetName: updated[0]?.name ?? t.admin.actions.thisUser,
-    detail: { to: parsed.data.role },
+    detail: { from: before.role, to: parsed.data.role },
   });
   revalidatePath('/admin/users');
   revalidatePath('/admin');
@@ -150,4 +157,50 @@ export async function archiveCourse(_prev: ActionResult | null, formData: FormDa
 
 export async function restoreCourse(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   return setCourseOffline(formData, 'restore');
+}
+
+/** How many courses one bulk archive may touch, so a mis-click cannot clear the catalog. */
+const BULK_LIMIT = 50;
+
+const bulkSchema = z.object({
+  reason: z.string().trim().max(200).optional(),
+});
+
+/**
+ * Takes several published courses offline at once, with an optional reason that goes into the
+ * audit row. Rows that are not published are skipped instead of failing the whole batch.
+ */
+export async function archiveCoursesBulk(formData: FormData): Promise<void> {
+  const admin = await requireUser(['admin']);
+  const ids = formData
+    .getAll('courseId')
+    .map((value) => String(value))
+    .filter(Boolean)
+    .slice(0, BULK_LIMIT);
+  if (ids.length === 0) return;
+  const parsed = bulkSchema.safeParse({ reason: formData.get('reason') ?? undefined });
+  if (!parsed.success) return;
+  const reason = parsed.data.reason?.trim();
+
+  const db = await getDb();
+  const updated = await db
+    .update(courses)
+    .set({ status: 'archived', visibility: 'private', updatedAt: new Date() })
+    .where(and(inArray(courses.id, ids), eq(courses.status, 'published')))
+    .returning({ id: courses.id, title: courses.title });
+
+  for (const row of updated) {
+    await recordAudit({
+      actor: admin,
+      action: AUDIT_ACTIONS.courseArchived,
+      targetType: 'course',
+      targetId: row.id,
+      targetName: row.title,
+      detail: reason ? { reason } : undefined,
+    });
+  }
+
+  revalidatePath('/admin/courses');
+  revalidatePath('/admin');
+  revalidatePath('/courses');
 }

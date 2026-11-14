@@ -2,6 +2,7 @@
   "metadata": {
     "overview": "Admin",
     "users": "Users · Admin",
+    "classes": "Classes · Admin",
     "courses": "Courses · Admin",
     "aiUsage": "AI usage · Admin",
     "scenarios": "Scenarios · Admin",
@@ -12,11 +13,18 @@
     "label": "Admin sections",
     "overview": "Overview",
     "users": "Users",
+    "classes": "Classes",
     "courses": "Courses",
     "aiUsage": "AI usage",
     "scenarios": "Scenarios",
     "badges": "Badges",
     "activity": "Activity"
+  },
+  "list": {
+    "showing": "Showing {from}-{to} of {total}",
+    "pageOf": "Page {page} of {pages}",
+    "previous": "Previous",
+    "next": "Next"
   },
   "roles": {
     "learner": "Learner",
@@ -81,6 +89,7 @@
     "subtitle": "Sprout at a glance",
     "admin": "Admin",
     "users": "Users",
+    "classes": "Classes",
     "events7Days": "Events, 7 days",
     "aiCallsToday": "AI calls today",
     "waitingReview": "Waiting review",
@@ -97,7 +106,12 @@
     "matchOne": "{count} match for \"{query}\"",
     "matchMany": "{count} matches for \"{query}\"",
     "newest": "{count} newest users",
-    "showingFirst": " (showing the first {limit})",
+    "exportCsv": "Download CSV",
+    "filterRole": "Filter by role",
+    "anyRole": "Any role",
+    "sortLabel": "Sort by",
+    "sortNewest": "Newest first",
+    "sortActive": "Recently active",
     "never": "Never",
     "roleLabel": "Role for {name}",
     "saveRoleLabel": "Save role for {name}",
@@ -109,9 +123,29 @@
       "role": "Role"
     }
   },
+  "classes": {
+    "title": "Classes",
+    "subtitle": "Every class on the platform, and whether its leaderboard is visible to students.",
+    "emptyTitle": "No classes yet",
+    "emptyBody": "An instructor or an admin creates a class from the Classes page.",
+    "invite": "Invite code",
+    "boardVisible": "Visible to students",
+    "boardHidden": "Hidden from students",
+    "show": "Show to students",
+    "hide": "Hide from students",
+    "columns": {
+      "name": "Class",
+      "instructor": "Instructor",
+      "students": "Students",
+      "courses": "Courses",
+      "board": "Leaderboard",
+      "action": "Change"
+    }
+  },
   "courses": {
     "title": "Courses",
     "subtitle": "Review what people want to publish, and browse everything else.",
+    "exportCsv": "Download CSV",
     "reviewQueue": "Review queue",
     "queueEmptyTitle": "Queue is empty",
     "queueEmptyBody": "Nothing is waiting for review right now.",
@@ -121,11 +155,20 @@
     "preview": "Preview course",
     "allCourses": "All courses",
     "filters": {
+      "search": "Search",
+      "searchPlaceholder": "Title or #code",
       "status": "Status",
       "source": "Source",
       "owner": "Owner",
       "apply": "Apply filters",
       "clear": "Clear"
+    },
+    "bulk": {
+      "reason": "Reason",
+      "reasonPlaceholder": "Why these are coming down",
+      "archive": "Take selected offline",
+      "hint": "Only published courses can be selected.",
+      "select": "Select"
     },
     "emptyTitle": "No courses match",
     "emptyBody": "Try a different filter.",
@@ -203,6 +246,8 @@
     "open": "Open",
     "close": "Close",
     "toggling": "Saving…",
+    "reasonLabel": "Reason for the change, optional",
+    "reasonPlaceholder": "Why, for the log",
     "opened": "{name} is open again.",
     "closed": "{name} is closed. Learners see a notice instead.",
     "closedBadge": "Closed",
@@ -240,10 +285,25 @@
   "activity": {
     "title": "Activity",
     "subtitle": "Changes admins have made. Newest first.",
+    "exportCsv": "Download CSV",
+    "filters": {
+      "action": "Action",
+      "anyAction": "Any action",
+      "actor": "Actor",
+      "actorPlaceholder": "Name",
+      "period": "Period",
+      "anyTime": "Any time",
+      "day": "Last 24 hours",
+      "week": "Last 7 days",
+      "month": "Last 30 days",
+      "apply": "Apply filters",
+      "clear": "Clear"
+    },
     "emptyTitle": "Nothing yet",
     "emptyBody": "Role changes, course reviews and closed scenarios show up here.",
     "actions": {
       "user.role_changed": "made {target} a {role}",
+      "user.role_changed_from": "changed {target} from {from} to {role}",
       "course.approved": "published {target}",
       "course.sent_back": "sent {target} back to its author",
       "course.archived": "took {target} out of the catalog",
@@ -303,7 +363,13 @@
     "userGone": "That user no longer exists.",
     "roleChanged": "{name} is now a {role}.",
     "roleChangedAdmin": "{name} is now an admin.",
-    "roles": {
+    "list": {
+    "showing": "Showing {from}-{to} of {total}",
+    "pageOf": "Page {page} of {pages}",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "roles": {
       "learner": "learner",
       "instructor": "instructor",
       "admin": "admin"
@@ -316,6 +382,9 @@
     "rejected": "{title} went back to its author as a draft.",
     "notPublished": "That course is not published.",
     "notArchived": "That course is not archived.",
+    "badReason": "Keep the reason under 200 characters.",
+    "archivedMany": "{count} courses taken out of the catalog.",
+    "archivedManyWithReason": "{count} courses taken out of the catalog. Reason: {reason}",
     "archived": "{title} is out of the catalog.",
     "restored": "{title} is back as a draft."
   }

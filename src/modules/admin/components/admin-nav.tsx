@@ -6,6 +6,7 @@ import { getT } from '@/i18n';
 export const ADMIN_SECTIONS = [
   { href: '/admin', key: 'overview' },
   { href: '/admin/users', key: 'users' },
+  { href: '/admin/classes', key: 'classes' },
   { href: '/admin/courses', key: 'courses' },
   { href: '/admin/ai-usage', key: 'aiUsage' },
   { href: '/admin/scenarios', key: 'scenarios' },

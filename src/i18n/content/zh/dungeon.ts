@@ -69,6 +69,8 @@ export const DUNGEON_ZH: DungeonContent = {
     emptyShop: '没有可买的东西了。',
     hpFull: '生命已满。',
     itemUsed: '道具已使用。',
+    bagFull: '背包已满。',
+    descending: '继续深入',
     questionNumber: '第',
     charactersSection: '角色',
     talentsSection: '天赋（最多 2 个）',

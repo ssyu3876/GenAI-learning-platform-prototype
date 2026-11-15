@@ -2,6 +2,10 @@
 // run state and calls these functions, so the map rules are testable on their own.
 
 import type { BossDef, DungeonQuestion, MonsterDef, RoomType } from './dungeon';
+import { seededRandom } from './dungeon-meta';
+
+/** Any 0..1 generator. `Math.random` for a fresh run, a seeded one for the daily challenge. */
+export type Rng = () => number;
 
 export const DUNGEON_CONFIG = {
   hp: { easy: 120, normal: 100, hard: 80 } as const,
@@ -39,14 +43,14 @@ const DIRS: Array<[number, number]> = [
   [0, -1],
 ];
 
-function randInt(n: number): number {
-  return Math.floor(Math.random() * n);
+function randInt(n: number, rng: Rng): number {
+  return Math.floor(rng() * n);
 }
 
-function shuffle<T>(items: readonly T[]): T[] {
+function shuffle<T>(items: readonly T[], rng: Rng): T[] {
   const copy = [...items];
   for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = randInt(i + 1);
+    const j = randInt(i + 1, rng);
     [copy[i], copy[j]] = [copy[j]!, copy[i]!];
   }
   return copy;
@@ -72,14 +76,20 @@ function corners(size: number): Array<[number, number]> {
 }
 
 /** A random self-avoiding walk that stays on the grid. */
-function walk(start: [number, number], length: number, used: Set<string>, size: number): Array<[number, number]> {
+function walk(
+  start: [number, number],
+  length: number,
+  used: Set<string>,
+  size: number,
+  rng: Rng,
+): Array<[number, number]> {
   const path: Array<[number, number]> = [start];
   const seen = new Set(used).add(key(...start));
   let [x, y] = start;
   for (let i = 1; i < length; i += 1) {
     const options = neighbors(x, y, size).filter(([nx, ny]) => !seen.has(key(nx, ny)));
     if (!options.length) break;
-    const [nx, ny] = options[randInt(options.length)]!;
+    const [nx, ny] = options[randInt(options.length, rng)]!;
     path.push([nx, ny]);
     seen.add(key(nx, ny));
     x = nx;
@@ -88,20 +98,20 @@ function walk(start: [number, number], length: number, used: Set<string>, size: 
   return path;
 }
 
-function buildTree(): Array<[number, number]> {
+function buildTree(rng: Rng): Array<[number, number]> {
   const size = 4;
-  const start = corners(size)[randInt(4)]!;
-  const main = walk(start, 4 + randInt(3), new Set(), size);
+  const start = corners(size)[randInt(4, rng)]!;
+  const main = walk(start, 4 + randInt(3, rng), new Set(), size, rng);
   if (main.length < 4) return [];
   const cells: Array<[number, number]> = [...main];
   const used = new Set(cells.map(([x, y]) => key(x, y)));
 
   const anchors = main.slice(1, -1);
-  const branchCount = 1 + randInt(3);
+  const branchCount = 1 + randInt(3, rng);
   for (let i = 0; i < branchCount; i += 1) {
     if (!anchors.length) break;
-    const anchor = anchors[randInt(anchors.length)]!;
-    const branch = walk(anchor, 2 + randInt(2), used, size);
+    const anchor = anchors[randInt(anchors.length, rng)]!;
+    const branch = walk(anchor, 2 + randInt(2, rng), used, size, rng);
     for (const cell of branch.slice(1)) {
       if (used.has(key(...cell))) continue;
       cells.push(cell);
@@ -112,8 +122,8 @@ function buildTree(): Array<[number, number]> {
   return cells;
 }
 
-function buildMap(id: string): DungeonMap | null {
-  const cells = buildTree();
+function buildMap(id: string, rng: Rng): DungeonMap | null {
+  const cells = buildTree(rng);
   if (cells.length < 7 || cells.length > 9) return null;
   const byKey = new Map(cells.map(([x, y]) => [key(x, y), { x, y }]));
   const rooms: Room[] = cells.map(([x, y], i) => ({
@@ -159,7 +169,7 @@ function buildMap(id: string): DungeonMap | null {
     [...leaves].sort((a, b) => (dist.get(b.id) ?? 0) - (dist.get(a.id) ?? 0))[0] ?? leaves[0]!;
   boss.type = 'boss';
 
-  const spare = shuffle(leaves.filter((r) => r.id !== boss.id));
+  const spare = shuffle(leaves.filter((r) => r.id !== boss.id), rng);
   if (!spare[0] || !spare[1]) return null;
   spare[0].type = 'chest';
   spare[1].type = 'shop';
@@ -182,7 +192,7 @@ function buildMap(id: string): DungeonMap | null {
   };
 }
 
-/** Three hand-built backups; generation always has something valid to fall back to. */
+/** Hand-built backups; generation always has something valid to fall back to. */
 const TEMPLATES: Array<Array<[number, number, RoomType]>> = [
   [
     [0, 3, 'start'],
@@ -193,6 +203,24 @@ const TEMPLATES: Array<Array<[number, number, RoomType]>> = [
     [2, 0, 'boss'],
     [1, 2, 'chest'],
     [1, 1, 'shop'],
+  ],
+  [
+    [3, 3, 'start'],
+    [2, 3, 'battle'],
+    [2, 2, 'battle'],
+    [1, 2, 'chest'],
+    [1, 1, 'shop'],
+    [2, 1, 'battle'],
+    [2, 0, 'boss'],
+  ],
+  [
+    [0, 0, 'start'],
+    [1, 0, 'battle'],
+    [2, 0, 'battle'],
+    [2, 1, 'battle'],
+    [1, 1, 'shop'],
+    [3, 1, 'chest'],
+    [3, 2, 'boss'],
   ],
 ];
 
@@ -217,22 +245,72 @@ function templateMap(index: number): DungeonMap {
   return { id: `template-${index}`, gridSize: 4, rooms, startRoomId: start.id, bossRoomId: boss.id };
 }
 
+/**
+ * The room graph has narrow constraints (7–9 rooms, 3–5 battles, exactly one degree-3 room,
+ * both ends degree 1), so a single random tree passes only about once in 500 tries. With a
+ * few hundred attempts the fallback template showed up in roughly a quarter of all maps,
+ * which is why every layer of a daily run used to look the same.
+ */
+const MAX_ATTEMPTS = 1500;
+
+/** Room positions and types only: two maps with the same fingerprint play the same. */
+function fingerprint(map: DungeonMap): string {
+  return map.rooms
+    .map((room) => `${room.pos.join(',')}:${room.type}`)
+    .sort()
+    .join(' ');
+}
+
 /** Retries the generator, then falls back to a hand-built map. */
-export function generateMap(id: string): DungeonMap {
-  for (let i = 0; i < 200; i += 1) {
-    const map = buildMap(id);
+export function generateMap(id: string, rng: Rng = Math.random): DungeonMap {
+  for (let i = 0; i < MAX_ATTEMPTS; i += 1) {
+    const map = buildMap(id, rng);
     if (map) return map;
   }
-  return templateMap(Math.abs(id.length) + randInt(TEMPLATES.length));
+  return templateMap(randInt(TEMPLATES.length, rng));
 }
 
 export function generateMapPool(count: number): DungeonMap[] {
-  return Array.from({ length: count }, (_, i) => generateMap(`map-${i}-${randInt(10000)}`));
+  const maps: DungeonMap[] = [];
+  const seen = new Set<string>();
+  for (let i = 0; i < count; i += 1) {
+    let map = generateMap(`map-${i}-${randInt(10000, Math.random)}`);
+    // Layers should not repeat a layout, even when the generator falls back to a template.
+    for (let attempt = 0; attempt < 6 && seen.has(fingerprint(map)); attempt += 1) {
+      map = generateMap(`map-${i}-${randInt(10000, Math.random)}-${attempt}`);
+    }
+    seen.add(fingerprint(map));
+    maps.push(map);
+  }
+  return maps;
 }
 
-/** The hand-built map, exposed for the daily challenge where everyone should see the same layout. */
-export function presetMap(): DungeonMap {
-  return templateMap(0);
+/**
+ * The daily and weekly challenge: everyone gets the same three layouts for a given seed,
+ * and each layer is a different map. Free runs keep using `generateMap`, which is random.
+ */
+export function generateSeededMaps(seed: number, count: number): DungeonMap[] {
+  const maps: DungeonMap[] = [];
+  const seen = new Set<string>();
+  for (let i = 0; i < count; i += 1) {
+    const base = seed + i * 7919;
+    let map = generateMap(`seeded-${seed}-${i}`, seededRandom(base));
+    // A rejected layout has to stay deterministic, so the retry walks the seed forward.
+    for (let attempt = 1; attempt <= 8 && seen.has(fingerprint(map)); attempt += 1) {
+      map = generateMap(`seeded-${seed}-${i}-${attempt}`, seededRandom(base + attempt * 104729));
+    }
+    seen.add(fingerprint(map));
+    maps.push(map);
+  }
+  return maps;
+}
+
+/**
+ * How many items the backpack holds. The `thin` modifier cuts it to two; everything that
+ * adds an item has to go through this instead of `DUNGEON_CONFIG.maxItems`.
+ */
+export function itemCap(modifierId: string | null | undefined): number {
+  return modifierId === 'thin' ? 2 : DUNGEON_CONFIG.maxItems;
 }
 
 export function roomAt(map: DungeonMap, x: number, y: number): Room | undefined {
@@ -271,23 +349,23 @@ export function drawQuestion(
   for (const level of order) {
     const pool = questions.filter((q) => q.difficulty === level && !used.has(q.id));
     if (pool.length) {
-      const question = pool[randInt(pool.length)]!;
+      const question = pool[randInt(pool.length, Math.random)]!;
       return { question, used: new Set(used).add(question.id) };
     }
   }
   // Pool exhausted: reshuffle everything except the question just asked.
   const fresh = questions.filter((q) => !used.has(q.id));
   if (!fresh.length) {
-    const question = questions[randInt(questions.length)]!;
+    const question = questions[randInt(questions.length, Math.random)]!;
     return { question, used: new Set([question.id]) };
   }
-  const question = fresh[randInt(fresh.length)]!;
+  const question = fresh[randInt(fresh.length, Math.random)]!;
   return { question, used: new Set([question.id]) };
 }
 
 export function pickMonster(monsters: MonsterDef[], layer: number): MonsterDef {
   const pool = monsters.filter((m) => m.layers.includes(layer));
-  return pool[randInt(pool.length)] ?? monsters[0]!;
+  return pool[randInt(pool.length, Math.random)] ?? monsters[0]!;
 }
 
 export function bossAt(bosses: BossDef[], layer: number): BossDef {

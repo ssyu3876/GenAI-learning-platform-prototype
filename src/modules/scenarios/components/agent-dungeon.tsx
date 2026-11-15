@@ -23,6 +23,7 @@ import {
   loadMeta,
   runScore,
   saveMeta,
+  seededRandom,
   seededShuffle,
   studyPoints,
   weeklySeed,
@@ -34,10 +35,19 @@ import {
   canMove,
   drawQuestion,
   generateMapPool,
+  generateSeededMaps,
+  itemCap,
   monsterGold,
   pickMonster,
-  presetMap,
 } from '../content/dungeon-engine';
+import {
+  playBlip,
+  playBreak,
+  primeAudio,
+  setAudioSettings,
+  startBgm,
+  stopBgm,
+} from './dungeon-audio';
 
 type Phase = 'menu' | 'map' | 'battle' | 'chest' | 'shop' | 'buff' | 'gameover' | 'victory';
 
@@ -58,42 +68,59 @@ interface BattleState {
   gold: number;
 }
 
-const DIFFS: Array<{ id: Difficulty; labelKey: string }> = [
-  { id: 'easy', labelKey: 'easy' },
+const DIFFS: Array<{ id: Difficulty; labelKey: string }> = [  { id: 'easy', labelKey: 'easy' },
   { id: 'normal', labelKey: 'normal' },
   { id: 'hard', labelKey: 'hard' },
 ];
 
-/** A tiny Web Audio blip; no assets, no dependency. */
-let soundEnabled = true;
-let soundVolume = 0.5;
-
-function blip(frequency: number, duration = 120, type: OscillatorType = 'square') {
-  if (!soundEnabled) return;
-  try {
-    const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!Ctor) return;
-    const ctx = new Ctor();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = type;
-    osc.frequency.value = frequency;
-    gain.gain.setValueAtTime(0.06 * soundVolume, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration / 1000);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + duration / 1000);
-    window.setTimeout(() => void ctx.close(), duration + 120);
-  } catch {
-    // Audio is a bonus; never break the game for it.
-  }
+/** The layer-change wipe: the map is swapped while the screen is covered. */
+interface Descent {
+  layer: number;
+  stage: 'in' | 'out';
 }
 
-function breakSound() {
-  blip(520, 110, 'square');
-  window.setTimeout(() => blip(880, 160, 'sine'), 80);
-  window.setTimeout(() => blip(1320, 240, 'sine'), 200);
+function prefersReducedMotion(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
+
+/** Picks a modifier from the run seed, so a daily run is the same for everyone. */
+function seededModifier(seed: number, layerIndex: number) {
+  const rng = seededRandom(seed + layerIndex * 101);
+  return MODIFIERS[Math.floor(rng() * MODIFIERS.length)] ?? null;
+}
+
+function randomModifier() {
+  return MODIFIERS[Math.floor(Math.random() * MODIFIERS.length)] ?? null;
+}
+
+/**
+ * The map tiles are drawn as raised blocks rather than flat cards: a hard offset shadow gives
+ * the thickness, a wide soft shadow lifts the block off the board, and the two inset shadows
+ * brighten the top edge while darkening the bottom, which is what makes the eye read a cube.
+ */
+const TILE_DEPTH = {
+  backgroundImage:
+    'linear-gradient(180deg, var(--color-paper) 0%, var(--color-cream) 58%, #f0e4cc 100%)',
+  boxShadow: [
+    '0 6px 0 -1px var(--color-line)',
+    '0 14px 22px -12px rgba(43, 34, 64, 0.55)',
+    'inset 0 3px 0 rgba(255, 255, 255, 0.95)',
+    'inset 0 -12px 16px -10px rgba(43, 34, 64, 0.28)',
+  ].join(', '),
+};
+
+/** Same block, lit coral, for the room the player is standing in. */
+const TILE_DEPTH_HERE = {
+  backgroundImage:
+    'linear-gradient(180deg, var(--color-paper) 0%, var(--color-coral-soft) 55%, #f6c3b6 100%)',
+  boxShadow: TILE_DEPTH.boxShadow,
+};
+
+/** Empty cells are holes in the board, so they get the inverse treatment: pressed in. */
+const SLOT_DEPTH = {
+  boxShadow:
+    'inset 0 4px 8px -3px rgba(43, 34, 64, 0.22), inset 0 -2px 0 rgba(255, 255, 255, 0.6)',
+};
 
 export function AgentDungeon({ copy }: { copy: Copy }) {
   const L = copy.labels as unknown as Record<string, string>;
@@ -149,6 +176,17 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
   const reportedRun = useRef(false);
   /** Whether the server accepted the run, shown on the result screen. */
   const [runSave, setRunSave] = useState<'idle' | 'saving' | 'ok' | 'error'>('idle');
+  const [descent, setDescent] = useState<Descent | null>(null);
+  const [runSeed, setRunSeed] = useState(0);
+  const descentTimers = useRef<number[]>([]);
+
+  useEffect(
+    () => () => {
+      descentTimers.current.forEach((id) => window.clearTimeout(id));
+      descentTimers.current = [];
+    },
+    [],
+  );
 
   useEffect(() => {
     const timer = window.setTimeout(() => setMeta(loadMeta()), 0);
@@ -156,9 +194,20 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
   }, []);
 
   useEffect(() => {
-    soundEnabled = soundOn;
-    soundVolume = volume;
+    setAudioSettings({ enabled: soundOn, volume });
   }, [soundOn, volume]);
+
+  // One music bed for the whole run; the mood follows the screen instead of restarting it.
+  useEffect(() => {
+    if (phase === 'menu' || phase === 'victory' || phase === 'gameover') {
+      stopBgm();
+      return;
+    }
+    const fighting = phase === 'battle' ? battle : null;
+    startBgm(fighting ? (fighting.kind === 'boss' ? 'boss' : 'battle') : 'map');
+  }, [phase, battle]);
+
+  useEffect(() => stopBgm, []);
 
   useEffect(() => {
     if ((phase !== 'victory' && phase !== 'gameover') || awarded) return;
@@ -227,6 +276,8 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
   const map = maps[layer];
   const currentRoom: Room | undefined = map?.rooms.find((r) => r.id === roomId);
   const bossCopy = map ? bossAt(copy.bosses as never[], layer + 1) : null;
+  /** Item cap for this run: the `thin` modifier cuts the backpack to two slots. */
+  const cap = itemCap(modifier?.id);
 
   const roomIcon: Record<string, string> = {
     start: '🚪',
@@ -252,14 +303,15 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
   }, [timeLeft, phase, feedback]);
 
   function resetRun(nextDifficulty: Difficulty, options?: { mode?: 'free' | 'daily' | 'weekly'; tier?: number }) {
+    // Called from a click, which is the only moment a browser lets audio start.
+    primeAudio();
     const nextMode = options?.mode ?? mode;
     const nextTier = options?.tier ?? tier;
     const seed = nextMode === 'daily' ? dailySeed() : nextMode === 'weekly' ? weeklySeed() : 0;
-    const nextMaps =
-      nextMode === 'free'
-        ? generateMapPool(3)
-        : [presetMap(), presetMap(), presetMap()];
+    const nextMaps = nextMode === 'free' ? generateMapPool(3) : generateSeededMaps(seed, 3);
     const bank = nextMode === 'free' ? copy.questions : seededShuffle(copy.questions, seed);
+    const nextModifier = nextMode === 'free' ? randomModifier() : seededModifier(seed, 0);
+    setRunSeed(seed);
     setQuestionBank(bank);
     setDifficulty(nextDifficulty);
     setMode(nextMode);
@@ -285,7 +337,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     if (talents.includes('heal')) startItems.push('heal');
     if (talents.includes('scan')) startItems.push('eliminate');
     if (talents.includes('items2')) startItems.push('triple', 'shield');
-    setItems(startItems);
+    setItems(startItems.slice(0, itemCap(nextModifier?.id)));
     setBuffs(new Set());
     setUsed(new Set());
     setStats({ correct: 0, wrong: 0, gold: 0, kills: 0, layers: 0 });
@@ -296,10 +348,11 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     setMaxStreak(0);
     setFlawlessLayers(0);
     setDamageThisLayer(false);
-    setModifier(MODIFIERS[Math.floor(Math.random() * MODIFIERS.length)] ?? null);
+    setModifier(nextModifier);
     setAwarded(false);
     reportedRun.current = false;
     setRunSave('idle');
+    setDescent(null);
     const start = nextMaps[0]!.rooms.find((r) => r.id === nextMaps[0]!.startRoomId)!;
     setRoomId(start.id);
     setVisited(new Set([start.id]));
@@ -440,7 +493,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
         if (next.confidence === 0) {
           next.broken = true;
           setBreakFx(true);
-          breakSound();
+          playBreak();
           window.setTimeout(() => setBreakFx(false), 900);
         }
       } else {
@@ -454,7 +507,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
       }
       setBattle(next);
       setEnemyHit(true);
-      blip(660, 90, 'square');
+      playBlip(660, 90, 'square');
       window.setTimeout(() => setEnemyHit(false), 360);
     } else {
       setStats((s) => ({ ...s, wrong: s.wrong + 1 }));
@@ -471,7 +524,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
       }
       const nextHp = Math.max(0, hp - damage);
       setHp(nextHp);
-      blip(160, 220, 'sawtooth');
+      playBlip(160, 220, 'sawtooth');
       setDamageFlash(true);
       window.setTimeout(() => setDamageFlash(false), 460);
       if (nextHp <= 0) {
@@ -536,7 +589,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     if (!damageThisLayer) setFlawlessLayers((n) => n + 1);
     if (battle.elite) {
       const drop = copy.items[Math.floor(Math.random() * copy.items.length)]!;
-      if (items.length < DUNGEON_CONFIG.maxItems) setItems((prev) => [...prev, drop.id]);
+      if (items.length < itemCap(modifier?.id)) setItems((prev) => [...prev, drop.id]);
     }
     if (battle.kind === 'boss') {
       if (layer < 2) {
@@ -553,9 +606,10 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     }
   }
 
-  function nextLayer() {
-    const next = layer + 1;
+  /** Swaps in the next layer's map. The wipe below calls this while the screen is covered. */
+  function applyLayer(next: number) {
     if (!maps[next]) return;
+    const nextModifier = mode === 'free' ? randomModifier() : seededModifier(runSeed, next);
     setLayer(next);
     const start = maps[next]!.rooms.find((r) => r.id === maps[next]!.startRoomId)!;
     setRoomId(start.id);
@@ -564,10 +618,29 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     setBattle(null);
     setQuestion(null);
     setFeedback(null);
-    setModifier(MODIFIERS[Math.floor(Math.random() * MODIFIERS.length)] ?? null);
+    setModifier(nextModifier);
+    // `thin` can turn up on a later layer, so the backpack has to shrink with it.
+    setItems((prev) => prev.slice(0, itemCap(nextModifier?.id)));
     setDamageThisLayer(false);
     setBreakFx(false);
     setPhase('map');
+  }
+
+  /** Covers the screen, swaps the map while it is dark, then lifts. */
+  function beginDescent(next: number) {
+    if (!maps[next]) return;
+    if (prefersReducedMotion()) {
+      applyLayer(next);
+      return;
+    }
+    setDescent({ layer: next, stage: 'in' });
+    const swap = window.setTimeout(() => {
+      applyLayer(next);
+      setDescent({ layer: next, stage: 'out' });
+      const lift = window.setTimeout(() => setDescent(null), 520);
+      descentTimers.current.push(lift);
+    }, 600);
+    descentTimers.current.push(swap);
   }
 
   function grantBuff(id: string) {
@@ -580,14 +653,14 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
     if (id === 'pack' || id === 'pack2') {
       const count = id === 'pack' ? 2 : 3;
       const extra = [...copy.items].sort(() => Math.random() - 0.5).slice(0, count);
-      setItems((prev) => [...prev, ...extra.map((i) => i.id)].slice(0, DUNGEON_CONFIG.maxItems + 3));
+      setItems((prev) => [...prev, ...extra.map((i) => i.id)].slice(0, itemCap(modifier?.id)));
     }
   }
 
   function chooseBuff(buff: Copy['buffs'][number]) {
     grantBuff(buff.id);
     setBuffChoices([]);
-    nextLayer();
+    beginDescent(layer + 1);
   }
 
   function applyItem(id: string) {
@@ -636,7 +709,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
         setBattle({ ...battle, hp: Math.max(0, battle.hp - 2) });
       }
       setEnemyHit(true);
-      blip(440, 120, 'triangle');
+      playBlip(440, 120, 'triangle');
       window.setTimeout(() => setEnemyHit(false), 360);
     }
     setItems((prev) => {
@@ -702,6 +775,35 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
       return next;
     });
   }
+
+  // The layer wipe. It stays mounted across the buff → map swap, so the fade out continues
+  // from the fade in instead of starting again.
+  const descentOverlay = descent ? (
+    <div
+      className="pointer-events-none fixed inset-0 z-[70] grid place-items-center bg-ink text-cream transition-opacity duration-500"
+      style={{ opacity: descent.stage === 'in' ? 1 : 0 }}
+      aria-hidden
+    >
+      <div
+        className="text-center transition-transform duration-700 ease-out"
+        style={{ transform: descent.stage === 'in' ? 'scale(1)' : 'scale(1.08)' }}
+      >
+        <div className="relative mx-auto grid h-24 w-24 place-items-center">
+          <span className="absolute inset-0 animate-float-soft rounded-full border-2 border-cream/20" />
+          <span className="absolute inset-3 rounded-full border-2 border-butter/40" />
+          <span className="absolute inset-7 rounded-full bg-butter/25 blur-md" />
+          <MapIcon className="relative h-8 w-8 text-butter" aria-hidden />
+        </div>
+        <p className="mt-4 text-sm font-bold tracking-[0.3em] text-cream/60 uppercase">{L.descending}</p>
+        <p className="mt-1 font-display text-5xl font-bold">
+          {L.layer} {descent.layer + 1}/3
+        </p>
+        <p className="mt-1 text-sm text-cream/70">
+          {L.boss}: {bossAt(copy.bosses as never[], descent.layer + 1).name}
+        </p>
+      </div>
+    </div>
+  ) : null;
 
   if (phase === 'menu') {
     return (
@@ -1039,7 +1141,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-bold text-ink-soft uppercase">{L.backpack}</span>
+          <span className="text-sm font-bold text-ink-soft uppercase">{L.backpack} {items.length}/{cap}</span>
           {items.length === 0 ? <span className="text-sm text-ink-soft">—</span> : null}
           {Array.from(new Set(items)).map((id) => {
             const item = copy.items.find((i) => i.id === id)!;
@@ -1164,16 +1266,18 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
               </div>
               <Button
                 size="sm"
-                disabled={gold < item.price[difficulty === 'easy' ? 0 : difficulty === 'normal' ? 1 : 2]}
+                disabled={gold < item.price[difficulty === 'easy' ? 0 : difficulty === 'normal' ? 1 : 2] || items.length >= cap}
                 onClick={() => {
                   const cost = item.price[difficulty === 'easy' ? 0 : difficulty === 'normal' ? 1 : 2];
-                  if (gold < cost) return;
+                  if (gold < cost || items.length >= cap) return;
                   setGold((g) => g - cost);
-                  setItems((prev) => [...prev, item.id].slice(0, DUNGEON_CONFIG.maxItems));
+                  setItems((prev) => [...prev, item.id].slice(0, cap));
                   setShopStock((s) => ({ ...s, items: s.items.filter((i) => i.id !== item.id) }));
                 }}
               >
-                {L.buy} {item.price[difficulty === 'easy' ? 0 : difficulty === 'normal' ? 1 : 2]}
+                {items.length >= cap
+                  ? L.bagFull
+                  : `${L.buy} ${item.price[difficulty === 'easy' ? 0 : difficulty === 'normal' ? 1 : 2]}`}
               </Button>
             </div>
           ))}
@@ -1194,6 +1298,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
   if (phase === 'buff') {
     return (
       <div className="mx-auto flex max-w-xl flex-col gap-3">
+        {descentOverlay}
         <div className="rounded-blob border-2 border-line bg-butter-soft p-4 shadow-sticker-sm">
           <p className="font-display text-xl font-bold">{L.buffTitle}</p>
           <p className="text-base text-ink-soft">{L.buffBody}</p>
@@ -1220,6 +1325,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
   if (!map) return null;
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_18rem]">
+      {descentOverlay}
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2 rounded-blob border-2 border-line bg-ink px-3 py-2 text-cream shadow-sticker-sm">
           <MapIcon className="h-4 w-4" aria-hidden />
@@ -1250,7 +1356,14 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
               const x = i % 4;
               const y = Math.floor(i / 4);
               const room = map.rooms.find((r) => r.pos[0] === x && r.pos[1] === y);
-              if (!room) return <div key={i} className="aspect-square rounded-lg border-2 border-dashed border-line/20" />;
+              if (!room)
+                return (
+                  <div
+                    key={i}
+                    style={SLOT_DEPTH}
+                    className="aspect-square rounded-lg border-2 border-dashed border-line/20 bg-cream/40"
+                  />
+                );
               const here = room.id === roomId;
               const reachable = availableRooms.has(room.id);
               const isCleared = cleared.has(room.id);
@@ -1261,25 +1374,27 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
                   type="button"
                   disabled={!reachable && !here}
                   onClick={() => moveTo(room)}
-                  style={{
-                    boxShadow:
-                      '0 5px 0 0 var(--color-line), inset 0 2px 0 0 rgba(255,255,255,.55)',
-                  }}
+                  style={here ? TILE_DEPTH_HERE : TILE_DEPTH}
                   className={cn(
-                    'relative grid aspect-square place-items-center rounded-lg border-2 border-line bg-gradient-to-b from-paper to-cream text-2xl transition-all duration-150 hover:-translate-y-0.5',
-                    here ? 'border-coral from-coral-soft to-paper shadow-sticker' : '',
-                    reachable && !here && 'animate-pulse border-butter from-butter-soft to-paper',
+                    'relative grid aspect-square place-items-center rounded-lg border-2 border-line text-2xl transition-all duration-150',
+                    'hover:-translate-y-1 active:translate-y-0.5',
+                    reachable && !here && 'animate-pulse border-butter',
                     isCleared && 'opacity-60',
                   )}
                 >
-                  <span className={cn(known ? 'text-3xl' : 'text-lg font-bold text-ink-soft')}>
+                  <span
+                    className={cn(
+                      'relative z-10 drop-shadow-[0_1px_0_rgba(255,255,255,.8)]',
+                      known ? 'text-3xl' : 'text-lg font-bold text-ink-soft',
+                    )}
+                  >
                     {known ? roomIcon[room.type] : '?'}
                   </span>
                   {isCleared ? (
-                    <span className="absolute right-1 bottom-1 text-sm text-mint-deep">✓</span>
+                    <span className="absolute right-1 bottom-1 z-10 text-sm text-mint-deep">✓</span>
                   ) : null}
                   {reachable && !here ? (
-                    <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-coral" aria-hidden />
+                    <span className="absolute -top-1 -right-1 z-10 h-2 w-2 rounded-full bg-coral" aria-hidden />
                   ) : null}
                 </button>
               );
@@ -1324,7 +1439,7 @@ export function AgentDungeon({ copy }: { copy: Copy }) {
           </div>
         </div>
         <div className="rounded-blob border-2 border-line bg-paper p-3 shadow-sticker-sm">
-          <p className="text-sm font-bold text-ink-soft uppercase">{L.backpack}</p>
+          <p className="text-sm font-bold text-ink-soft uppercase">{L.backpack} {items.length}/{cap}</p>
           <div className="mt-2 flex flex-wrap gap-1">
             {items.length === 0 ? <span className="text-sm text-ink-soft">—</span> : null}
             {Array.from(new Set(items)).map((id) => {

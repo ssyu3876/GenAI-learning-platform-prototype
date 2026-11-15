@@ -1,9 +1,11 @@
 // /admin/courses: the review queue (pending_review) and a filterable list of every course.
 import Form from 'next/form';
 import Link from 'next/link';
+import { Download } from 'lucide-react';
 import { z } from 'zod';
-import { Badge, Button, buttonClasses, Card, CardBody, CardHeader, EmptyState, PageHeader, Select, type Tint } from '@/components/ui';
+import { Badge, Button, buttonClasses, Card, CardBody, CardHeader, EmptyState, Input, PageHeader, Select, type Tint } from '@/components/ui';
 import { fmt, getT, plural } from '@/i18n';
+import { archiveCoursesBulk } from '../actions';
 import { AdminNav } from '../components/admin-nav';
 import { CourseStatusButtons } from '../components/course-status-buttons';
 import { ReviewButtons } from '../components/review-buttons';
@@ -28,16 +30,30 @@ const filtersSchema = z.object({
   status: z.enum(COURSE_STATUSES).optional().catch(undefined),
   source: z.enum(COURSE_SOURCES).optional().catch(undefined),
   ownerId: z.string().max(40).optional().catch(undefined),
+  q: z.string().trim().max(60).optional().catch(undefined),
 });
 
 export function parseCourseFilters(params: Record<string, string | string[] | undefined>): CourseFilters {
-  return filtersSchema.parse({ status: first(params.status), source: first(params.source), ownerId: first(params.owner) });
+  return filtersSchema.parse({
+    status: first(params.status),
+    source: first(params.source),
+    ownerId: first(params.owner),
+    q: first(params.q),
+  });
 }
 
 export async function AdminCoursesPage({ filters }: { filters: CourseFilters }) {
   const { locale, t } = await getT();
   const [pending, all, owners] = await Promise.all([listPendingCourses(), listCourses(filters), listCourseOwners()]);
-  const isFiltered = Boolean(filters.status || filters.source || filters.ownerId);
+  const isFiltered = Boolean(filters.status || filters.source || filters.ownerId || filters.q);
+  const exportParams = new URLSearchParams();
+  if (filters.status) exportParams.set('status', filters.status);
+  if (filters.source) exportParams.set('source', filters.source);
+  if (filters.ownerId) exportParams.set('owner', filters.ownerId);
+  if (filters.q) exportParams.set('q', filters.q);
+  const exportHref = exportParams.size
+    ? `/admin/courses/export?${exportParams.toString()}`
+    : '/admin/courses/export';
   const dateLocale = locale === 'zh' ? 'zh-CN' : 'en-GB';
   const dateLabel = (d: Date) => d.toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', year: 'numeric' });
   const VISIBILITY_LABEL = {
@@ -95,10 +111,19 @@ export async function AdminCoursesPage({ filters }: { filters: CourseFilters }) 
       </section>
 
       <section aria-labelledby="all-heading">
-        <h2 id="all-heading" className="mb-3 text-xl font-bold">
-          {t.admin.courses.allCourses}
-        </h2>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 id="all-heading" className="text-xl font-bold">
+            {t.admin.courses.allCourses}
+          </h2>
+          <Link href={exportHref} className={buttonClasses('ghost')} prefetch={false}>
+            <Download className="h-4 w-4" aria-hidden /> {t.admin.courses.exportCsv}
+          </Link>
+        </div>
         <Form action="/admin/courses" className="mb-4 flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-1">
+            <label htmlFor="f-search" className="font-display text-sm font-semibold">{t.admin.courses.filters.search}</label>
+            <Input id="f-search" name="q" type="search" defaultValue={filters.q ?? ''} placeholder={t.admin.courses.filters.searchPlaceholder} className="w-56" />
+          </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="f-status" className="font-display text-sm font-semibold">{t.admin.courses.filters.status}</label>
             <Select id="f-status" name="status" defaultValue={filters.status ?? ''} className="w-44">
@@ -136,10 +161,32 @@ export async function AdminCoursesPage({ filters }: { filters: CourseFilters }) 
             {all.length === 0 ? (
               <EmptyState title={t.admin.courses.emptyTitle}>{t.admin.courses.emptyBody}</EmptyState>
             ) : (
-              <div className="overflow-x-auto">
+              <form action={archiveCoursesBulk}>
+                <div className="mb-3 flex flex-wrap items-end gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="bulk-reason" className="font-display text-sm font-semibold">
+                      {t.admin.courses.bulk.reason}
+                    </label>
+                    <Input
+                      id="bulk-reason"
+                      name="reason"
+                      maxLength={200}
+                      placeholder={t.admin.courses.bulk.reasonPlaceholder}
+                      className="w-64"
+                    />
+                  </div>
+                  <Button type="submit" variant="secondary" size="sm">
+                    {t.admin.courses.bulk.archive}
+                  </Button>
+                  <p className="text-xs text-ink-soft">{t.admin.courses.bulk.hint}</p>
+                </div>
+                <div className="overflow-x-auto">
                 <table className="w-full min-w-[44rem] text-left text-sm">
                   <thead className="font-display text-ink-soft">
                     <tr>
+                      <th scope="col" className="w-8 py-2 pr-3">
+                        <span className="sr-only">{t.admin.courses.bulk.select}</span>
+                      </th>
                       <th scope="col" className="py-2 pr-3">{t.admin.courses.columns.course}</th>
                       <th scope="col" className="py-2 pr-3">{t.admin.courses.columns.status}</th>
                       <th scope="col" className="py-2 pr-3">{t.admin.courses.columns.visibility}</th>
@@ -153,11 +200,22 @@ export async function AdminCoursesPage({ filters }: { filters: CourseFilters }) 
                   <tbody>
                     {all.map((c) => (
                       <tr key={c.id} className="border-t-2 border-line/15">
+                        <td className="py-2.5 pr-3 align-top">
+                          <input
+                            type="checkbox"
+                            name="courseId"
+                            value={c.id}
+                            disabled={c.status !== 'published'}
+                            aria-label={`${t.admin.courses.bulk.select} ${c.title}`}
+                            className="mt-1 h-4 w-4 accent-ink"
+                          />
+                        </td>
                         <td className="py-2.5 pr-3">
                           <Link href={`/courses/${c.slug}`} className="flex items-center gap-2 font-semibold hover:underline">
                             <span aria-hidden>{c.emoji}</span>
                             {c.title}
                           </Link>
+                          {c.code ? <div className="text-xs text-ink-soft">#{c.code}</div> : null}
                         </td>
                         <td className="py-2.5 pr-3"><Badge tint={STATUS_TINT[c.status]}>{t.admin.status[c.status]}</Badge></td>
                         <td className="py-2.5 pr-3 capitalize">
@@ -173,8 +231,9 @@ export async function AdminCoursesPage({ filters }: { filters: CourseFilters }) 
                       </tr>
                     ))}
                   </tbody>
-                </table>
-              </div>
+                  </table>
+                </div>
+              </form>
             )}
           </CardBody>
         </Card>

@@ -35,6 +35,7 @@ export async function savePrefs(_prev: ActionResult | null, formData: FormData):
     .values({ userId: user.id, ...parsed.data })
     .onConflictDoUpdate({ target: leaderboardPrefs.userId, set: { ...parsed.data, updatedAt: new Date() } });
   revalidatePath('/leaderboard');
+  revalidatePath('/admin/classes');
   return { ok: true, message: 'Saved. Your classmates will see the change right away.' };
 }
 
@@ -51,4 +52,5 @@ export async function setClassBoard(formData: FormData): Promise<void> {
     .values({ classId, enabled })
     .onConflictDoUpdate({ target: leaderboardClassSettings.classId, set: { enabled, updatedAt: new Date() } });
   revalidatePath('/leaderboard');
+  revalidatePath('/admin/classes');
 }

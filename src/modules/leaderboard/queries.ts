@@ -63,7 +63,7 @@ export async function getScopes(user: SessionUser): Promise<Scope[]> {
         label: r.name,
         isClass: true,
         enabled: enabled.get(r.id) ?? true,
-        canManage: user.role === 'admin' || r.instructorId === user.id,
+        canManage: r.instructorId === user.id,
       })),
       { id: 'global', label: 'Everyone', isClass: false, enabled: true, canManage: false },
     ],

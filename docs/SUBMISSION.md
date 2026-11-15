@@ -8,7 +8,8 @@ A learning platform prototype with three roles: learners, instructors and admins
 |---|---|
 | **Deployed app** | https://gen-ai-learning-platform-prototype.vercel.app |
 | **GitHub repository** (public) | https://github.com/ssyu3876/GenAI-learning-platform-prototype |
-| **Overview video** (7 min) | https://youtu.be/v0ja5RL-34c |
+| **Overview video** (7 min) | [Watch on YouTube](https://youtu.be/v0ja5RL-34c) |
+| **Video preview** | ![overview](video-cover.png) |
 | **Final report** (PDF) | [report.pdf](report.pdf) |
 | **Presentation slides** (PDF) | slides.pdf |
 

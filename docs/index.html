@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sprout · COMP5241 Project</title>
+<style>
+  :root {
+    --cream: #faf6ef;
+    --ink: #2b2b2b;
+    --muted: #6f675c;
+    --amber: #e8a33d;
+    --line: #ded5c7;
+    --card: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font: 16px/1.65 "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    padding: 48px 20px 80px;
+  }
+  main { max-width: 860px; margin: 0 auto; }
+  header { border-bottom: 3px solid var(--amber); padding-bottom: 22px; margin-bottom: 34px; }
+  h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -0.5px; }
+  .sub { color: var(--muted); font-size: 15px; }
+  h2 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--amber); margin: 38px 0 12px;
+  }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px 24px; margin-bottom: 18px; }
+  section h2 { margin-top: 0; }
+  p { margin: 0 0 12px; }
+  a { color: #1f6feb; }
+  ul { margin: 0; padding-left: 20px; }
+  li { margin-bottom: 6px; }
+  code { background: #f1ece2; padding: 2px 6px; border-radius: 5px; font-size: 14px; }
+  .accounts { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  .accounts th, .accounts td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .accounts th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .6px; }
+  .accounts tr:last-child td { border-bottom: none; }
+  video { width: 100%; border-radius: 10px; border: 1px solid var(--line); background: #000; }
+  .note { color: var(--muted); font-size: 14px; }
+  footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 40px; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+  .button {
+    display: inline-block; padding: 10px 18px; border-radius: 999px; text-decoration: none;
+    background: var(--ink); color: var(--cream); font-weight: 600; font-size: 14px;
+  }
+  .button.alt { background: var(--amber); color: var(--ink); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Sprout</h1>
+    <div class="sub">
+      A learning platform with three roles: learners, instructors and admins.<br />
+      COMP5241 course project · group 19 · November 2026
+    </div>
+  </header>
+
+  <section>
+    <h2>Links</h2>
+    <div class="buttons">
+      <a class="button alt" href="https://gen-ai-learning-platform-prototype.vercel.app" target="_blank" rel="noopener">Open the app</a>
+      <a class="button" href="https://github.com/ssyu3876/GenAI-learning-platform-prototype" target="_blank" rel="noopener">GitHub repository</a>
+    </div>
+    <p class="note" style="margin-top:14px">
+      The app is deployed on Vercel. The repository is public and holds the full source, the database
+      migrations and the seed data.
+    </p>
+  </section>
+
+  <section>
+    <h2>Log in and try it</h2>
+    <p>Every demo account uses the same password: <code>sprout123</code></p>
+    <table class="accounts">
+      <tr><th>Role</th><th>Email</th><th>What you can do</th></tr>
+      <tr><td>Learner</td><td><code>learner@demo.dev</code></td><td>Courses, activities, review, scenarios, badges</td></tr>
+      <tr><td>Instructor</td><td><code>instructor@demo.dev</code></td><td>Studio, classes, assignments, tutor insights</td></tr>
+      <tr><td>Admin</td><td><code>admin@demo.dev</code></td><td>The eight page admin console</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Overview video</h2>
+    <p class="note">Seven minutes. The first half is the learner side, the second half is the instructor and admin side.</p>
+    <video controls preload="metadata" src="demo-overview.mp4">
+      Your browser cannot play the video. <a href="demo-overview.mp4">Download it instead.</a>
+    </video>
+  </section>
+
+  <section>
+    <h2>Report and slides</h2>
+    <ul>
+      <li><a href="report.pdf" target="_blank" rel="noopener">Final report (PDF)</a></li>
+      <li><a href="slides.pdf" target="_blank" rel="noopener">Presentation slides (PDF)</a></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Where to start</h2>
+    <ul>
+      <li>Learner: <b>Home</b> shows the three step path. <b>Scenarios</b> holds four longer exercises.</li>
+      <li>Instructor: <b>Studio</b> creates courses, <b>Classes</b> organises students, <b>Tutor insights</b> shows what the class asks Pip.</li>
+      <li>Admin: <b>Admin</b> opens the console. Try approving a course, or closing a scenario.</li>
+    </ul>
+    <p class="note" style="margin-top:12px">
+      Demo data: 6 courses, 1 class of 19 accounts, and 881 learning events. Screenshots in the report
+      come from the same demo data.
+    </p>
+  </section>
+
+  <footer>COMP5241 · Sprout project group</footer>
+</main>
+</body>
+</html>

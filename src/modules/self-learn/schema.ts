@@ -24,6 +24,21 @@ export const courseSeries = pgTable(
   (t) => [index('course_series_user_idx').on(t.userId, t.createdAt)],
 );
 
+/** A saved "Learn anything" configuration, used when the learner rejects existing matches. */
+export const courseRequestDrafts = pgTable(
+  'course_request_drafts',
+  {
+    id: text().primaryKey(),
+    userId: text()
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    request: jsonb().$type<GenerationRequest>().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('course_request_drafts_user_idx').on(t.userId, t.createdAt)],
+);
+
 /**
  * One learner request. The outline is stored before the full course exists, so the learner
  * can review/adjust it without spending the expensive generation tokens twice.
@@ -37,6 +52,9 @@ export const courseGenerationSessions = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     request: jsonb().$type<GenerationRequest>().notNull(),
     outline: jsonb().$type<CourseOutline>().notNull(),
+    origin: text().$type<'standard' | 'extension'>().notNull().default('standard'),
+    sourceLessonIds: jsonb().$type<string[]>().notNull().default([]),
+    confusion: text().notNull().default(''),
     status: text().$type<GenerationStatus>().notNull().default('outline'),
     courseId: text().references(() => courses.id, { onDelete: 'set null' }),
     seriesId: text().references(() => courseSeries.id, { onDelete: 'set null' }),

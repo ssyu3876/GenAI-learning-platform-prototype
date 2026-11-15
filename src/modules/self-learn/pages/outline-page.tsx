@@ -8,7 +8,7 @@ import { getT } from '@/i18n';
 import { fmt } from '@/i18n/format';
 import { approveOutline, regenerateOutline } from '../actions';
 import { getGenerationSession } from '../queries';
-import { totalMinutesForRequest } from '../types';
+import { formatsForRequest, totalMinutesForRequest } from '../types';
 
 const ACTIVITY_KEYS = {
   quiz: 'quiz',
@@ -36,8 +36,13 @@ export async function OutlinePage({
   if (session.status === 'generating' && session.courseId) redirect(`/create/generate/${session.id}`);
 
   const { outline, request } = session;
-  const backHref = session.seriesId ? `/create/series/${session.seriesId}` : '/create';
-  const backLabel = session.seriesId ? t.selfLearn.series.backSeries : t.selfLearn.outline.back;
+  const isExtension = session.origin === 'extension';
+  const backHref = session.seriesId
+    ? `/create/series/${session.seriesId}`
+    : isExtension
+      ? '/create/extension'
+      : '/create';
+  const backLabel = session.seriesId ? t.selfLearn.series.backSeries : isExtension ? t.selfLearn.extension.title : t.selfLearn.outline.back;
   const timeLabel =
     request.timeBudget === 'custom'
       ? `${Number((totalMinutesForRequest(request) / 60).toFixed(1))} ${t.selfLearn.form.customHoursUnit}`
@@ -56,12 +61,22 @@ export async function OutlinePage({
       </div>
 
       {error === 'limit' ? <Notice tone="error">{t.selfLearn.outline.limitError}</Notice> : null}
+      {isExtension ? (
+        <Notice tone="success">
+          {t.selfLearn.extension.outlineSource.replace('{count}', String(session.sourceLessonIds.length))}
+        </Notice>
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
         <Badge tint="mint">
           <Clock className="h-3 w-3" /> {timeLabel}
         </Badge>
         <Badge tint="paper">{t.selfLearn.outline.lessonsCount.replace('{count}', String(outline.lessons.length))}</Badge>
+        {formatsForRequest(request).map((format) => (
+          <Badge key={format} tint="sky">
+            {t.selfLearn.form.formatChoices[format]}
+          </Badge>
+        ))}
         <Badge tint="paper">{t.selfLearn.form.styleOptions[request.explanationStyle]}</Badge>
         <Badge tint="paper">{t.selfLearn.form.formatOptions[request.contentFormat]}</Badge>
         <Badge tint="paper">{t.selfLearn.form.assessmentOptions[request.assessment]}</Badge>

@@ -5,6 +5,7 @@ import { getDb } from '@/core/db/client';
 import {
   activities,
   activityAttempts,
+  activityAttemptHistory,
   enrollments,
   learningEvents,
   lessonCompletions,
@@ -98,6 +99,15 @@ export async function completeActivity(input: {
 
   const gained = xpDelta(existing?.xpEarned ?? 0, score, activity.xpReward);
   const bestScore = Math.max(existing?.bestScore ?? 0, score);
+
+  await db.insert(activityAttemptHistory).values({
+    id: newId('attemptHistory'),
+    userId: input.userId,
+    activityId: activity.id,
+    courseId: activity.courseId,
+    score,
+    detail: input.detail ?? null,
+  });
 
   if (existing) {
     await db

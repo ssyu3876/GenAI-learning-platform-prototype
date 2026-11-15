@@ -239,5 +239,9 @@
     "newLeaf": "A new leaf appears at {xp} XP.",
     "allLeaves": "Every leaf is out. Nicely done.",
     "withinReach": "Within reach"
+  },
+  "notifications": {
+    "badgeSubject": "You earned a new badge",
+    "badgeBody": "You earned “{name}”."
   }
 }

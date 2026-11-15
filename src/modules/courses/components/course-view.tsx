@@ -8,7 +8,9 @@ import { SubmitButton } from '@/components/ui/submit-button';
 import { getT } from '@/i18n';
 import type { Translations } from '@/i18n';
 import { startCourse } from '../actions';
+import { getCourseSocial } from '../library';
 import { getCoursePageData } from '../queries';
+import { CourseEngagement } from './course-engagement';
 import { courseDuration } from './duration';
 
 const ACTIVITY_LABEL_KEY: Record<string, keyof Translations['activities']['types']> = {
@@ -25,19 +27,26 @@ const ACTIVITY_LABEL_KEY: Record<string, keyof Translations['activities']['types
 // routing, not for display: learners should see one course, not a catalog split in two.
 const EDITION_TAGS = new Set(['student', 'professional', '学生', '职场']);
 
-export async function CourseView({ user, slug }: { user: SessionUser; slug: string }) {
+export async function CourseView({ user, slug, from }: { user: SessionUser; slug: string; from?: string }) {
   const { t } = await getT();
 
   const data = await getCoursePageData(user, slug);
   if (!data) notFound();
   const { outline, completed, best, enrollment, nextLesson } = data;
+  const fromCreate = from === 'create';
+  const social = await getCourseSocial(user, outline);
+  const isPublic = outline.status === 'published' && outline.visibility === 'public';
+  const isOwner = outline.ownerId === user.id;
   const tint = asTint(outline.color);
   const percent = outline.lessons.length ? Math.round((completed.size / outline.lessons.length) * 100) : 0;
 
   return (
     <div className="flex flex-col gap-6">
-      <Link href="/courses" className="flex items-center gap-1 text-sm font-semibold text-ink-soft hover:text-ink">
-        <ChevronLeft className="h-4 w-4" /> {t.courses.page.allCourses}
+      <Link
+        href={fromCreate ? '/create' : '/courses'}
+        className="flex items-center gap-1 text-sm font-semibold text-ink-soft hover:text-ink"
+      >
+        <ChevronLeft className="h-4 w-4" /> {fromCreate ? t.courses.page.backToCreate : t.courses.page.allCourses}
       </Link>
 
       <Card tint={tint} className="p-6 sm:p-8">
@@ -92,6 +101,10 @@ export async function CourseView({ user, slug }: { user: SessionUser; slug: stri
           </div>
         </div>
       </Card>
+
+      {isPublic || isOwner ? (
+        <CourseEngagement courseId={outline.id} social={social} isPublic={isPublic} isOwner={isOwner} />
+      ) : null}
 
       <section>
         <h2 className="mb-3 text-xl font-bold">{t.courses.page.lessonsTitle}</h2>

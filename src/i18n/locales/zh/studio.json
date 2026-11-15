@@ -280,6 +280,14 @@
     "publishClassMessage": "已发布到你的班级。把它分配给一个班级，学习者就能找到它。",
     "submitPublicMessage": "已提交审核。管理员批准后，它就会出现在公开课程库里。",
     "unpublishMessage": "已退回草稿。学习者暂时无法打开它。",
-    "archiveMessage": "已归档。学习者看不到它，课程库里也不会显示。"
+    "archiveMessage": "已归档。学习者看不到它，课程库里也不会显示。",
+    "courseOfflineMailSubject": "你的课程已下架",
+    "courseOfflineMailBody": "《{title}》已被取消发布或归档，学习者现在无法打开它。",
+    "courseOfflineStudentMailSubject": "一门课程已下架",
+    "courseOfflineStudentMailBody": "《{title}》已下架，你暂时无法继续学习。",
+    "reviewQueueMailSubject": "待审核课程：{title}",
+    "reviewQueueMailBody": "《{title}》已提交公开课程审核。",
+    "courseUpdatedMailSubject": "课程已更新：{title}",
+    "courseUpdatedMailBody": "你班级中的《{title}》已更新。"
   }
 }

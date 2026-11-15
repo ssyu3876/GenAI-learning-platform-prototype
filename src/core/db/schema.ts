@@ -33,6 +33,26 @@ export const users = pgTable('users', {
   lastActiveAt: timestamp({ withTimezone: true }),
 });
 
+/** Inbox notification switches; a missing row means every category is enabled. */
+export const mailPreferences = pgTable('mail_preferences', {
+  userId: text()
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  courseApproved: boolean().notNull().default(true),
+  classAssigned: boolean().notNull().default(true),
+  badgeEarned: boolean().notNull().default(true),
+  courseOffline: boolean().notNull().default(true),
+  assignmentPublished: boolean().notNull().default(true),
+  assignmentReminder: boolean().notNull().default(true),
+  assignmentSubmitted: boolean().notNull().default(true),
+  assignmentGraded: boolean().notNull().default(true),
+  classStudentJoined: boolean().notNull().default(true),
+  courseUpdated: boolean().notNull().default(true),
+  reviewQueue: boolean().notNull().default(true),
+  courseShared: boolean().notNull().default(true),
+  updatedAt: updatedAt(),
+});
+
 export type LearnerBackground = 'non_cs' | 'cs_student' | 'cs_graduate' | 'other';
 export type LearnerGoal = 'understand' | 'career' | 'build' | 'ai_skills';
 export type LearnerTrack = 'explorer' | 'builder';
@@ -168,6 +188,30 @@ export const activityAttempts = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [uniqueIndex().on(t.userId, t.activityId), index().on(t.courseId)],
+);
+
+/** Append-only copy of every activity attempt, used for historical learning analytics. */
+export const activityAttemptHistory = pgTable(
+  'activity_attempt_history',
+  {
+    id: text().primaryKey(),
+    userId: text()
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    activityId: text()
+      .notNull()
+      .references(() => activities.id, { onDelete: 'cascade' }),
+    courseId: text()
+      .notNull()
+      .references(() => courses.id, { onDelete: 'cascade' }),
+    score: integer().notNull(),
+    detail: jsonb().$type<unknown>(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('activity_attempt_history_user_idx').on(t.userId, t.createdAt),
+    index('activity_attempt_history_activity_idx').on(t.activityId, t.createdAt),
+  ],
 );
 
 export const lessonCompletions = pgTable(

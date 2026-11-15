@@ -1,9 +1,12 @@
 import { and, count, eq, isNotNull, sql, sum } from 'drizzle-orm';
 import { getDb } from '@/core/db/client';
+import { sendSystemMail } from '@/core/mail/notify';
 import { activityAttempts, enrollments, learningEvents, lessonCompletions, users } from '@/core/db/schema';
 import { getUserStats } from '@/core/progress/service';
 import { computeStreak, getLevel } from '@/core/progress/xp';
+import { getLocale, getTranslations, fmt } from '@/i18n';
 import { BADGES, type BadgeDef, type BadgeGroup, type BadgeId, type BadgeSnapshot } from './definitions';
+import { badgeAwards } from './schema';
 
 /** The fields a `scenario.completed` payload can carry. Older rows only have the first two. */
 export interface ScenarioPayload {
@@ -129,6 +132,58 @@ export function evaluateBadges(snapshot: BadgeSnapshot): BadgeState[] {
   });
 }
 
+const BADGE_BASELINE = '__initialized__';
+
+async function syncBadgeNotifications(userId: string, badges: BadgeState[]): Promise<void> {
+  const db = await getDb();
+  const known = await db
+    .select({ badgeId: badgeAwards.badgeId })
+    .from(badgeAwards)
+    .where(eq(badgeAwards.userId, userId));
+  const knownIds = new Set(known.map((row) => row.badgeId));
+  const earned = badges.filter((badge) => badge.earned).map((badge) => badge.def.id);
+
+  // Existing learners should not receive one mail per historical badge on the first load.
+  if (!knownIds.has(BADGE_BASELINE)) {
+    await db
+      .insert(badgeAwards)
+      .values([...earned.map((badgeId) => ({ userId, badgeId })), { userId, badgeId: BADGE_BASELINE }])
+      .onConflictDoNothing();
+    return;
+  }
+
+  const newBadges = earned.filter((badgeId) => !knownIds.has(badgeId));
+  if (newBadges.length === 0) return;
+  const [systemUser] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.role, 'admin'))
+    .limit(1);
+  if (!systemUser || systemUser.id === userId) return;
+  const locale = await getLocale();
+  const t = getTranslations(locale);
+  for (const badgeId of newBadges) {
+    const inserted = await db
+      .insert(badgeAwards)
+      .values({ userId, badgeId })
+      .onConflictDoNothing()
+      .returning({ badgeId: badgeAwards.badgeId });
+    if (inserted.length === 0) continue;
+    const badge = t.achievements.badges[badgeId as BadgeId];
+    try {
+      await sendSystemMail({
+        senderId: systemUser.id,
+        recipientId: userId,
+        event: 'badgeEarned',
+        subject: t.achievements.notifications.badgeSubject,
+        body: fmt(t.achievements.notifications.badgeBody, { name: badge.name }),
+      });
+    } catch (error) {
+      console.warn('[mail] could not send badge notification', error);
+    }
+  }
+}
+
 export async function getBadgeStates(userId: string): Promise<{
   snapshot: BadgeSnapshot;
   badges: BadgeState[];
@@ -136,6 +191,7 @@ export async function getBadgeStates(userId: string): Promise<{
 }> {
   const snapshot = await getBadgeSnapshot(userId);
   const badges = evaluateBadges(snapshot);
+  await syncBadgeNotifications(userId, badges);
   return { snapshot, badges, earnedCount: badges.filter((b) => b.earned).length };
 }
 

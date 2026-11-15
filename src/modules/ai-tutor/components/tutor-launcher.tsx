@@ -3,14 +3,24 @@
 // On a lesson page it sends the lesson id so Pip answers about that lesson.
 
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, RotateCcw, Send, Square, X } from 'lucide-react';
+import { BookOpen, BookOpenCheck, History, PlayCircle, RotateCcw, Send, Square, X } from 'lucide-react';
 import type { ShellAddonProps } from '@/core/types';
 import { Button, cn, Markdown, Pip } from '@/components/ui';
 import { useT } from '@/i18n/client';
 import { fmt } from '@/i18n/format';
-import { getTutorLessonTitle } from '../actions';
-import { lessonIdFromPath, MAX_HISTORY, MAX_MESSAGE_CHARS } from '../shared';
+import { getTutorLessonTitle, getTutorRecommendationsAction, trackTutorRecommendation } from '../actions';
+import type { TutorRecommendation } from '../recommendations';
+import {
+  lessonIdFromPath,
+  MAX_HISTORY,
+  MAX_MESSAGE_CHARS,
+  TUTOR_CONTEXT_EVENT,
+  TUTOR_RESUME_EVENT,
+  type TutorResumePayload,
+  type TutorReviewHandoff,
+} from '../shared';
 
 interface ChatItem {
   id: number;
@@ -29,11 +39,23 @@ export function TutorLauncher({ user }: ShellAddonProps) {
     t.aiTutor.quickPrompts.quiz,
     t.aiTutor.quickPrompts.atWork,
   ] as const;
+  const REVIEW_PROMPTS = [
+    t.aiTutor.reviewPrompts.whyWrong,
+    t.aiTutor.reviewPrompts.simpler,
+    t.aiTutor.reviewPrompts.practice,
+    t.aiTutor.reviewPrompts.related,
+  ] as const;
 
   const pathname = usePathname();
   const lessonId = lessonIdFromPath(pathname);
 
   const [open, setOpen] = useState(false);
+  const [handoff, setHandoff] = useState<TutorReviewHandoff | null>(null);
+  const [handoffPath, setHandoffPath] = useState<string | null>(null);
+  const [resumed, setResumed] = useState<TutorResumePayload | null>(null);
+  const [resumedPath, setResumedPath] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [recommendations, setRecommendations] = useState<TutorRecommendation[]>([]);
   const [messages, setMessages] = useState<ChatItem[]>([]);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
@@ -48,7 +70,64 @@ export function TutorLauncher({ user }: ShellAddonProps) {
   const logRef = useRef<HTMLDivElement>(null);
   const wasOpen = useRef(false);
 
-  const lessonTitle = lessonId ? titles[lessonId] : undefined;
+  const activeHandoff = handoffPath === pathname ? handoff : null;
+  const activeResumed = resumedPath === pathname ? resumed : null;
+  const activeLessonId = activeHandoff?.lessonId ?? activeResumed?.lessonId ?? lessonId;
+  const lessonTitle = activeHandoff?.lessonTitle ?? activeResumed?.lessonTitle ?? (lessonId ? titles[lessonId] : undefined);
+  const recommendationLessonId = activeLessonId;
+
+  useEffect(() => {
+    if (!open || !recommendationLessonId) return;
+    let cancelled = false;
+    getTutorRecommendationsAction(recommendationLessonId)
+      .then((result) => {
+        if (!cancelled) setRecommendations(result.ok ? (result.data ?? []) : []);
+      })
+      .catch(() => {
+        if (!cancelled) setRecommendations([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, recommendationLessonId]);
+
+  // The review page dispatches this event; no review module import is needed.
+  useEffect(() => {
+    const onContext = (event: Event) => {
+      const detail = (event as CustomEvent<TutorReviewHandoff>).detail;
+      if (!detail || detail.entry !== 'review' || !detail.lessonId || !detail.question) return;
+      abortRef.current?.abort();
+      setHandoff(detail);
+      setHandoffPath(pathname);
+      setSessionId(null);
+      setMessages([]);
+      setError(null);
+      setOpen(true);
+    };
+    window.addEventListener(TUTOR_CONTEXT_EVENT, onContext);
+    return () => window.removeEventListener(TUTOR_CONTEXT_EVENT, onContext);
+  }, [pathname]);
+
+  // A history item can re-open its persisted thread in the same panel.
+  useEffect(() => {
+    const onResume = (event: Event) => {
+      const detail = (event as CustomEvent<TutorResumePayload>).detail;
+      if (!detail?.sessionId || !Array.isArray(detail.messages)) return;
+      abortRef.current?.abort();
+      setSessionId(detail.sessionId);
+      setResumed(detail);
+      setResumedPath(pathname);
+      setHandoff(null);
+      setHandoffPath(null);
+      setMessages(detail.messages.map((message, index) => ({ id: index + 1, role: message.role, content: message.content })));
+      nextId.current = detail.messages.length + 1;
+      setRecommendations([]);
+      setError(null);
+      setOpen(true);
+    };
+    window.addEventListener(TUTOR_RESUME_EVENT, onResume);
+    return () => window.removeEventListener(TUTOR_RESUME_EVENT, onResume);
+  }, [pathname]);
 
   // Fetch the lesson title for the context chip once per lesson, only when the panel is open.
   useEffect(() => {
@@ -103,6 +182,21 @@ export function TutorLauncher({ user }: ShellAddonProps) {
 
     const controller = new AbortController();
     abortRef.current = controller;
+    const reviewContext = activeHandoff
+      ? {
+          entry: 'review' as const,
+          lessonId: activeHandoff.lessonId,
+          question: activeHandoff.question,
+          wrongAnswerIndex: activeHandoff.wrongAnswerIndex,
+        }
+      : activeResumed?.entry === 'review' && activeResumed.lessonId && activeResumed.reviewQuestion
+        ? {
+            entry: 'review' as const,
+            lessonId: activeResumed.lessonId,
+            question: activeResumed.reviewQuestion,
+            wrongAnswerIndex: null,
+          }
+        : null;
     // Keep an API error message; use the localized message for network or parse failures.
     let serverError: string | null = null;
     const appendToReply = (chunk: string) =>
@@ -112,7 +206,12 @@ export function TutorLauncher({ user }: ShellAddonProps) {
       const res = await fetch('/api/tutor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: history, ...(lessonId ? { lessonId } : {}) }),
+        body: JSON.stringify({
+          messages: history,
+          ...(activeLessonId ? { lessonId: activeLessonId } : {}),
+          ...(sessionId ? { sessionId } : {}),
+          ...(reviewContext ? { context: reviewContext } : {}),
+        }),
         signal: controller.signal,
       });
       if (!res.ok || !res.body) {
@@ -120,6 +219,8 @@ export function TutorLauncher({ user }: ShellAddonProps) {
         serverError = data?.error ?? t.aiTutor.errors.noAnswer;
         throw new Error(serverError);
       }
+      const nextSessionId = res.headers.get('x-tutor-session');
+      if (nextSessionId) setSessionId(nextSessionId);
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       for (;;) {
@@ -155,6 +256,11 @@ export function TutorLauncher({ user }: ShellAddonProps) {
     abortRef.current?.abort();
     setMessages([]);
     setError(null);
+    setHandoff(null);
+    setHandoffPath(null);
+    setResumed(null);
+    setResumedPath(null);
+    setSessionId(null);
     inputRef.current?.focus();
   }
 
@@ -227,6 +333,16 @@ export function TutorLauncher({ user }: ShellAddonProps) {
               </h2>
               <p className="truncate text-xs text-ink-soft">{t.aiTutor.subtitle}</p>
             </div>
+            {user.role === 'learner' ? (
+              <Link
+                href="/tutor/history"
+                onClick={() => setOpen(false)}
+                aria-label={t.aiTutor.history}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-soft hover:bg-paper hover:text-ink"
+              >
+                <History className="h-4 w-4" aria-hidden />
+              </Link>
+            ) : null}
             <Button variant="ghost" size="sm" onClick={resetChat} disabled={messages.length === 0} aria-label={t.aiTutor.newChat}>
               <RotateCcw className="h-4 w-4" aria-hidden />
             </Button>
@@ -235,15 +351,83 @@ export function TutorLauncher({ user }: ShellAddonProps) {
             </Button>
           </header>
 
-          {lessonId && lessonTitle !== null ? (
+          {activeHandoff || (activeLessonId && lessonTitle !== null) ? (
             <div className="border-b-2 border-line/20 px-3 py-2">
               <span className="inline-flex max-w-full items-center gap-1.5 rounded-pill border-2 border-line bg-butter-soft px-2.5 py-0.5 text-xs font-semibold">
                 <BookOpen className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 <span className="truncate">
-                  {fmt(t.aiTutor.context.talkingAbout, { title: lessonTitle ?? t.aiTutor.context.thisLesson })}
+                  {activeHandoff
+                    ? fmt(t.aiTutor.context.reviewing, { title: activeHandoff.lessonTitle })
+                    : activeResumed?.entry === 'review'
+                      ? fmt(t.aiTutor.context.reviewing, { title: activeResumed.lessonTitle })
+                      : fmt(t.aiTutor.context.talkingAbout, { title: lessonTitle ?? t.aiTutor.context.thisLesson })}
                 </span>
               </span>
+              {activeHandoff ? (
+                <p className="mt-1 truncate text-xs text-ink-soft">{activeHandoff.question}</p>
+              ) : activeResumed?.entry === 'review' && activeResumed.reviewQuestion ? (
+                <p className="mt-1 truncate text-xs text-ink-soft">{activeResumed.reviewQuestion}</p>
+              ) : null}
             </div>
+          ) : null}
+
+          {activeResumed ? (
+            <p className="flex items-center gap-1 border-b-2 border-line/20 px-3 py-1.5 text-[0.7rem] font-semibold text-ink-soft">
+              <History className="h-3 w-3" aria-hidden /> {t.aiTutor.historyPage.resumed}
+            </p>
+          ) : null}
+
+          {recommendations.length > 0 ? (
+            <details className="border-b-2 border-line/20 px-3 py-2">
+              <summary className="cursor-pointer text-xs font-bold text-ink-soft">
+                {t.aiTutor.recommendations.title}
+              </summary>
+              <ul className="mt-2 flex flex-col gap-1.5">
+                {recommendations.map((item) => {
+                  const content = (
+                    <>
+                      <span className="mt-0.5 shrink-0">
+                        {item.kind === 'video' ? (
+                          <PlayCircle className="h-4 w-4" aria-hidden />
+                        ) : (
+                          <BookOpen className="h-4 w-4" aria-hidden />
+                        )}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-semibold">{item.title}</span>
+                        <span className="block truncate text-xs text-ink-soft">{item.subtitle}</span>
+                      </span>
+                    </>
+                  );
+                  return (
+                    <li key={`${item.kind}-${item.href}`}>
+                      {item.kind === 'video' ? (
+                        <a
+                          href={item.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => void trackTutorRecommendation({ kind: item.kind, title: item.title, href: item.href, courseId: item.courseId })}
+                          className="flex gap-2 rounded-lg p-1 hover:bg-butter-soft"
+                        >
+                          {content}
+                        </a>
+                      ) : (
+                        <Link
+                          href={item.href}
+                          onClick={() => {
+                            void trackTutorRecommendation({ kind: item.kind, title: item.title, href: item.href, courseId: item.courseId });
+                            setOpen(false);
+                          }}
+                          className="flex gap-2 rounded-lg p-1 hover:bg-butter-soft"
+                        >
+                          {content}
+                        </Link>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </details>
           ) : null}
 
           <div ref={logRef} role="log" aria-label={t.aiTutor.conversation} className="flex-1 overflow-y-auto px-3 py-3">
@@ -254,10 +438,21 @@ export function TutorLauncher({ user }: ShellAddonProps) {
                 </span>
                 <p className="font-display text-lg font-bold">{fmt(t.aiTutor.empty.greeting, { name: firstName })}</p>
                 <p className="text-sm text-ink-soft">
-                  {lessonId
-                    ? t.aiTutor.empty.lessonHint
-                    : t.aiTutor.empty.generalHint}
+                  {activeHandoff
+                    ? t.aiTutor.empty.reviewHint
+                    : lessonId
+                      ? t.aiTutor.empty.lessonHint
+                      : t.aiTutor.empty.generalHint}
                 </p>
+                {user.role === 'learner' ? (
+                  <Link
+                    href="/create/extension"
+                    onClick={() => setOpen(false)}
+                    className="mt-1 inline-flex items-center gap-1.5 rounded-pill border-2 border-line bg-butter-soft px-3 py-1.5 text-sm font-semibold hover:bg-butter"
+                  >
+                    <BookOpenCheck className="h-4 w-4" aria-hidden /> {t.aiTutor.extensionCta}
+                  </Link>
+                ) : null}
               </div>
             ) : (
               <ul className="flex flex-col gap-3">
@@ -302,7 +497,7 @@ export function TutorLauncher({ user }: ShellAddonProps) {
             ) : null}
             {showChips ? (
               <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1" aria-label={t.aiTutor.quickPrompts.label} role="group">
-                {QUICK_PROMPTS.map((q) => (
+                {(activeHandoff ? REVIEW_PROMPTS : QUICK_PROMPTS).map((q) => (
                   <button
                     key={q}
                     type="button"
@@ -340,6 +535,15 @@ export function TutorLauncher({ user }: ShellAddonProps) {
               )}
             </form>
             <p className="mt-1.5 text-[0.7rem] text-ink-soft">{t.aiTutor.composer.hint}</p>
+            {user.role === 'learner' ? (
+              <Link
+                href="/create/extension"
+                onClick={() => setOpen(false)}
+                className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-coral-deep underline underline-offset-2"
+              >
+                <BookOpenCheck className="h-3.5 w-3.5" aria-hidden /> {t.aiTutor.extensionCta}
+              </Link>
+            ) : null}
           </div>
         </section>
       ) : null}

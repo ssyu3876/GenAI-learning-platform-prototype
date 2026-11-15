@@ -41,6 +41,8 @@
     "notQuite": "Not quite.",
     "quizPicked": "In the quiz you picked {letter}. ",
     "masteredNote": "Mastered. This card leaves your review list.",
+    "askPip": "Ask Pip about this",
+    "askPipHint": "Pip will use this question, your answer and the lesson as context.",
     "backIn": "Back {time}.",
     "checkError": "Could not check that answer. Check your connection and try again.",
     "nextCard": "Next card",

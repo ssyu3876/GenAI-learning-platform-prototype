@@ -1,22 +1,34 @@
 'use server';
 
-import { and, eq } from 'drizzle-orm';
+import { and, count, eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 import { z } from 'zod';
 import type { ActivityOutcome } from '@/core/activity-types';
 import { generateText } from '@/core/ai/client';
 import { requireUser } from '@/core/auth/session';
 import { canViewCourse, getCourseById, getLessonWithActivities } from '@/core/content/queries';
 import { getDb } from '@/core/db/client';
-import { activities, lessons } from '@/core/db/schema';
+import { activities, courses, lessonCompletions, lessons, users } from '@/core/db/schema';
+import { sendSystemMail } from '@/core/mail/notify';
+import { newId } from '@/core/ids';
 import { completeActivity, completeLesson, enrollInCourse } from '@/core/progress/service';
-import type { SessionUser } from '@/core/types';
-import { getT } from '@/i18n';
+import type { ActionResult, SessionUser } from '@/core/types';
+import { fmt, getT } from '@/i18n';
 import { outputLanguage } from '@/i18n/ai';
 import { localizeContent } from '@/i18n/content';
 import { getActivityType } from '@/registry/activities';
-import { ADAPTATION_VARIANTS, lessonAdaptations, type AdaptationVariant } from './schema';
+import {
+  ADAPTATION_VARIANTS,
+  courseFavorites,
+  courseLikes,
+  courseReviews,
+  courseShares,
+  courseViews,
+  lessonAdaptations,
+  type AdaptationVariant,
+} from './schema';
 
 async function courseForLesson(user: SessionUser, lessonId: string) {
   const db = await getDb();
@@ -158,4 +170,167 @@ export async function adaptLesson(lessonId: string, variant: AdaptationVariant):
     await db.insert(lessonAdaptations).values({ lessonId, variant, content: text }).onConflictDoNothing();
   }
   return { content: text, mocked };
+}
+
+async function publicCourse(courseId: string) {
+  const course = await getCourseById(courseId);
+  if (!course || course.status !== 'published' || course.visibility !== 'public') throw new Error('Course is not public');
+  return course;
+}
+
+function revalidateLibrary(slug?: string) {
+  revalidatePath('/library');
+  revalidatePath('/home');
+  if (slug) revalidatePath(`/courses/${slug}`);
+}
+
+export async function toggleCourseLike(formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const courseId = z.string().parse(formData.get('courseId'));
+  const course = await publicCourse(courseId);
+  const db = await getDb();
+  const [existing] = await db
+    .select({ courseId: courseLikes.courseId })
+    .from(courseLikes)
+    .where(and(eq(courseLikes.courseId, courseId), eq(courseLikes.userId, user.id)))
+    .limit(1);
+  if (existing) {
+    await db.delete(courseLikes).where(and(eq(courseLikes.courseId, courseId), eq(courseLikes.userId, user.id)));
+  } else {
+    await db.insert(courseLikes).values({ courseId, userId: user.id }).onConflictDoNothing();
+  }
+  revalidateLibrary(course.slug);
+}
+
+export async function toggleCourseFavorite(formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const courseId = z.string().parse(formData.get('courseId'));
+  const course = await publicCourse(courseId);
+  const db = await getDb();
+  const [existing] = await db
+    .select({ courseId: courseFavorites.courseId })
+    .from(courseFavorites)
+    .where(and(eq(courseFavorites.courseId, courseId), eq(courseFavorites.userId, user.id)))
+    .limit(1);
+  if (existing) {
+    await db.delete(courseFavorites).where(and(eq(courseFavorites.courseId, courseId), eq(courseFavorites.userId, user.id)));
+  } else {
+    await db.insert(courseFavorites).values({ courseId, userId: user.id }).onConflictDoNothing();
+  }
+  revalidateLibrary(course.slug);
+}
+
+export async function recordCourseView(courseId: string): Promise<void> {
+  const user = await requireUser();
+  try {
+    const course = await publicCourse(courseId);
+    const db = await getDb();
+    await db
+      .insert(courseViews)
+      .values({ courseId, userId: user.id })
+      .onConflictDoUpdate({
+        target: [courseViews.courseId, courseViews.userId],
+        set: { viewedAt: new Date() },
+      });
+    revalidateLibrary(course.slug);
+  } catch {
+    // A view is best effort; a missing/private course should not break the page.
+  }
+}
+
+const shareSchema = z.object({
+  courseId: z.string().min(1),
+  recipientId: z.string().min(1),
+});
+
+export async function shareCourse(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const user = await requireUser();
+  const { t } = await getT();
+  const parsed = shareSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, error: t.courses.library.shareError };
+  const course = await publicCourse(parsed.data.courseId);
+  if (parsed.data.recipientId === user.id) return { ok: false, error: t.courses.library.shareSelf };
+  const db = await getDb();
+  const [recipient] = await db
+    .select({ id: users.id, name: users.name })
+    .from(users)
+    .where(eq(users.id, parsed.data.recipientId))
+    .limit(1);
+  if (!recipient) return { ok: false, error: t.courses.library.shareError };
+  await db.insert(courseShares).values({
+    id: newId('share'),
+    courseId: course.id,
+    senderId: user.id,
+    recipientId: recipient.id,
+  });
+  const requestHeaders = await headers();
+  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '');
+  const forwardedHost = requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host') ?? 'localhost:3000';
+  const forwardedProto = requestHeaders.get('x-forwarded-proto') ?? (forwardedHost.startsWith('localhost') ? 'http' : 'https');
+  const courseUrl = `${configuredUrl ?? `${forwardedProto}://${forwardedHost}`}/courses/${course.slug}`;
+  try {
+    await sendSystemMail({
+      senderId: user.id,
+      recipientId: recipient.id,
+      event: 'courseShared',
+      subject: fmt(t.courses.library.shareMailSubject, { title: course.title }),
+      body: fmt(t.courses.library.shareMailBody, {
+        sender: user.name,
+        title: course.title,
+        link: courseUrl,
+      }),
+    });
+  } catch (error) {
+    console.warn('[courses] could not send share notification', error);
+  }
+  revalidateLibrary(course.slug);
+  return { ok: true, message: fmt(t.courses.library.shareSent, { name: recipient.name }) };
+}
+
+const reviewSchema = z.object({
+  courseId: z.string().min(1),
+  rating: z.coerce.number().int().min(1).max(5),
+  body: z.string().trim().max(800).default(''),
+});
+
+export async function submitCourseReview(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const user = await requireUser();
+  const { t } = await getT();
+  const parsed = reviewSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, error: t.courses.library.reviewError };
+  const course = await publicCourse(parsed.data.courseId);
+  const db = await getDb();
+  const [completed] = await db
+    .select({ n: count() })
+    .from(lessonCompletions)
+    .where(and(eq(lessonCompletions.userId, user.id), eq(lessonCompletions.courseId, course.id)));
+  if (Number(completed?.n ?? 0) === 0) return { ok: false, error: t.courses.library.reviewNeedsLesson };
+  const values = {
+    rating: parsed.data.rating,
+    body: parsed.data.body,
+    updatedAt: new Date(),
+  };
+  await db
+    .insert(courseReviews)
+    .values({ id: newId('review'), courseId: course.id, userId: user.id, ...values })
+    .onConflictDoUpdate({ target: [courseReviews.courseId, courseReviews.userId], set: values });
+  revalidateLibrary(course.slug);
+  return { ok: true, message: t.courses.library.reviewSaved };
+}
+
+/** Authors can move their own course into the public library without an admin round-trip. */
+export async function publishCourseToLibrary(formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const courseId = z.string().parse(formData.get('courseId'));
+  const course = await getCourseById(courseId);
+  if (!course) redirect('/courses');
+  if (course.ownerId !== user.id && user.role !== 'admin') throw new Error('Not allowed');
+  const db = await getDb();
+  await db
+    .update(courses)
+    .set({ status: 'published', visibility: 'public', updatedAt: new Date() })
+    .where(eq(courses.id, course.id));
+  revalidateLibrary(course.slug);
+  revalidatePath('/courses');
+  redirect(`/courses/${course.slug}`);
 }

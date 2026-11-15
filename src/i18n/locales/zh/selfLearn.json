@@ -9,6 +9,50 @@
   "lessonCountOne": "{count} 节课",
   "lessonCountMany": "{count} 节课",
   "reviseCourse": "反馈 / 修改",
+  "matches": {
+    "title": "公开课程库中可能已有匹配课程",
+    "subtitle": "Pip 找到了与你需求接近的课程。可以先查看，也可以先保存为草稿，稍后再决定是否生成。",
+    "view": "查看课程",
+    "none": "先保存草稿，稍后继续",
+    "saving": "保存中…",
+    "keepEditing": "暂不保存，返回修改",
+    "noneHint": "暂时不会生成课程。保存后可从“学习任何内容”页再次打开或修改。"
+  },
+  "draft": {
+    "title": "课程草稿",
+    "subtitle": "配置已保存，准备好后再生成课程。",
+    "topic": "你想学的内容",
+    "savedNote": "草稿会保留主题、时间、风格和课程形式；大纲生成后会自动移除。",
+    "continue": "生成课程大纲",
+    "generating": "生成中…",
+    "refill": "重新填写",
+    "listTitle": "已保存的课程草稿",
+    "listSubtitle": "可以从这里继续，也可以先修改配置再生成。"
+  },
+  "extension": {
+    "title": "从已学内容继续",
+    "subtitle": "选择 1–3 个已完成的章节，告诉 Pip 还有哪里不清楚，生成一门简短的拓展课程。",
+    "chapters": "已完成的章节",
+    "chaptersHint": "这里只显示你学完的章节，最多选 3 个。",
+    "selectedHint": "已选 {count} / 3",
+    "confusion": "还有哪里不清楚？",
+    "confusionHint": "选填。可以具体说说是哪一个点没想通。",
+    "confusionPlaceholder": "例如：我理解“委派”是什么意思，但还是判断不好哪些事情应该留给人。",
+    "goal": "你希望这门课解决什么？",
+    "goalRemedial": "补强薄弱点",
+    "goalDeepen": "深入理解",
+    "goalProject": "做一个小型应用",
+    "duration": "时间预算",
+    "minutes": "分钟",
+    "generate": "规划拓展课程",
+    "generating": "Pip 正在规划…",
+    "outlineNote": "你会先看到课程大纲，确认后才会生成完整课程。",
+    "outlineSource": "这份大纲基于 {count} 个已完成章节和你的疑惑点。",
+    "intro": "这门课会基于下面这些章节，不会简单重复，而是把已有概念连接起来并继续拓展。",
+    "empty": "还没有已完成的章节",
+    "emptyHint": "先完成至少一节课，再回来基于它生成拓展课程。",
+    "browseCourses": "浏览课程"
+  },
   "form": {
     "topicLabel": "你想学什么？",
     "topicPlaceholder": "例如：股票市场是怎么运作的",
@@ -60,14 +104,23 @@
       "theory": "先讲原理",
       "cases": "用案例带出概念"
     },
-    "formatLabel": "你更喜欢什么形式？",
-    "formatHint": "决定阅读、幻灯片和互动练习的比例。",
+    "formatLabel": "课程希望采用什么形式？",
+    "formatHint": "可选一个或多个。按住 Shift 点击可连续选择。",
     "formatOptions": {
       "read": "图文阅读",
       "slides": "语音幻灯片",
       "interactive": "互动练习",
       "mixed": "混合"
     },
+    "formatChoices": {
+      "text": "图文类",
+      "slides": "PPT 讲解",
+      "video": "嵌入视频",
+      "interactive": "互动练习"
+    },
+    "formatSelected": "已选择 {count} 种形式",
+    "formatEmpty": "请至少选择一种形式。",
+    "formatShiftHint": "按住 Shift 点击可连续选择",
     "assessmentLabel": "你想怎么检验学习效果？",
     "assessmentHint": "Pip 会按这个选择活动和最终检验方式。",
     "assessmentOptions": {

@@ -1,17 +1,27 @@
 // /create: "Learn anything" form plus the learner's own generated courses.
 import Link from 'next/link';
 import type { SessionUser } from '@/core/types';
-import { asTint, Card, EmptyState, PageHeader, PipSays, TINT_SOLID } from '@/components/ui';
+import { asTint, Badge, Card, EmptyState, PageHeader, PipSays, TINT_SOLID } from '@/components/ui';
 import { getT } from '@/i18n';
 import { fmt } from '@/i18n/format';
 import { localizeContent } from '@/i18n/content';
 import { LearnForm } from '../components/learn-form';
-import { countCoursesGeneratedToday, DAILY_COURSE_LIMIT, listOwnCourses } from '../queries';
+import {
+  countCoursesGeneratedToday,
+  DAILY_COURSE_LIMIT,
+  listCourseRequestDrafts,
+  listOwnCourses,
+} from '../queries';
+import { formatsForRequest, totalMinutesForRequest } from '../types';
 
 export async function CreatePage({ user }: { user: SessionUser }) {
   const { locale, t } = await getT();
 
-  const [rawOwn, today] = await Promise.all([listOwnCourses(user.id), countCoursesGeneratedToday(user.id)]);
+  const [rawOwn, today, drafts] = await Promise.all([
+    listOwnCourses(user.id),
+    countCoursesGeneratedToday(user.id),
+    listCourseRequestDrafts(user.id),
+  ]);
   const own = localizeContent(rawOwn, locale);
   const firstName = user.name.split(' ')[0] ?? user.name;
   const whatCuriousText = fmt(t.selfLearn.curiousAbout, { name: firstName });
@@ -28,6 +38,39 @@ export async function CreatePage({ user }: { user: SessionUser }) {
       </PipSays>
 
       <LearnForm remaining={Math.max(DAILY_COURSE_LIMIT - today, 0)} limit={DAILY_COURSE_LIMIT} />
+
+      {drafts.length > 0 ? (
+        <section aria-labelledby="saved-drafts" className="flex flex-col gap-3">
+          <div>
+            <h2 id="saved-drafts" className="text-xl font-bold">{t.selfLearn.draft.listTitle}</h2>
+            <p className="text-sm text-ink-soft">{t.selfLearn.draft.listSubtitle}</p>
+          </div>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {drafts.map((draft) => (
+              <li key={draft.id}>
+                <Link href={`/create/draft/${draft.id}`} className="block">
+                  <Card className="flex h-full flex-col gap-2 p-4">
+                    <p className="font-display text-lg font-bold">{draft.request.topic}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      <Badge tint="paper">
+                        {draft.request.timeBudget === 'custom'
+                          ? `${Math.round((totalMinutesForRequest(draft.request) / 60) * 10) / 10} ${t.selfLearn.form.customHoursUnit}`
+                          : t.selfLearn.form.timeOptions[draft.request.timeBudget]}
+                      </Badge>
+                      {formatsForRequest(draft.request).map((format) => (
+                        <Badge key={format} tint="sky">
+                          {t.selfLearn.form.formatChoices[format]}
+                        </Badge>
+                      ))}
+                    </div>
+                    <p className="text-sm font-semibold text-coral-deep">{t.selfLearn.draft.continue} →</p>
+                  </Card>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section aria-labelledby="own-courses" className="flex flex-col gap-3">
         <h2 id="own-courses" className="text-xl font-bold">

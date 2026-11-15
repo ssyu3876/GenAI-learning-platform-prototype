@@ -25,6 +25,8 @@ interface BaseOptions {
   tier?: ModelTier;
   temperature?: number;
   maxTokens?: number;
+  /** Provider timeout; interactive features can fall back to mock sooner. */
+  timeoutMs?: number;
 }
 
 const config = () => ({
@@ -104,7 +106,7 @@ async function callProvider(
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.apiKey}` },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(90_000),
+    signal: AbortSignal.timeout(opts.timeoutMs ?? 90_000),
   });
   if (!res.ok) {
     throw new Error(`AI provider ${res.status}: ${(await res.text()).slice(0, 300)}`);

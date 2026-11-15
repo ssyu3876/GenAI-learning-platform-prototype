@@ -119,14 +119,18 @@ Copy `.env.example` to `.env.local`. The app works with no `.env.local` (uses PG
 | `AI_API_KEY` | No | Leave empty for mock AI. Add a DeepSeek key for real responses |
 | `AI_BASE_URL` | No | Default `https://api.deepseek.com` |
 | `AI_MODEL_FAST` / `AI_MODEL_SMART` | No | Model names for cheap vs. high-quality calls |
+| `YOUTUBE_API_KEY` | No | Enables real YouTube video results in AI-tutor recommendations. Without it, the tutor shows a search link and curated links only |
+| `NEXT_PUBLIC_APP_URL` | No | Public origin used in shared-course links. Usually inferred from the request host on Vercel |
+| `CRON_SECRET` | Recommended | Protects `/api/cron/assignment-reminders`; Vercel sends `Authorization: Bearer <value>` |
 
 ## Deploying to Vercel
 
 1. Push this repo to GitHub.
 2. In Vercel: **Import Project** and connect the repo.
 3. **Storage → Create → Neon (Postgres)**, then connect it. This sets `DATABASE_URL`.
-4. **Settings → Environment Variables**: add `AUTH_SECRET` (long random string) and `AI_API_KEY`
-   if you have one.
+4. **Settings → Environment Variables**: add `AUTH_SECRET` (long random string), `AI_API_KEY`
+   if you have one, and optionally `YOUTUBE_API_KEY`. Add `CRON_SECRET` to secure scheduled
+   assignment reminders.
 5. Build command is already set to `npm run vercel-build` (migrates, seeds if empty, then builds).
 6. Deploy. The demo accounts work in production too.
 

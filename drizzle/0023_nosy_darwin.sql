@@ -1,0 +1,4 @@
+ALTER TABLE "tutor_recommendation_clicks" ADD COLUMN "course_id" text;--> statement-breakpoint
+ALTER TABLE "tutor_recommendation_clicks" ADD COLUMN "class_id" text;--> statement-breakpoint
+ALTER TABLE "tutor_recommendation_clicks" ADD CONSTRAINT "tutor_recommendation_clicks_course_id_courses_id_fk" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "tutor_recommendation_clicks" ADD CONSTRAINT "tutor_recommendation_clicks_class_id_classes_id_fk" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id") ON DELETE set null ON UPDATE no action;

@@ -22,6 +22,14 @@ export interface TutorLearnerProfile {
   track: LearnerTrack;
 }
 
+export interface TutorReviewContext {
+  question: string;
+  options: string[];
+  wrongAnswer: string | null;
+  correctAnswer: string;
+  explanation: string;
+}
+
 export const LESSON_CHAR_LIMIT = 4000;
 
 export function truncate(text: string, limit: number): string {
@@ -54,11 +62,13 @@ export function buildSystemPrompt({
   lesson,
   profile,
   learnerName,
+  review = null,
   locale = 'en',
 }: {
   lesson: TutorLessonContext | null;
   profile: TutorLearnerProfile | null;
   learnerName: string;
+  review?: TutorReviewContext | null;
   locale?: Locale;
 }): string {
   const parts = [
@@ -97,6 +107,26 @@ export function buildSystemPrompt({
     }
   } else {
     parts.push('The learner is not on a specific lesson right now. Help with whatever they are learning.');
+  }
+
+  if (review) {
+    parts.push(
+      [
+        'The learner is reviewing a quiz question they have already answered incorrectly. This is a post-attempt review, so you may explain the correct reasoning; the normal "never reveal quiz answers" rule does not apply to this question.',
+        'Do not dump the answer immediately. Acknowledge the tempting wrong choice, explain the underlying idea in two or three short steps, then show why the correct option follows.',
+        'Finish with one small check question. Keep it under 180 words unless they ask for more.',
+        `Question: ${review.question}`,
+        review.options.length
+          ? `Options:\n${review.options.map((option, index) => `${String.fromCharCode(65 + index)}. ${option}`).join('\n')}`
+          : '',
+        `The learner chose: ${review.wrongAnswer ?? 'no answer'}`,
+        `Correct option: ${review.correctAnswer}`,
+        review.explanation ? `Stored explanation: ${review.explanation}` : '',
+        'Use the stored explanation as a reference, not as text to copy verbatim.',
+      ]
+        .filter(Boolean)
+        .join('\n'),
+    );
   }
   return parts.join('\n\n');
 }
@@ -141,12 +171,20 @@ const DEMO_NOTE_ZH = '_演示模式：Pip 现在没有接入 AI 密钥，这是�
 export function buildMockReply({
   question,
   lesson,
+  review = null,
   locale = 'en',
 }: {
   question: string;
   lesson: TutorLessonContext | null;
+  review?: TutorReviewContext | null;
   locale?: Locale;
 }): string {
+  if (review) {
+    if (locale === 'zh') {
+      return `${DEMO_NOTE_ZH}\n\n这道题你选了 **${review.wrongAnswer ?? '一个选项'}**，正确答案是 **${review.correctAnswer}**。\n\n${review.explanation || '先回到这一课，找到题目问的那个概念，再用自己的话说一遍。'}\n\n再想一想：如果把题目里的条件换掉，你的选择还成立吗？`;
+    }
+    return `${DEMO_NOTE}\n\nYou picked **${review.wrongAnswer ?? 'an option'}**; the correct option is **${review.correctAnswer}**.\n\n${review.explanation || 'Go back to the lesson, find the concept the question is testing, and say it in your own words.'}\n\nOne check: if the question changed one condition, would your choice still hold?`;
+  }
   if (locale === 'zh') {
     const topic = lesson ? `**${lesson.title}**` : '这个话题';
     const idea = lesson ? keyIdea(lesson.content) : null;

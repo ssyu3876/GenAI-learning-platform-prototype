@@ -17,20 +17,24 @@ import { getT } from '@/i18n';
 import { byLocale } from '@/i18n/ai';
 import { ACTIVITY_TYPES, activitySpecs } from '@/registry/activities';
 import { generateOutline, generateSeriesCourseOutline, generateSeriesPlan, regenerateOneLesson } from './generation';
+import { findMatchingPublicCourses, type CourseMatch } from './library-match';
 import {
   countCoursesGeneratedToday,
   DAILY_COURSE_LIMIT,
   getAudienceProfile,
+  getCompletedLessons,
+  getCourseRequestDraft,
   getCourseSeries,
   getGeneratedCourse,
   getGenerationSession,
   listSeriesSessions,
 } from './queries';
-import { courseFeedback, courseGenerationSessions, courseSeries } from './schema';
+import { courseFeedback, courseGenerationSessions, courseRequestDrafts, courseSeries } from './schema';
 import {
   preferredActivityTypes,
   requestSchema,
   seriesStartSchema,
+  type CourseFormat,
   type GenerationRequest,
 } from './types';
 
@@ -98,11 +102,11 @@ function requestWithFeedback(request: GenerationRequest, comment?: string): Gene
   return next;
 }
 
-/** Step 1: requirements -> framework. The full course is not written yet. */
+/** Step 1: requirements -> check public library -> framework. */
 export async function generateLearnerOutline(
-  _prev: ActionResult | null,
+  _prev: ActionResult<{ matches: CourseMatch[]; request: GenerationRequest }> | null,
   formData: FormData,
-): Promise<ActionResult> {
+): Promise<ActionResult<{ matches: CourseMatch[]; request: GenerationRequest }>> {
   const user = await requireUser(['learner']);
   const { locale } = await getT();
   const requestedHours = Number(formData.get('customHours'));
@@ -118,7 +122,10 @@ export async function generateLearnerOutline(
       ),
     };
   }
-  const parsed = requestSchema.safeParse(Object.fromEntries(formData));
+  const parsed = requestSchema.safeParse({
+    ...Object.fromEntries(formData),
+    formats: formData.getAll('formats').filter((value): value is string => typeof value === 'string'),
+  });
   if (!parsed.success) {
     return {
       ok: false,
@@ -148,6 +155,11 @@ export async function generateLearnerOutline(
   };
   const profile = await getAudienceProfile(user.id);
   const specs = specsFor(request);
+  const matches = await findMatchingPublicCourses(request);
+  if (matches.length > 0) {
+    // Do not spend generation tokens until the learner has looked at the suggestion.
+    return { ok: true, data: { matches, request } };
+  }
   try {
     const outline = await generateOutline({ request, profile, specs, userId: user.id });
     const db = await getDb();
@@ -296,6 +308,177 @@ export async function startSeriesPart(formData: FormData): Promise<void> {
   redirect(`/create/outline/${sessionId}`);
 }
 
+/** Step 2: build a course that extends chapters the learner has already finished. */
+const extensionSchema = z.object({
+  lessonIds: z.array(z.string().min(1)).min(1).max(3),
+  confusion: z.string().trim().max(800).optional().transform((value) => value || undefined),
+  goal: z.enum(['remedial', 'deepen', 'project']).catch('deepen'),
+  minutes: z.coerce.number().int().min(15).max(60).catch(30),
+  formats: z.array(z.enum(['text', 'slides', 'video', 'interactive'])).min(1).max(4).optional(),
+});
+
+export async function generateExtensionOutline(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireUser(['learner']);
+  const { locale } = await getT();
+  const parsed = extensionSchema.safeParse({
+    lessonIds: formData.getAll('lessonIds').map(String).filter(Boolean),
+    confusion: formData.get('confusion') ?? '',
+    goal: formData.get('goal') ?? 'deepen',
+    minutes: formData.get('minutes') ?? 30,
+    formats: formData.getAll('formats').filter((value): value is string => typeof value === 'string'),
+  });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: byLocale(locale, 'Choose one to three completed chapters.', '请选择 1–3 个已完成的章节。'),
+    };
+  }
+  const sources = await getCompletedLessons(user.id, parsed.data.lessonIds);
+  if (sources.length !== parsed.data.lessonIds.length) {
+    return {
+      ok: false,
+      error: byLocale(locale, 'Some of those chapters are not completed yet.', '其中有些章节还没有完成。'),
+    };
+  }
+  if ((await countCoursesGeneratedToday(user.id)) >= DAILY_COURSE_LIMIT) {
+    return {
+      ok: false,
+      error: byLocale(
+        locale,
+        `Pip has made ${DAILY_COURSE_LIMIT} courses for you today. Try again tomorrow.`,
+        `Pip 今天已经为你做了 ${DAILY_COURSE_LIMIT} 门课程，明天再来吧。`,
+      ),
+    };
+  }
+
+  const titles = sources.map((source) => source.title).join(' · ').slice(0, 180);
+  const goalText = {
+    remedial: byLocale(locale, 'clear up confusion', '补强薄弱点'),
+    deepen: byLocale(locale, 'go deeper', '深入理解'),
+    project: byLocale(locale, 'apply it in a small project', '做一个小型应用'),
+  }[parsed.data.goal];
+  const formats = (parsed.data.formats ?? ['text']) as CourseFormat[];
+  const contentFormat = formats.includes('interactive')
+    ? 'interactive'
+    : formats.includes('slides')
+      ? 'slides'
+      : formats.length === 1 && formats[0] === 'text'
+        ? 'read'
+        : 'mixed';
+  const request: GenerationRequest = {
+    topic: byLocale(locale, `Extension: ${titles}`, `拓展：${titles}`).slice(0, 200),
+    why: parsed.data.confusion ?? byLocale(locale, `I want to ${goalText} after these chapters.`, `我想在这些章节之后${goalText}。`),
+    level: parsed.data.goal === 'remedial' ? 'beginner' : 'intermediate',
+    timeBudget: 'custom',
+    customMinutes: parsed.data.minutes,
+    lessonCount: parsed.data.minutes <= 20 ? 3 : parsed.data.minutes <= 35 ? 4 : 5,
+    explanationStyle: parsed.data.goal === 'project' ? 'cases' : 'examples',
+    contentFormat,
+    formats,
+    assessment: parsed.data.goal === 'project' ? 'project' : 'mixed',
+    locale,
+  };
+  const profile = await getAudienceProfile(user.id);
+  const specs = specsFor(request);
+  try {
+    const outline = await generateOutline({
+      request,
+      profile,
+      specs,
+      userId: user.id,
+      sourceLessons: sources.map((source) => ({
+        title: source.title,
+        courseTitle: source.courseTitle,
+        content: source.content,
+      })),
+      confusion: parsed.data.confusion,
+    });
+    const db = await getDb();
+    const sessionId = newId('courseGen');
+    await db.insert(courseGenerationSessions).values({
+      id: sessionId,
+      userId: user.id,
+      request,
+      outline,
+      origin: 'extension',
+      sourceLessonIds: sources.map((source) => source.id),
+      confusion: parsed.data.confusion ?? '',
+      status: 'outline',
+    });
+    revalidatePath('/create');
+    redirect(`/create/outline/${sessionId}`);
+  } catch (error) {
+    const digest = error && typeof error === 'object' && 'digest' in error ? String(error.digest) : '';
+    if (digest.startsWith('NEXT_REDIRECT')) throw error;
+    return {
+      ok: false,
+      error: byLocale(
+        locale,
+        error instanceof Error ? error.message : 'Pip could not plan this course. Try again.',
+        error instanceof Error ? `Pip 规划拓展课程时出错了：${error.message}` : 'Pip 规划拓展课程时出错了，请再试一次。',
+      ),
+    };
+  }
+}
+
+/** Save the rejected-match configuration so the learner can resume without re-entering it. */
+const draftRequestSchema = z.object({
+  topic: z.string().trim().min(3).max(200),
+  why: z.string().trim().max(300).optional(),
+  level: z.enum(['beginner', 'intermediate', 'advanced']),
+  timeBudget: z.enum(['30m', '1h', '2h', '4h', 'custom']),
+  customMinutes: z.number().int().min(15).max(1200).optional(),
+  lessonCount: z.number().int().min(3).max(12).optional(),
+  explanationStyle: z.enum(['examples', 'steps', 'theory', 'cases']),
+  contentFormat: z.enum(['read', 'slides', 'interactive', 'mixed']),
+  formats: z.array(z.enum(['text', 'slides', 'video', 'interactive'])).min(1).max(4).optional(),
+  assessment: z.enum(['quick', 'quiz', 'project', 'mixed']),
+  locale: z.enum(['en', 'zh']),
+});
+
+export async function saveCourseRequestDraft(
+  request: GenerationRequest,
+): Promise<ActionResult<{ id: string }>> {
+  const user = await requireUser(['learner']);
+  const parsed = draftRequestSchema.safeParse(request);
+  if (!parsed.success) return { ok: false, error: 'Could not save that configuration.' };
+  const db = await getDb();
+  const id = newId('courseDraft');
+  const savedRequest: GenerationRequest = { ...parsed.data, why: parsed.data.why };
+  await db.insert(courseRequestDrafts).values({ id, userId: user.id, request: savedRequest });
+  revalidatePath('/create');
+  return { ok: true, data: { id } };
+}
+
+export async function generateFromDraft(formData: FormData): Promise<void> {
+  const user = await requireUser(['learner']);
+  const draftId = z.string().min(1).parse(formData.get('draftId'));
+  const draft = await getCourseRequestDraft(user.id, draftId);
+  if (!draft) redirect('/create');
+  if ((await countCoursesGeneratedToday(user.id)) >= DAILY_COURSE_LIMIT) {
+    redirect(`/create/draft/${draft.id}?error=limit`);
+  }
+  const request = draft.request;
+  const profile = await getAudienceProfile(user.id);
+  const specs = specsFor(request);
+  const outline = await generateOutline({ request, profile, specs, userId: user.id });
+  const db = await getDb();
+  const sessionId = newId('courseGen');
+  await db.insert(courseGenerationSessions).values({
+    id: sessionId,
+    userId: user.id,
+    request,
+    outline,
+    status: 'outline',
+  });
+  await db.delete(courseRequestDrafts).where(eq(courseRequestDrafts.id, draft.id));
+  revalidatePath('/create');
+  redirect(`/create/outline/${sessionId}`);
+}
+
 /** Step 2a: learner wants a different direction. */
 export async function regenerateOutline(formData: FormData): Promise<void> {
   const user = await requireUser(['learner']);
@@ -305,12 +488,22 @@ export async function regenerateOutline(formData: FormData): Promise<void> {
   const request = requestWithFeedback(session.request, comment);
   const specs = specsFor(request);
   const profile = await getAudienceProfile(user.id);
+  const sourceLessons =
+    session.origin === 'extension'
+      ? (await getCompletedLessons(user.id, session.sourceLessonIds)).map((source) => ({
+          title: source.title,
+          courseTitle: source.courseTitle,
+          content: source.content,
+        }))
+      : undefined;
   const outline = await generateOutline({
     request,
     profile,
     specs,
     userId: user.id,
     feedback: comment,
+    sourceLessons,
+    confusion: session.origin === 'extension' ? session.confusion : undefined,
   });
   const db = await getDb();
   await db

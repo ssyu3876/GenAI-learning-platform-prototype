@@ -8,9 +8,11 @@ import activitiesEn from './locales/en/activities.json';
 import achievementsEn from './locales/en/achievements.json';
 import adminEn from './locales/en/admin.json';
 import aiTutorEn from './locales/en/aiTutor.json';
+import assignmentsEn from './locales/en/assignments.json';
 import classesEn from './locales/en/classes.json';
 import coursesEn from './locales/en/courses.json';
 import leaderboardEn from './locales/en/leaderboard.json';
+import mailEn from './locales/en/mail.json';
 import onboardingEn from './locales/en/onboarding.json';
 import reviewEn from './locales/en/review.json';
 import scenariosEn from './locales/en/scenarios.json';
@@ -22,9 +24,11 @@ import activitiesZh from './locales/zh/activities.json';
 import achievementsZh from './locales/zh/achievements.json';
 import adminZh from './locales/zh/admin.json';
 import aiTutorZh from './locales/zh/aiTutor.json';
+import assignmentsZh from './locales/zh/assignments.json';
 import classesZh from './locales/zh/classes.json';
 import coursesZh from './locales/zh/courses.json';
 import leaderboardZh from './locales/zh/leaderboard.json';
+import mailZh from './locales/zh/mail.json';
 import onboardingZh from './locales/zh/onboarding.json';
 import reviewZh from './locales/zh/review.json';
 import scenariosZh from './locales/zh/scenarios.json';
@@ -38,7 +42,9 @@ const en = {
   courses: coursesEn,
   activities: activitiesEn,
   aiTutor: aiTutorEn,
+  assignments: assignmentsEn,
   leaderboard: leaderboardEn,
+  mail: mailEn,
   studio: studioEn,
   classes: classesEn,
   selfLearn: selfLearnEn,
@@ -57,7 +63,9 @@ const zh: Translations = {
   courses: coursesZh,
   activities: activitiesZh,
   aiTutor: aiTutorZh,
+  assignments: assignmentsZh,
   leaderboard: leaderboardZh,
+  mail: mailZh,
   studio: studioZh,
   classes: classesZh,
   selfLearn: selfLearnZh,

@@ -2,7 +2,7 @@
 
 // One review sitting: the due cards one at a time, checked on the server so the answer
 // key never reaches the browser before the learner commits.
-import { Check, ChevronRight, RotateCcw, X, Zap } from 'lucide-react';
+import { Check, ChevronRight, RotateCcw, Sparkles, X, Zap } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { Badge, Button, Card, cn, Notice, Pip, ProgressBar } from '@/components/ui';
@@ -15,11 +15,15 @@ export interface SessionCard {
   prompt: string;
   options: string[];
   wrongAnswer: number | null;
+  courseId: string;
+  courseSlug: string;
   courseEmoji: string;
   courseTitle: string;
+  lessonId: string;
   lessonTitle: string;
 }
 
+const TUTOR_CONTEXT_EVENT = 'sprout:tutor-context';
 const letter = (i: number) => String.fromCharCode(65 + i);
 
 export function ReviewSession({ cards }: { cards: SessionCard[] }) {
@@ -74,6 +78,27 @@ export function ReviewSession({ cards }: { cards: SessionCard[] }) {
   function skip() {
     setError(null);
     next();
+  }
+
+  function askPip() {
+    if (!card || !result) return;
+    window.dispatchEvent(
+      new CustomEvent(TUTOR_CONTEXT_EVENT, {
+        detail: {
+          entry: 'review',
+          courseId: card.courseId,
+          courseSlug: card.courseSlug,
+          courseTitle: card.courseTitle,
+          lessonId: card.lessonId,
+          lessonTitle: card.lessonTitle,
+          question: card.prompt,
+          options: card.options,
+          wrongAnswerIndex: picked ?? card.wrongAnswer,
+          correctAnswerIndex: result.answerIndex,
+          explanation: result.explanation,
+        },
+      }),
+    );
   }
 
   if (finished || !card) {
@@ -171,6 +196,12 @@ export function ReviewSession({ cards }: { cards: SessionCard[] }) {
               {result.correct ? t.review.session.rightThisTime : t.review.session.notQuite}
             </p>
             {result.explanation ? <p className="mt-1">{result.explanation}</p> : null}
+            <div className="mt-3">
+              <Button variant="secondary" size="sm" onClick={askPip}>
+                <Sparkles className="h-4 w-4" aria-hidden /> {t.review.session.askPip}
+              </Button>
+              <p className="mt-1 text-xs text-ink-soft">{t.review.session.askPipHint}</p>
+            </div>
             <p className="mt-2 text-sm text-ink-soft">
               {card.wrongAnswer !== null && card.wrongAnswer !== result.answerIndex
                 ? fmt(t.review.session.quizPicked, { letter: letter(card.wrongAnswer) })

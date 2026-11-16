@@ -17,11 +17,14 @@ import {
 } from '@/core/content/draft';
 import { canViewCourse, getCourseById, getCourseOutline } from '@/core/content/queries';
 import { getDb } from '@/core/db/client';
+import { sendSystemMail } from '@/core/mail/notify';
 import {
   activities,
   classCourses,
+  classMembers,
   courses,
   lessons,
+  users,
   type CourseStatus,
   type CourseVisibility,
   type UserRole,
@@ -305,6 +308,16 @@ export async function setCourseStatus(_prev: ActionResult | null, formData: Form
     const [row] = await db.select({ n: count() }).from(lessons).where(eq(lessons.courseId, course.id));
     if (!row?.n) return { ok: false, error: t.studio.actions.addLessonFirst };
   }
+  const affectedStudents =
+    parsed.data.intent === 'unpublish' ||
+    parsed.data.intent === 'archive' ||
+    parsed.data.intent === 'publish_class'
+      ? await db
+          .selectDistinct({ userId: classMembers.userId })
+          .from(classCourses)
+          .innerJoin(classMembers, eq(classMembers.classId, classCourses.classId))
+          .where(eq(classCourses.courseId, course.id))
+      : [];
   await db.transaction(async (tx) => {
     await tx
       .update(courses)
@@ -321,6 +334,69 @@ export async function setCourseStatus(_prev: ActionResult | null, formData: Form
   revalidateCourse(course);
   revalidatePath('/courses');
   revalidatePath('/classes', 'layout');
+  revalidatePath('/mail');
+  const wentOffline = parsed.data.intent === 'unpublish' || parsed.data.intent === 'archive';
+  if (parsed.data.intent === 'submit_public') {
+    const admins = await db.select({ id: users.id }).from(users).where(eq(users.role, 'admin'));
+    for (const admin of admins) {
+      try {
+        await sendSystemMail({
+          senderId: user.id,
+          recipientId: admin.id,
+          event: 'reviewQueue',
+          subject: fmt(t.studio.actions.reviewQueueMailSubject, { title: course.title }),
+          body: fmt(t.studio.actions.reviewQueueMailBody, { title: course.title }),
+        });
+      } catch (error) {
+        console.warn('[mail] could not send review-queue notification', error);
+      }
+    }
+  }
+  if (parsed.data.intent === 'publish_class') {
+    for (const student of affectedStudents) {
+      if (student.userId === user.id || student.userId === course.ownerId) continue;
+      try {
+        await sendSystemMail({
+          senderId: user.id,
+          recipientId: student.userId,
+          event: 'courseUpdated',
+          subject: fmt(t.studio.actions.courseUpdatedMailSubject, { title: course.title }),
+          body: fmt(t.studio.actions.courseUpdatedMailBody, { title: course.title }),
+        });
+      } catch (error) {
+        console.warn('[mail] could not send course-update notification', error);
+      }
+    }
+  }
+  if (wentOffline && course.ownerId && course.ownerId !== user.id) {
+    try {
+      await sendSystemMail({
+        senderId: user.id,
+        recipientId: course.ownerId,
+        event: 'courseOffline',
+        subject: t.studio.actions.courseOfflineMailSubject,
+        body: fmt(t.studio.actions.courseOfflineMailBody, { title: course.title }),
+      });
+    } catch (error) {
+      console.warn('[mail] could not send course-offline notification', error);
+    }
+  }
+  if (wentOffline) {
+    for (const student of affectedStudents) {
+      if (student.userId === user.id || student.userId === course.ownerId) continue;
+      try {
+        await sendSystemMail({
+          senderId: user.id,
+          recipientId: student.userId,
+          event: 'courseOffline',
+          subject: t.studio.actions.courseOfflineStudentMailSubject,
+          body: fmt(t.studio.actions.courseOfflineStudentMailBody, { title: course.title }),
+        });
+      } catch (error) {
+        console.warn('[mail] could not send student course-offline notification', error);
+      }
+    }
+  }
   return { ok: true, message: change.message };
 }
 

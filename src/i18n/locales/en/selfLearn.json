@@ -9,6 +9,50 @@
   "lessonCountOne": "{count} lesson",
   "lessonCountMany": "{count} lessons",
   "reviseCourse": "Give feedback / revise",
+  "matches": {
+    "title": "Public courses that may fit",
+    "subtitle": "Pip found courses in the public library that look close to what you asked for. View one, or save your setup as a draft and decide later.",
+    "view": "View course",
+    "none": "Save as draft and continue later",
+    "saving": "Saving…",
+    "keepEditing": "Not now — keep editing",
+    "noneHint": "Nothing is generated yet. A saved draft can be resumed or changed from Learn anything."
+  },
+  "draft": {
+    "title": "Course draft",
+    "subtitle": "Your configuration is saved. Generate the course when you are ready.",
+    "topic": "What you want to learn",
+    "savedNote": "This draft keeps your topic, time, style and format choices. It is removed after the outline is created.",
+    "continue": "Generate course outline",
+    "generating": "Generating…",
+    "refill": "Start over",
+    "listTitle": "Saved course drafts",
+    "listSubtitle": "Pick up where you left off, or change the setup before generating."
+  },
+  "extension": {
+    "title": "Build from what you've learned",
+    "subtitle": "Pick one to three completed chapters, tell Pip what still feels unclear, and get a short extension course.",
+    "chapters": "Completed chapters",
+    "chaptersHint": "Only chapters you have finished are listed. Choose up to three.",
+    "selectedHint": "{count} / 3 selected",
+    "confusion": "What still feels unclear?",
+    "confusionHint": "Optional. Mention the exact part that did not click.",
+    "confusionPlaceholder": "For example: I understand what delegation means, but I still cannot decide what should stay human.",
+    "goal": "What do you want from this course?",
+    "goalRemedial": "Clear up my confusion",
+    "goalDeepen": "Go deeper",
+    "goalProject": "Apply it in a small project",
+    "duration": "Time budget",
+    "minutes": "minutes",
+    "generate": "Plan this extension course",
+    "generating": "Pip is planning…",
+    "outlineNote": "You will review the outline before any lessons are generated.",
+    "outlineSource": "This outline builds on {count} completed chapter(s) and your confusion notes.",
+    "intro": "This course will build on the chapters below. Pip will not simply repeat them — it will connect and extend the ideas.",
+    "empty": "No completed chapters yet",
+    "emptyHint": "Finish at least one lesson, then come back to build a course from it.",
+    "browseCourses": "Browse courses"
+  },
   "form": {
     "topicLabel": "What do you want to learn?",
     "topicPlaceholder": "e.g. How the stock market works",
@@ -60,14 +104,23 @@
       "theory": "Principles first",
       "cases": "Case studies"
     },
-    "formatLabel": "What format do you prefer?",
-    "formatHint": "This controls the mix of reading, slides and practice.",
+    "formatLabel": "What format should the course use?",
+    "formatHint": "Choose one or more. Shift-click to select a range.",
     "formatOptions": {
       "read": "Reading",
       "slides": "Narrated slides",
       "interactive": "Interactive practice",
       "mixed": "A mix"
     },
+    "formatChoices": {
+      "text": "Written / illustrated",
+      "slides": "Slide presentation",
+      "video": "Embedded video",
+      "interactive": "Interactive practice"
+    },
+    "formatSelected": "{count} format(s) selected",
+    "formatEmpty": "Choose at least one format.",
+    "formatShiftHint": "Shift-click to select a range",
     "assessmentLabel": "How do you want to check your learning?",
     "assessmentHint": "Pip chooses activities and a final check that match this.",
     "assessmentOptions": {

@@ -1,12 +1,68 @@
 // Read functions for self-learn (server only).
 import { and, count, desc, eq, gte, inArray } from 'drizzle-orm';
 import { getDb } from '@/core/db/client';
-import { courses, learnerProfiles, lessons, type Course } from '@/core/db/schema';
+import { courses, learnerProfiles, lessonCompletions, lessons, type Course } from '@/core/db/schema';
 import type { AudienceProfile } from './audience';
-import { courseGenerationSessions, courseSeries, type CourseGenerationSession } from './schema';
+import { courseGenerationSessions, courseRequestDrafts, courseSeries, type CourseGenerationSession } from './schema';
 import type { CourseSeriesPlan } from './types';
 
 export const DAILY_COURSE_LIMIT = 5;
+
+export async function getCourseRequestDraft(userId: string, id: string) {
+  const db = await getDb();
+  const [row] = await db
+    .select()
+    .from(courseRequestDrafts)
+    .where(and(eq(courseRequestDrafts.id, id), eq(courseRequestDrafts.userId, userId)))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function listCourseRequestDrafts(userId: string) {
+  const db = await getDb();
+  return db
+    .select()
+    .from(courseRequestDrafts)
+    .where(eq(courseRequestDrafts.userId, userId))
+    .orderBy(desc(courseRequestDrafts.updatedAt))
+    .limit(10);
+}
+
+export interface CompletedLesson {
+  id: string;
+  title: string;
+  content: string;
+  courseId: string;
+  courseTitle: string;
+  courseEmoji: string;
+  completedAt: Date;
+}
+
+/** Completed lessons are the only material an extension course may build on. */
+export async function listCompletedLessons(userId: string): Promise<CompletedLesson[]> {
+  const db = await getDb();
+  return db
+    .select({
+      id: lessons.id,
+      title: lessons.title,
+      content: lessons.content,
+      courseId: courses.id,
+      courseTitle: courses.title,
+      courseEmoji: courses.emoji,
+      completedAt: lessonCompletions.completedAt,
+    })
+    .from(lessonCompletions)
+    .innerJoin(lessons, eq(lessons.id, lessonCompletions.lessonId))
+    .innerJoin(courses, eq(courses.id, lessons.courseId))
+    .where(eq(lessonCompletions.userId, userId))
+    .orderBy(desc(lessonCompletions.completedAt));
+}
+
+export async function getCompletedLessons(userId: string, ids: string[]): Promise<CompletedLesson[]> {
+  if (ids.length === 0) return [];
+  const rows = await listCompletedLessons(userId);
+  return rows.filter((row) => ids.includes(row.id));
+}
 
 export type OwnCourse = Pick<Course, 'id' | 'slug' | 'title' | 'emoji' | 'color' | 'summary' | 'createdAt'> & {
   lessonCount: number;

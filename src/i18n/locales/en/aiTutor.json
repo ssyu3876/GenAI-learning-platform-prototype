@@ -2,7 +2,9 @@
   "askPip": "Ask Pip",
   "subtitle": "Your study buddy. Hints, not answers.",
   "newChat": "Start a new chat",
+  "history": "Past tutoring",
   "close": "Close Pip (Esc)",
+  "extensionCta": "Build a course from what I've learned",
   "conversation": "Conversation with Pip",
   "youLabel": "You: ",
   "pipLabel": "Pip: ",
@@ -17,15 +19,57 @@
     "quiz": "Quiz me with one question",
     "atWork": "How is this used at work?"
   },
+  "reviewPrompts": {
+    "whyWrong": "Why was I wrong?",
+    "simpler": "Explain the idea more simply",
+    "practice": "Give me one similar question",
+    "related": "Which part of the lesson should I reread?"
+  },
+  "recommendations": {
+    "title": "Related learning"
+  },
   "empty": {
     "greeting": "Hi {name}, what are you stuck on?",
     "fallbackName": "there",
     "lessonHint": "Ask anything about this lesson, or tap a quick question below.",
+    "reviewHint": "I can see the question you missed. Let's work through why the answer you picked was tempting.",
     "generalHint": "Ask about anything you are learning. Open a lesson and I will know what you are reading."
   },
   "context": {
     "talkingAbout": "Talking about: {title}",
+    "reviewing": "Reviewing: {title}",
     "thisLesson": "this lesson"
+  },
+  "historyPage": {
+    "title": "Past tutoring",
+    "subtitle": "Your recent conversations with Pip, with the question and lesson they came from.",
+    "empty": "No tutoring history yet",
+    "emptyHint": "Ask Pip about a lesson or a review question and it will appear here.",
+    "messages": "{count} messages",
+    "general": "General study question",
+    "you": "You",
+    "pip": "Pip",
+    "continue": "Continue in Pip",
+    "resumed": "Resumed from history",
+    "entries": {
+      "review": "From review",
+      "lesson": "From a lesson",
+      "general": "General chat"
+    }
+  },
+  "insights": {
+    "title": "AI tutor insights",
+    "subtitle": "Where learners in your classes are asking Pip for help.",
+    "myClasses": "My classes",
+    "myCourses": "Learners in my courses",
+    "empty": "No AI-tutor activity yet",
+    "emptyHint": "When learners ask Pip about a lesson or a review question, the topics will appear here.",
+    "sessions": "Tutoring sessions",
+    "reviewQuestions": "Questions from review",
+    "recommendationClicks": "Recommendations opened",
+    "wrongQuestions": "Most-missed quiz questions",
+    "topLessons": "Chapters where learners ask for help",
+    "recent": "Recent questions"
   },
   "composer": {
     "label": "Message Pip",

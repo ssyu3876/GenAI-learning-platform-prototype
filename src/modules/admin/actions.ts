@@ -7,8 +7,9 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { AUDIT_ACTIONS, recordAudit } from '@/core/audit';
 import { requireUser } from '@/core/auth/session';
+import { sendSystemMail } from '@/core/mail/notify';
 import { getDb } from '@/core/db/client';
-import { courses, users, USER_ROLES } from '@/core/db/schema';
+import { courses, classCourses, classMembers, users, USER_ROLES } from '@/core/db/schema';
 import type { ActionResult } from '@/core/types';
 import { fmt, getT } from '@/i18n';
 
@@ -71,19 +72,33 @@ async function reviewCourse(formData: FormData, decision: 'approve' | 'reject'):
     .update(courses)
     .set(values)
     .where(and(eq(courses.id, parsed.data.courseId), eq(courses.status, 'pending_review')))
-    .returning({ title: courses.title });
+    .returning({ title: courses.title, ownerId: courses.ownerId });
   if (updated.length === 0) return { ok: false, error: t.admin.actions.courseNotPending };
+  const title = updated[0]?.title ?? t.admin.actions.thisCourse;
   await recordAudit({
     actor: admin,
     action: decision === 'approve' ? AUDIT_ACTIONS.courseApproved : AUDIT_ACTIONS.courseSentBack,
     targetType: 'course',
     targetId: parsed.data.courseId,
-    targetName: updated[0]?.title ?? t.admin.actions.thisCourse,
+    targetName: title,
   });
+  if (decision === 'approve' && updated[0]?.ownerId) {
+    try {
+      await sendSystemMail({
+        senderId: admin.id,
+        recipientId: updated[0].ownerId,
+        event: 'courseApproved',
+        subject: t.admin.actions.approvalMailSubject,
+        body: fmt(t.admin.actions.approvalMailBody, { title }),
+      });
+    } catch (error) {
+      console.warn('[mail] could not send approval notification', error);
+    }
+  }
   revalidatePath('/admin/courses');
   revalidatePath('/admin');
   revalidatePath('/courses');
-  const title = updated[0]?.title ?? t.admin.actions.thisCourse;
+  revalidatePath('/mail');
   return {
     ok: true,
     message: decision === 'approve' ? fmt(t.admin.actions.approved, { title }) : fmt(t.admin.actions.rejected, { title }),
@@ -111,6 +126,14 @@ async function setCourseOffline(formData: FormData, decision: 'archive' | 'resto
   const parsed = reviewSchema.safeParse({ courseId: formData.get('courseId') });
   if (!parsed.success) return { ok: false, error: t.admin.actions.pickCourse };
   const db = await getDb();
+  const affectedStudents =
+    decision === 'archive'
+      ? await db
+          .selectDistinct({ userId: classMembers.userId })
+          .from(classCourses)
+          .innerJoin(classMembers, eq(classMembers.classId, classCourses.classId))
+          .where(eq(classCourses.courseId, parsed.data.courseId))
+      : [];
   const values =
     decision === 'archive'
       ? { status: 'archived' as const, visibility: 'private' as const, updatedAt: new Date() }
@@ -124,24 +147,54 @@ async function setCourseOffline(formData: FormData, decision: 'archive' | 'resto
         eq(courses.status, decision === 'archive' ? 'published' : 'archived'),
       ),
     )
-    .returning({ title: courses.title });
+    .returning({ title: courses.title, ownerId: courses.ownerId });
   if (updated.length === 0) {
     return {
       ok: false,
       error: decision === 'archive' ? t.admin.actions.notPublished : t.admin.actions.notArchived,
     };
   }
+  const title = updated[0]?.title ?? t.admin.actions.thisCourse;
   await recordAudit({
     actor: admin,
     action: decision === 'archive' ? AUDIT_ACTIONS.courseArchived : AUDIT_ACTIONS.courseRestored,
     targetType: 'course',
     targetId: parsed.data.courseId,
-    targetName: updated[0]?.title ?? t.admin.actions.thisCourse,
+    targetName: title,
   });
+  if (decision === 'archive' && updated[0]?.ownerId && updated[0].ownerId !== admin.id) {
+    try {
+      await sendSystemMail({
+        senderId: admin.id,
+        recipientId: updated[0].ownerId,
+        event: 'courseOffline',
+        subject: t.admin.actions.offlineMailSubject,
+        body: fmt(t.admin.actions.offlineMailBody, { title }),
+      });
+    } catch (error) {
+      console.warn('[mail] could not send course-offline notification', error);
+    }
+  }
+  if (decision === 'archive') {
+    for (const student of affectedStudents) {
+      if (student.userId === admin.id || student.userId === updated[0]?.ownerId) continue;
+      try {
+        await sendSystemMail({
+          senderId: admin.id,
+          recipientId: student.userId,
+          event: 'courseOffline',
+          subject: t.admin.actions.offlineStudentMailSubject,
+          body: fmt(t.admin.actions.offlineStudentMailBody, { title }),
+        });
+      } catch (error) {
+        console.warn('[mail] could not send student course-offline notification', error);
+      }
+    }
+  }
   revalidatePath('/admin/courses');
   revalidatePath('/admin');
   revalidatePath('/courses');
-  const title = updated[0]?.title ?? t.admin.actions.thisCourse;
+  revalidatePath('/mail');
   return {
     ok: true,
     message:

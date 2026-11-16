@@ -12,6 +12,9 @@ export type ExplanationStyle = (typeof EXPLANATION_STYLES)[number];
 export const CONTENT_FORMATS = ['read', 'slides', 'interactive', 'mixed'] as const;
 export type ContentFormat = (typeof CONTENT_FORMATS)[number];
 
+export const COURSE_FORMATS = ['text', 'slides', 'video', 'interactive'] as const;
+export type CourseFormat = (typeof COURSE_FORMATS)[number];
+
 export const ASSESSMENTS = ['quick', 'quiz', 'project', 'mixed'] as const;
 export type Assessment = (typeof ASSESSMENTS)[number];
 
@@ -37,6 +40,8 @@ export const requestSchema = z.object({
   ),
   explanationStyle: z.enum(EXPLANATION_STYLES).catch('examples'),
   contentFormat: z.enum(CONTENT_FORMATS).catch('mixed'),
+  /** User-selected course forms. Optional for older stored requests. */
+  formats: z.array(z.enum(COURSE_FORMATS)).min(1).max(4).optional(),
   assessment: z.enum(ASSESSMENTS).catch('mixed'),
 });
 
@@ -46,6 +51,17 @@ export type GenerationRequest = Omit<z.infer<typeof requestSchema>, 'customHours
   /** UI language at generation time, so the outline and lessons stay in that language. */
   locale: 'en' | 'zh';
 };
+
+export function formatsForRequest(request: Pick<GenerationRequest, 'formats' | 'contentFormat'>): CourseFormat[] {
+  if (request.formats?.length) return request.formats;
+  return request.contentFormat === 'read'
+    ? ['text']
+    : request.contentFormat === 'slides'
+      ? ['slides']
+      : request.contentFormat === 'interactive'
+        ? ['interactive']
+        : ['text', 'slides'];
+}
 
 export const outlineLessonSchema = z.object({
   title: z.string().min(1).max(120),

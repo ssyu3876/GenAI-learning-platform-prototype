@@ -8,9 +8,11 @@ import { activitiesManifest } from '@/modules/activities/manifest';
 import { achievementsManifest } from '@/modules/achievements/manifest';
 import { adminManifest } from '@/modules/admin/manifest';
 import { aiTutorManifest } from '@/modules/ai-tutor/manifest';
+import { assignmentsManifest } from '@/modules/assignments/manifest';
 import { classesManifest } from '@/modules/classes/manifest';
 import { coursesManifest } from '@/modules/courses/manifest';
 import { leaderboardManifest } from '@/modules/leaderboard/manifest';
+import { mailManifest } from '@/modules/mail/manifest';
 import { onboardingManifest } from '@/modules/onboarding/manifest';
 import { reviewManifest } from '@/modules/review/manifest';
 import { scenariosManifest } from '@/modules/scenarios/manifest';
@@ -24,6 +26,8 @@ export const MODULES: ModuleManifest[] = [
   selfLearnManifest,
   reviewManifest,
   leaderboardManifest,
+  assignmentsManifest,
+  mailManifest,
   aiTutorManifest,
   studioManifest,
   classesManifest,

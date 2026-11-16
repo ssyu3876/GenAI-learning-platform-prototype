@@ -21,7 +21,7 @@ export async function AppShell({ user, children }: { user: SessionUser; children
   const ROLE_LABEL = { learner: t.chrome.shell.learner, instructor: t.chrome.shell.instructor, admin: t.chrome.shell.admin } as const;
 
   const nav = [
-    { href: '/home', label: t.chrome.nav.home, icon: House, roles: [user.role], order: 0 },
+    { href: '/home', label: t.chrome.nav.home, icon: House, badge: undefined, roles: [user.role], order: 0 },
     ...navItemsFor(user.role).map((item) => ({ ...item, label: navLabel(item.href, item.label, t) })),
   ];
   const stats = await getUserStats(user.id);
@@ -41,10 +41,11 @@ export async function AppShell({ user, children }: { user: SessionUser; children
           <span className="font-display text-2xl font-bold">{t.chrome.landing.siteName}</span>
         </Link>
         <nav aria-label={t.chrome.nav.mainNavigation} className="flex flex-col gap-1">
-          {nav.map(({ href, label, icon: Icon }) => (
+          {nav.map(({ href, label, icon: Icon, badge: Indicator }) => (
             <NavLink key={href} href={href}>
               <Icon className="h-5 w-5" />
               {label}
+              {Indicator ? <Indicator /> : null}
             </NavLink>
           ))}
         </nav>
@@ -108,10 +109,11 @@ export async function AppShell({ user, children }: { user: SessionUser; children
             </form>
           </div>
           <nav aria-label={t.chrome.nav.mobileNavigation} className="flex gap-1 overflow-x-auto px-3 pb-3 lg:hidden">
-            {nav.map(({ href, label, icon: Icon }) => (
+            {nav.map(({ href, label, icon: Icon, badge: Indicator }) => (
               <NavLink key={href} href={href} compact>
                 <Icon className="h-4 w-4" />
                 {label}
+                {Indicator ? <Indicator /> : null}
               </NavLink>
             ))}
           </nav>

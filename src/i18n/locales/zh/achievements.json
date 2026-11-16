@@ -239,5 +239,9 @@
     "newLeaf": "再过 {xp} 经验值，就会长出一片新叶子。",
     "allLeaves": "叶子已经全部长出来了，做得真好。",
     "withinReach": "触手可及"
+  },
+  "notifications": {
+    "badgeSubject": "你获得了一枚新徽章",
+    "badgeBody": "你获得了「{name}」。"
   }
 }

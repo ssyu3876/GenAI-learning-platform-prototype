@@ -2,7 +2,9 @@
   "askPip": "问问 Pip",
   "subtitle": "你的学习伙伴。只给提示，不给答案。",
   "newChat": "开始新对话",
+  "history": "历史辅导",
   "close": "关闭 Pip（Esc）",
+  "extensionCta": "从已学章节生成课程",
   "conversation": "与 Pip 的对话",
   "youLabel": "你：",
   "pipLabel": "Pip：",
@@ -17,15 +19,57 @@
     "quiz": "出一道题考考我",
     "atWork": "这在工作中怎么用？"
   },
+  "reviewPrompts": {
+    "whyWrong": "我为什么错了？",
+    "simpler": "把这个知识点讲简单点",
+    "practice": "再给我一道类似的题",
+    "related": "我应该重读这一课的哪部分？"
+  },
+  "recommendations": {
+    "title": "相关学习内容"
+  },
   "empty": {
     "greeting": "嗨，{name}，你卡在哪儿了？",
     "fallbackName": "朋友",
     "lessonHint": "这一课有什么不懂的都可以问我，也可以点下面的快捷问题。",
+    "reviewHint": "我看到你做错的那道题了。我们一起看看，当时为什么会选那个答案。",
     "generalHint": "你在学的内容都可以问我。打开一课后，我就知道你正在读什么。"
   },
   "context": {
     "talkingAbout": "正在聊：{title}",
+    "reviewing": "正在复习：{title}",
     "thisLesson": "这一课"
+  },
+  "historyPage": {
+    "title": "历史辅导",
+    "subtitle": "查看最近和 Pip 的对话，以及它们来自哪道题、哪一节课。",
+    "empty": "还没有辅导记录",
+    "emptyHint": "向 Pip 提问某节课或某道错题后，记录会出现在这里。",
+    "messages": "{count} 条消息",
+    "general": "通用学习问题",
+    "you": "你",
+    "pip": "Pip",
+    "continue": "继续对话",
+    "resumed": "从历史会话恢复",
+    "entries": {
+      "review": "来自错题",
+      "lesson": "来自课程",
+      "general": "通用对话"
+    }
+  },
+  "insights": {
+    "title": "AI 助教洞察",
+    "subtitle": "查看班级学生在哪些地方向 Pip 求助。",
+    "myClasses": "我的班级",
+    "myCourses": "我的课程学习者",
+    "empty": "还没有 AI 助教使用记录",
+    "emptyHint": "学生向 Pip 提问课程或错题后，相关主题会出现在这里。",
+    "sessions": "辅导会话",
+    "reviewQuestions": "错题相关问题",
+    "recommendationClicks": "推荐打开次数",
+    "wrongQuestions": "高频错题",
+    "topLessons": "学生最常求助的章节",
+    "recent": "最近的问题"
   },
   "composer": {
     "label": "给 Pip 发消息",

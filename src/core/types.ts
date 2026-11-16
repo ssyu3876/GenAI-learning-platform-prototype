@@ -27,6 +27,8 @@ export interface NavItem {
   label: string;
   /** Any lucide-react icon, e.g. `icon: BookOpen` */
   icon: IconComponent;
+  /** Optional unread/count indicator rendered after the label. */
+  badge?: ComponentType;
   roles: UserRole[];
   /** Lower comes first. Core range: 0-99, modules: 100+ */
   order: number;

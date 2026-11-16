@@ -73,8 +73,11 @@ export async function ReviewPage({ user }: { user: SessionUser }) {
                   prompt: c.prompt,
                   options: c.options,
                   wrongAnswer: c.wrongAnswer,
+                  courseId: c.course.id,
+                  courseSlug: c.course.slug,
                   courseEmoji: c.course.emoji,
                   courseTitle: c.course.title,
+                  lessonId: c.lessonId,
                   lessonTitle: c.lessonTitle,
                 }))}
               />

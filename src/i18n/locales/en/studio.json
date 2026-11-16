@@ -280,6 +280,14 @@
     "publishClassMessage": "Published to your classes. Assign it to a class so learners can find it.",
     "submitPublicMessage": "Sent for review. It shows up in the public catalog once an admin approves it.",
     "unpublishMessage": "Back to draft. Learners cannot open it for now.",
-    "archiveMessage": "Archived. It is hidden from learners and the catalog."
+    "archiveMessage": "Archived. It is hidden from learners and the catalog.",
+    "courseOfflineMailSubject": "A course was taken offline",
+    "courseOfflineMailBody": "“{title}” was unpublished or archived. Learners can no longer open it.",
+    "courseOfflineStudentMailSubject": "A course was taken offline",
+    "courseOfflineStudentMailBody": "“{title}” is no longer available, so you cannot continue it for now.",
+    "reviewQueueMailSubject": "Course waiting for review: {title}",
+    "reviewQueueMailBody": "“{title}” was submitted for public catalogue review.",
+    "courseUpdatedMailSubject": "Course updated: {title}",
+    "courseUpdatedMailBody": "“{title}” was updated in your class."
   }
 }

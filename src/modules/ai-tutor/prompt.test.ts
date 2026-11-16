@@ -41,6 +41,25 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain('not on a specific lesson');
     expect(prompt).toContain('unknown');
   });
+
+  it('adds the reviewed question and permits a post-attempt explanation', () => {
+    const prompt = buildSystemPrompt({
+      lesson,
+      profile: null,
+      learnerName: 'Mia',
+      review: {
+        question: 'What does git commit do?',
+        options: ['Save a snapshot', 'Delete the repo'],
+        wrongAnswer: 'Delete the repo',
+        correctAnswer: 'Save a snapshot',
+        explanation: 'A commit records a snapshot in history.',
+      },
+    });
+    expect(prompt).toContain('already answered incorrectly');
+    expect(prompt).toContain('Save a snapshot');
+    expect(prompt).toContain('Delete the repo');
+    expect(prompt).toContain('post-attempt review');
+  });
 });
 
 describe('mock replies', () => {

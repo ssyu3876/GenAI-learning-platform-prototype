@@ -9,11 +9,17 @@ import { Button, Card, Field, Input, Notice, PipSays, Select } from '@/component
 import { useT } from '@/i18n/client';
 import { fmt } from '@/i18n/format';
 import { generateLearnerOutline, startCourseSeries } from '../actions';
-import { SINGLE_COURSE_MAX_HOURS } from '../types';
+import type { CourseMatch } from '../library-match';
+import { CourseFormatPicker } from './course-format-picker';
+import { MatchingCoursePrompt } from './matching-course-prompt';
+import { SINGLE_COURSE_MAX_HOURS, type GenerationRequest } from '../types';
 
 export function LearnForm({ remaining, limit }: { remaining: number; limit: number }) {
   const t = useT();
-  const [state, dispatch, pending] = useActionState<ActionResult | null, FormData>(generateLearnerOutline, null);
+  const [state, dispatch, pending] = useActionState<
+    ActionResult<{ matches: CourseMatch[]; request: GenerationRequest }> | null,
+    FormData
+  >(generateLearnerOutline, null);
   const [seriesState, seriesDispatch, seriesPending] = useActionState<ActionResult | null, FormData>(
     startCourseSeries,
     null,
@@ -52,6 +58,9 @@ export function LearnForm({ remaining, limit }: { remaining: number; limit: numb
     <Card className="p-5 sm:p-6">
       <form onSubmit={onSubmit} className="flex flex-col gap-4" aria-busy={pending}>
         {state && !state.ok ? <Notice tone="error">{state.error}</Notice> : null}
+        {state?.ok && state.data?.matches.length ? (
+          <MatchingCoursePrompt matches={state.data.matches} request={state.data.request} />
+        ) : null}
         <Field label={t.selfLearn.form.topicLabel} htmlFor="topic">
           <Input
             id="topic"
@@ -200,14 +209,8 @@ export function LearnForm({ remaining, limit }: { remaining: number; limit: numb
               ))}
             </Select>
           </Field>
-          <Field label={t.selfLearn.form.formatLabel} htmlFor="contentFormat" hint={t.selfLearn.form.formatHint}>
-            <Select id="contentFormat" name="contentFormat" defaultValue="mixed" disabled={pending}>
-              {Object.entries(t.selfLearn.form.formatOptions).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </Select>
+          <Field label={t.selfLearn.form.formatLabel} hint={t.selfLearn.form.formatHint}>
+            <CourseFormatPicker defaultFormats={['text']} />
           </Field>
           <Field label={t.selfLearn.form.assessmentLabel} htmlFor="assessment" hint={t.selfLearn.form.assessmentHint}>
             <Select id="assessment" name="assessment" defaultValue="mixed" disabled={pending}>

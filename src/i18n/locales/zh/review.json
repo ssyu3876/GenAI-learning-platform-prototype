@@ -41,6 +41,8 @@
     "notQuite": "还差一点。",
     "quizPicked": "测验时你选了 {letter}。",
     "masteredNote": "已掌握，这张卡片会离开你的复习列表。",
+    "askPip": "让 Pip 讲讲这道题",
+    "askPipHint": "Pip 会结合这道题、你的选择和对应章节来回答。",
     "backIn": "{time}再复习。",
     "checkError": "没能检查这个答案，请检查网络后再试一次。",
     "nextCard": "下一张",

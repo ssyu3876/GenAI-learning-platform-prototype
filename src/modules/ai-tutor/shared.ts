@@ -5,6 +5,36 @@ export const MAX_HISTORY = 12;
 /** Max characters per message. */
 export const MAX_MESSAGE_CHARS = 2000;
 
+/** A review page opens the global tutor with this context. Kept as a DOM event contract
+ * so the review module never imports the ai-tutor module. */
+export const TUTOR_CONTEXT_EVENT = 'sprout:tutor-context';
+export const TUTOR_RESUME_EVENT = 'sprout:tutor-resume';
+
+export interface TutorResumePayload {
+  sessionId: string;
+  entry: 'review' | 'lesson' | 'general';
+  courseId: string | null;
+  courseTitle: string;
+  lessonId: string | null;
+  lessonTitle: string;
+  reviewQuestion: string;
+  messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+}
+
+export interface TutorReviewHandoff {
+  entry: 'review';
+  courseId: string;
+  courseSlug: string;
+  courseTitle: string;
+  lessonId: string;
+  lessonTitle: string;
+  question: string;
+  options: string[];
+  wrongAnswerIndex: number | null;
+  correctAnswerIndex: number;
+  explanation: string;
+}
+
 export const QUICK_PROMPTS = [
   'Explain this more simply',
   'Give me a real-world example',

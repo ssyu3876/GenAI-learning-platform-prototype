@@ -1,0 +1,1 @@
+DROP TABLE "tutor_video_resources" CASCADE;

@@ -9,9 +9,11 @@ import {
 } from '@/core/content/draft';
 import { byLocale, outputLanguage } from '@/i18n/ai';
 import type { Locale } from '@/i18n/config';
+import { searchYouTube } from '@/core/video/youtube';
 import { buildAudienceNote, type AudienceProfile } from './audience';
 import {
   courseOutlineSchema,
+  formatsForRequest,
   lessonCountForRequest,
   minutesPerLessonForRequest,
   outlineLessonSchema,
@@ -31,6 +33,9 @@ export interface GenerateOutlineInput {
   specs: ActivitySpec[];
   userId: string;
   feedback?: string;
+  /** Completed lessons an extension course must build on. */
+  sourceLessons?: Array<{ title: string; courseTitle: string; content: string }>;
+  confusion?: string;
 }
 
 export interface GenerateCourseInput {
@@ -97,6 +102,39 @@ function allowedTypes(specs: ActivitySpec[]): string {
   return specs.map((spec) => spec.type).join(', ');
 }
 
+function courseFormatsLabel(request: GenerationRequest): string {
+  return formatsForRequest(request)
+    .map((format) =>
+      ({
+        text: 'written/illustrated lessons',
+        slides: 'narrated slide decks',
+        video: 'an embedded YouTube video',
+        interactive: 'interactive practice',
+      })[format],
+    )
+    .join(' + ');
+}
+
+/** Grounding block for courses launched from completed chapters in the AI tutor. */
+function extensionPrompt(input: GenerateOutlineInput): string {
+  if (!input.sourceLessons?.length) return '';
+  const sources = input.sourceLessons
+    .map(
+      (lesson) =>
+        `- "${lesson.title}" from "${lesson.courseTitle}"\n  ${lesson.content.slice(0, 1200).replace(/\s+/g, ' ').trim()}`,
+    )
+    .join('\n');
+  return [
+    'This is an extension course, not a from-scratch course.',
+    'The learner has already completed the lessons below. Build on that knowledge, use their vocabulary, and do not simply repeat the same material. Every new lesson should extend one of these lessons or connect them.',
+    `Completed lessons:\n${sources}`,
+    input.confusion ? `The learner is still confused about: ${input.confusion}` : '',
+    'Keep the course focused on the selected chapter(s); do not wander into unrelated parts of the course.',
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
 /** The prompt keeps the outline small; the expensive call happens only after approval. */
 export async function generateOutline(input: GenerateOutlineInput): Promise<CourseOutline> {
   const { request, profile, specs } = input;
@@ -106,6 +144,7 @@ export async function generateOutline(input: GenerateOutlineInput): Promise<Cour
   if (count > 6) return generateOutlineInBatches(input, count, totalMinutes);
   const audience = buildAudienceNote(profile, request.why);
   const allowed = allowedTypes(specs);
+  const extension = extensionPrompt(input);
 
   const system = [
     'You are Pip, a careful curriculum designer for a learning platform.',
@@ -118,6 +157,8 @@ export async function generateOutline(input: GenerateOutlineInput): Promise<Cour
     '  "assessment": string (how the learner proves they learned it), "videoPlan": string (short; narrated slides + diagrams unless told otherwise) }',
     `Allowed activity types: ${allowed}.`,
     'Every lesson must have a distinct purpose and build on the previous one. Do not repeat the same title pattern.',
+    `Course formats the learner selected: ${courseFormatsLabel(request)}.`,
+    'If video is selected, write a short introduction for the video, but do not invent a YouTube URL; a real video will be attached after generation.',
     `Vary the lesson lengths: make 1-2 applied/lab-style lessons longer (up to about ${Math.min(240, Math.round(minutes * 2))} minutes) and several core lessons shorter. The estimatedMinutes must add up to about ${totalMinutes} minutes.`,
   ].join('\n');
 
@@ -128,6 +169,7 @@ export async function generateOutline(input: GenerateOutlineInput): Promise<Cour
     `Explanation style: ${styleLabel(request.explanationStyle)}.`,
     `Content format: ${formatLabel(request.contentFormat)}.`,
     `Assessment preference: ${assessmentLabel(request.assessment)}.`,
+    extension,
     audience ? `Learner context: ${audience}.` : '',
     input.feedback ? `The learner reviewed the previous outline and asked for: ${input.feedback}` : '',
     'The course must be useful on its own, not a table of contents with vague labels.',
@@ -208,6 +250,7 @@ async function generateOutlineInBatches(
       `This is batch ${batchNumber} of ${batchTotal}: generate exactly ${batchCount} lessons for positions ${start + 1}-${start + batchCount}.`,
       `Across the whole course there must be exactly ${count} distinct lessons, about ${totalMinutes} minutes in total, with varied lengths (1-2 longer applied/lab lessons and shorter core lessons).`,
       'Do not duplicate previous lesson titles or turn the course into a table of contents.',
+      `Course formats the learner selected: ${courseFormatsLabel(request)}. If video is selected, do not invent a video URL.`,
       `Allowed activity types: ${allowed}.`,
       'Return ONE JSON object only:',
       '{ "title"?: string, "promise"?: string, "outcomes"?: string[], "assessment"?: string, "videoPlan"?: string, "lessons": [ { "title": string, "objective": string, "keyPoints": string[] (2-3), "estimatedMinutes": number, "activityTypes": string[] (1-3) } ] }',
@@ -221,6 +264,7 @@ async function generateOutlineInBatches(
       `Explanation style: ${styleLabel(request.explanationStyle)}.`,
       `Content format: ${formatLabel(request.contentFormat)}.`,
       `Assessment: ${assessmentLabel(request.assessment)}.`,
+      extensionPrompt(input),
       audience ? `Learner context: ${audience}.` : '',
       previousTitles.length ? `Previous lesson titles (do not repeat): ${previousTitles.join(' · ')}` : '',
       input.feedback ? `The learner asked for: ${input.feedback}` : '',
@@ -535,6 +579,24 @@ function fallbackSeriesOutline(course: SeriesCourse, request: GenerationRequest,
   );
 }
 
+/** Attach one real, verified video per lesson when the learner selected that format. */
+async function attachVideos(draft: CourseDraft, request: GenerationRequest): Promise<CourseDraft> {
+  if (!formatsForRequest(request).includes('video')) return draft;
+  const lessons = await Promise.all(
+    draft.lessons.map(async (lesson) => {
+      if (/https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//i.test(lesson.content)) return lesson;
+      const [video] = await searchYouTube(`${request.topic} ${lesson.title}`, 1);
+      if (!video) return lesson;
+      const title = video.title.replace(/[[\]]/g, '').slice(0, 160);
+      return {
+        ...lesson,
+        content: `${lesson.content.trimEnd()}\n\n[Video: ${title} · YouTube](${video.url})`,
+      };
+    }),
+  );
+  return { ...draft, lessons };
+}
+
 /** Full generation; one call, because the outline already fixed the structure. */
 export async function generateFullCourse(input: GenerateCourseInput): Promise<CourseDraft> {
   const { request, outline, specs } = input;
@@ -546,6 +608,8 @@ export async function generateFullCourse(input: GenerateCourseInput): Promise<Co
     'Each lesson must be substantial: 400-700 words of Markdown with a short opening, one concrete example,',
     'one common mistake, and a small practice prompt. No filler, no repeated paragraphs, no "in this lesson we will".',
     'Each lesson must have 2-3 activities whose configs match the allowed activity schemas.',
+    `Course formats the learner selected: ${courseFormatsLabel(request)}.`,
+    'If video is selected, introduce the video in one short sentence but do not invent a YouTube URL; a real video will be attached after generation.',
     outputLanguage(request.locale),
     'Reply with ONE JSON object only, matching the supplied course schema. Allowed activity types:',
     typeGuide(specs),
@@ -584,7 +648,7 @@ export async function generateFullCourse(input: GenerateCourseInput): Promise<Co
   let draft = sanitizeDraft(first.data, specs);
   if (first.mocked) {
     if (isAiConfigured()) throw new Error('Pip could not get usable lessons from the model. Please retry.');
-    return draft;
+    return attachVideos(draft, request);
   }
 
   const issues = qualityIssues(draft, request);
@@ -611,7 +675,7 @@ export async function generateFullCourse(input: GenerateCourseInput): Promise<Co
     draft = sanitizeDraft(retry.data, specs);
   }
 
-  return draft;
+  return attachVideos(draft, request);
 }
 
 /** Cheap quality gate: the model must write a real course, not four headings. */
